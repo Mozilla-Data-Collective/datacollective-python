@@ -15,10 +15,21 @@ pip install datacollective
 1. **Get your API key** from the Mozilla Data Collective dashboard
 
 2. **Set up your environment**:
+
+If you have cloned the repository, you can run the following command:
+
    ```bash
    # Copy the example environment file
    cp .env.example .env
    ```
+
+Otherwise, copy and paste the following into a file called `.env` in your present working directory.
+
+```bash
+MDC_API_KEY=<MDC_API_KEY> # change to your MDC API Key
+MDC_API_URL=https://datacollective.mozillafoundation.org/api # change to MDC API URL endpoint
+MDC_DOWNLOAD_PATH=~/.mozdata/datasets # change to where you want to download datasets
+```
 
 3. **Configure your API key** by editing `.env`:
    ```bash
