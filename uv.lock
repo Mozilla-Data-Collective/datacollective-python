@@ -288,7 +288,7 @@ toml = [
 
 [[package]]
 name = "datacollective"
-version = "0.0.4"
+version = "0.0.16"
 source = { editable = "." }
 dependencies = [
     { name = "python-dotenv" },
