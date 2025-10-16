@@ -7,6 +7,10 @@ from typing import Any, Optional
 import requests
 from dotenv import load_dotenv
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .datasets import DatasetsWrapper
 
 class ProgressBar:
     """A custom progress bar with a fox emoji that moves across the bar"""
@@ -162,6 +166,9 @@ class DataCollective:
         )
         # Expand user path (handle ~)
         self.download_path = os.path.expanduser(download_path_env)  # type: ignore
+
+        from .datasets import DatasetsWrapper
+        self.datasets = DatasetsWrapper(self)
 
     def _ensure_download_directory(self, download_path: str) -> None:
         """
