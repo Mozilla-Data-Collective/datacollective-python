@@ -33,11 +33,14 @@ class DatasetsWrapper:
         # datasets_config_path = f"{extract_path}/datasets_config.json"
         # with open(datasets_config_path, "r") as f:
         #     datasets_config = json.load(f)
+        # datasets_config = {
+        #     "data_files": datasets_config["data_files"] # Limit what params a config can change
+        # }
 
         datasets_config = {
             "data_files": "cv-corpus-23.0-2025-09-05/bas/train.tsv"
         }
 
-        datasets_config.update(kwargs)
+        datasets_config.update(kwargs) # Override with any configuration the user sets
 
         return datasets.load_dataset(path=extract_path, **datasets_config)
