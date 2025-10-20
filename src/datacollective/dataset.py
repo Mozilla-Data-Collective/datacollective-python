@@ -21,14 +21,14 @@ class Dataset():
     def _data(self):
 
         if "/mcv-scripted-" in self.directory:
-            return self.get_scripted_speech_splits()
+            return self._get_scripted_speech_data()
         elif "/mcv-spontaneous-" in self.directory:
-            return self.get_spontaneous_speech_splits()
+            return self._get_spontaneous_speech_data()
         else:
             raise Exception(f"Dataset directory {self.directory} cannot be identified as MCV scripted or spontaneous")
 
     
-    def get_scripted_speech_splits(self):
+    def _get_scripted_speech_data(self):
         split_files: dict[str, str] = {}
         for root, _, files in os.walk(self.directory):
             for file in files:
@@ -50,7 +50,7 @@ class Dataset():
         
         return pd.concat(dfs, ignore_index=True)
     
-    def get_spontaneous_speech_splits(self):
+    def _get_spontaneous_speech_data(self):
 
         for root, _, files in os.walk(self.directory):
             for file in files:

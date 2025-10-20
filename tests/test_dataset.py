@@ -81,7 +81,7 @@ def test_get_scripted_speech_splits_filters_only_valid_names(tmp_path):
     pd.DataFrame({"x": [1]}).to_csv(invalid_file, sep="\t", index=False)
 
     ds = Dataset(str(base_dir))
-    df = ds.get_scripted_speech_splits()
+    df = ds._get_scripted_speech_data()
 
     assert "split" in df.columns
     assert all(df["split"].isin(SCRIPTED_SPEECH_SPLITS))
