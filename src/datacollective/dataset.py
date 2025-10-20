@@ -20,9 +20,9 @@ class Dataset():
     @property
     def _data(self):
 
-        if self.directory.startswith("mcv-scripted-"):
+        if "/mcv-scripted-" in self.directory:
             return self.get_scripted_speech_splits()
-        elif self.directory.startswith("mcv-spontaneous-"):
+        elif "/mcv-spontaneous-" in self.directory:
             return self.get_spontaneous_speech_splits()
         else:
             raise Exception(f"Dataset directory {self.directory} cannot be identified as MCV scripted or spontaneous")
