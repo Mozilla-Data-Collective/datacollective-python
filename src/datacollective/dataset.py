@@ -1,19 +1,35 @@
 import os
+
+from abc import ABC, abstractmethod
+
 import pandas as pd
 
 SCRIPTED_SPEECH_SPLITS = ["dev", "train", "test", "validated", "invalidated", "reported", "other"]
 
+
+
 class Dataset():
 
     def __init__(self, directory: str):
-
         self.directory = directory
-        self.splits = self.get_possible_splits()
+
+    @property
+    def splits_list(self):
+        return [str(x) for x in self.data["split"].dropna().unique().tolist()]
+
+    @property
+    def _data(self):
+
+        if self.directory.startswith("mcv-scripted-"):
+            return self.get_scripted_speech_splits()
+        elif self.directory.startswith("mcv-spontaneous-"):
+            return self.get_spontaneous_speech_splits()
+        else:
+            raise Exception("Dataset cannot be identified as MCV scripted or spontaneous")
 
     
-    def get_possible_splits(self):
-
-        data_files: dict[str, str] = {}
+    def get_scripted_speech_splits(self):
+        split_files: dict[str, str] = {}
         for root, _, files in os.walk(self.directory):
             for file in files:
                 if not file.endswith(".tsv"):
@@ -23,24 +39,32 @@ class Dataset():
                 data_file_name = file[:-4]
                 if data_file_name not in SCRIPTED_SPEECH_SPLITS:
                     continue
-                
-                data_files[data_file_name] = full_path
+
+                split_files[data_file_name] = full_path
+
+        dfs = []
+        for split, file in split_files.items():
+            df = pd.read_csv(file, sep="\t", header='infer')
+            df["split"] = split
+            dfs.append(df)
         
-        return data_files
+        return pd.concat(dfs, ignore_index=True)
     
+    def get_spontaneous_speech_splits(self):
 
-    def split(self, split: str):
-        if (split_file := self.splits.get(split)):
-            return DatasetSplit(split_file)
-        else:
-            raise Exception(f"Split named {split} not found in dataset")
+        for root, _, files in os.walk(self.directory):
+            for file in files:
+                if not file.startswith("ss-corpus-"):
+                    continue
 
-
-class DatasetSplit():
-
-    def __init__(self, split_file: str):
-        self.split_file = split_file
-
+                if not file.endswith(".tsv"):
+                    continue
+                
+                full_path = os.path.join(root, file)
+                return pd.read_csv(full_path, sep="\t", header='infer')
+        
+        raise Exception("Could nof find dataset file in directory")
+        
 
     def to_pandas(self):
-        return pd.read_csv(self.split_file, sep="\t", header='infer')
+        return self.data
