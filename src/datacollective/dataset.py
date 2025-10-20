@@ -15,7 +15,7 @@ class Dataset():
 
     @property
     def splits_list(self):
-        return [str(x) for x in self.data["split"].dropna().unique().tolist()]
+        return [str(x) for x in self._data["split"].dropna().unique().tolist()]
 
     @property
     def _data(self):
