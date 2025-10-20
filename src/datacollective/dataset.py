@@ -25,7 +25,7 @@ class Dataset():
         elif self.directory.startswith("mcv-spontaneous-"):
             return self.get_spontaneous_speech_splits()
         else:
-            raise Exception("Dataset cannot be identified as MCV scripted or spontaneous")
+            raise Exception(f"Dataset directory {self.directory} cannot be identified as MCV scripted or spontaneous")
 
     
     def get_scripted_speech_splits(self):
@@ -67,4 +67,4 @@ class Dataset():
         
 
     def to_pandas(self):
-        return self.data
+        return self._data
