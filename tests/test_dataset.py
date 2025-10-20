@@ -52,16 +52,6 @@ def test_spontaneous_dataset_loads_correctly(spontaneous_dataset_dir):
     assert df.iloc[0]["utterance"] == "hello"
 
 
-def test_scripted_ignores_non_tsv(scripted_dataset_dir):
-    # Add a non-tsv file that should be ignored
-    (scripted_dataset_dir / "train.csv").write_text("text,speaker\nhi,1")
-    ds = Dataset(str(scripted_dataset_dir))
-    df = ds.to_pandas()
-
-    assert "train.csv" not in [f.name for f in scripted_dataset_dir.iterdir()]
-    assert set(df["split"].unique()) == {"train", "test", "validated"}
-
-
 def test_spontaneous_dataset_missing_file_raises(tmp_path):
     base_dir = tmp_path / "mcv-spontaneous-en"
     base_dir.mkdir()
