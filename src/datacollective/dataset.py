@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 
+SCRIPTED_SPEECH_SPLITS = ["dev", "train", "test", "validated", "invalidated", "reported", "other"]
+
 class Dataset():
 
     def __init__(self, directory: str):
@@ -19,6 +21,9 @@ class Dataset():
                 
                 full_path = os.path.join(root, file)
                 data_file_name = file[:-4]
+                if data_file_name not in SCRIPTED_SPEECH_SPLITS:
+                    continue
+                
                 data_files[data_file_name] = full_path
         
         return data_files
