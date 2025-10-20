@@ -290,18 +290,14 @@ class DataCollective:
         return full_file_path
     
 
-    def load_dataset(self, dataset: str) -> str:
-
-        extract_path = self.download_and_extract_dataset(dataset)
-        return Dataset(extract_path)
-
-    def download_and_extract_dataset(self, dataset: str) -> str:
+    def load_dataset(self, dataset: str) -> Dataset:
 
         filepath = self.get_dataset(dataset)
-        return self.extract_dataset(filepath)
+        extract_path = self._extract_dataset(filepath)
+        return Dataset(extract_path)
     
 
-    def extract_dataset(self, filepath: str) -> str:
+    def _extract_dataset(self, filepath: str) -> str:
         
         archive_suffix = ".tar.gz"
         if filepath.endswith(archive_suffix):
