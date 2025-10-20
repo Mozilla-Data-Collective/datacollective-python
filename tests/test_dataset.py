@@ -66,7 +66,9 @@ def test_invalid_dataset_dir_raises(tmp_path):
     base_dir.mkdir()
     ds = Dataset(str(base_dir))
 
-    with pytest.raises(Exception, match="cannot be identified as MCV scripted or spontaneous"):
+    with pytest.raises(
+        Exception, match="cannot be identified as MCV scripted or spontaneous"
+    ):
         ds.to_pandas()
 
 

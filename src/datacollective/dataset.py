@@ -4,11 +4,18 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 
-SCRIPTED_SPEECH_SPLITS = ["dev", "train", "test", "validated", "invalidated", "reported", "other"]
+SCRIPTED_SPEECH_SPLITS = [
+    "dev",
+    "train",
+    "test",
+    "validated",
+    "invalidated",
+    "reported",
+    "other",
+]
 
 
-
-class Dataset():
+class Dataset:
     """
     Represents a dataset. Should be the jumping off point to access its data, metadata, anything that comes from it.
     A dataset is backed by a directory, that contains all of its data.
@@ -36,9 +43,10 @@ class Dataset():
         elif "/mcv-spontaneous-" in self.directory:
             return self._get_spontaneous_speech_data()
         else:
-            raise Exception(f"Dataset directory {self.directory} cannot be identified as MCV scripted or spontaneous")
+            raise Exception(
+                f"Dataset directory {self.directory} cannot be identified as MCV scripted or spontaneous"
+            )
 
-    
     def _get_scripted_speech_data(self):
         """
         A crude method of getting all of the data for a scripted speech dataset
@@ -50,7 +58,7 @@ class Dataset():
             for file in files:
                 if not file.endswith(".tsv"):
                     continue
-                
+
                 full_path = os.path.join(root, file)
                 data_file_name = file[:-4]
                 if data_file_name not in SCRIPTED_SPEECH_SPLITS:
@@ -60,12 +68,12 @@ class Dataset():
 
         dfs = []
         for split, file in split_files.items():
-            df = pd.read_csv(file, sep="\t", header='infer')
+            df = pd.read_csv(file, sep="\t", header="infer")
             df["split"] = split
             dfs.append(df)
-        
+
         return pd.concat(dfs, ignore_index=True)
-    
+
     def _get_spontaneous_speech_data(self):
         """
         A crude method of getting all of the data for a spontaneous speech dataset
@@ -80,16 +88,16 @@ class Dataset():
 
                 if not file.endswith(".tsv"):
                     continue
-                
+
                 full_path = os.path.join(root, file)
-                return pd.read_csv(full_path, sep="\t", header='infer')
-        
+                return pd.read_csv(full_path, sep="\t", header="infer")
+
         raise Exception("Could nof find dataset file in directory")
-        
-    # This may look redundant today, but this is intentionally designed to present an API which is agnostic to its own insides. 
+
+    # This may look redundant today, but this is intentionally designed to present an API which is agnostic to its own insides.
     # The inside might be anything, you call this to know you've got pandas
     def to_pandas(self):
         """
-        Provides the dataset in a pandas format. 
+        Provides the dataset in a pandas format.
         """
         return self._data
