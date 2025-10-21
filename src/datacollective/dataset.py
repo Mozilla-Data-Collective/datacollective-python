@@ -25,7 +25,7 @@ class Dataset:
         self.directory = directory
 
     @property
-    def splits_list(self):
+    def splits(self):
         """
         A list of splits available for the dataset
         """
