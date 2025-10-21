@@ -1,8 +1,7 @@
-import os
 import pandas as pd
 import pytest
 
-from datacollective.dataset import Dataset, SCRIPTED_SPEECH_SPLITS
+from datacollective.dataset import SCRIPTED_SPEECH_SPLITS, Dataset
 
 
 @pytest.fixture
@@ -37,9 +36,9 @@ def test_scripted_dataset_loads_correctly(scripted_dataset_dir):
     assert len(df) == 6  # 3 splits × 2 rows each
 
 
-def test_scripted_splits_list_property(scripted_dataset_dir):
+def test_scripted_splits_property(scripted_dataset_dir):
     ds = Dataset(str(scripted_dataset_dir))
-    splits = ds.splits_list
+    splits = ds.splits
     assert sorted(splits) == ["test", "train", "validated"]
 
 

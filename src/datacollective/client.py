@@ -1,13 +1,14 @@
 import os
-import sys
-import time
-import tarfile
 import shutil
+import sys
+import tarfile
+import time
 from pathlib import Path
 from typing import Any, Optional
 
 import requests
 from dotenv import load_dotenv
+
 from .dataset import Dataset
 
 
@@ -292,6 +293,9 @@ class DataCollective:
     def load_dataset(self, dataset: str) -> Dataset:
 
         filepath = self.get_dataset(dataset)
+        if not filepath:
+            raise Exception("Downloading dataset failed")
+
         extract_path = self._extract_dataset(filepath)
         return Dataset(extract_path)
 
