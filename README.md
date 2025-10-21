@@ -88,6 +88,20 @@ print(f"Download path: {client.download_path}")
 dataset = client.get_dataset('your-dataset-id')
 ```
 
+## Load and query datasets
+
+**note:** today, this feature only works with Mozilla Common Voice datasets
+```
+from datacollective import DataCollective
+
+client = DataCollective()
+
+dataset = client.load_dataset("<dataset-id>") # Load dasaset into memory
+df = dataset.to_pandas() # Convert to pandas for queryable form
+dataset.splits # A list of all splits available in the dataset
+```
+
+
 ## Multiple Environments
 
 You can use different environment configurations:
