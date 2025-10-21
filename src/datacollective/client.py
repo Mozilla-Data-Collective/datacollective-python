@@ -293,6 +293,9 @@ class DataCollective:
     def load_dataset(self, dataset: str) -> Dataset:
 
         filepath = self.get_dataset(dataset)
+        if not filepath:
+            raise Exception("Downloading dataset failed")
+
         extract_path = self._extract_dataset(filepath)
         return Dataset(extract_path)
 
