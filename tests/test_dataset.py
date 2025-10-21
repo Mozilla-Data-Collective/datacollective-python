@@ -1,8 +1,7 @@
-import os
 import pandas as pd
 import pytest
 
-from datacollective.dataset import Dataset, SCRIPTED_SPEECH_SPLITS
+from datacollective.dataset import SCRIPTED_SPEECH_SPLITS, Dataset
 
 
 @pytest.fixture

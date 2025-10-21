@@ -1,7 +1,5 @@
 import os
 
-from abc import ABC, abstractmethod
-
 import pandas as pd
 
 SCRIPTED_SPEECH_SPLITS = [
@@ -25,14 +23,14 @@ class Dataset:
         self.directory = directory
 
     @property
-    def splits(self):
+    def splits(self) -> list[str]:
         """
         A list of splits available for the dataset
         """
         return [str(x) for x in self._data["split"].dropna().unique().tolist()]
 
     @property
-    def _data(self):
+    def _data(self) -> pd.DataFrame:
         """
         A single opinion of how a dataset's data should be presented
         A table of all splits in a dataset, can be differentiated via the split column
@@ -47,7 +45,7 @@ class Dataset:
                 f"Dataset directory {self.directory} cannot be identified as MCV scripted or spontaneous"
             )
 
-    def _get_scripted_speech_data(self):
+    def _get_scripted_speech_data(self) -> pd.DataFrame:
         """
         A crude method of getting all of the data for a scripted speech dataset
         Transforms it into the canonical representation of several splits of data
@@ -74,7 +72,7 @@ class Dataset:
 
         return pd.concat(dfs, ignore_index=True)
 
-    def _get_spontaneous_speech_data(self):
+    def _get_spontaneous_speech_data(self) -> pd.DataFrame:
         """
         A crude method of getting all of the data for a spontaneous speech dataset
         Transforms it into the canonical representation of several splits of data
@@ -96,7 +94,7 @@ class Dataset:
 
     # This may look redundant today, but this is intentionally designed to present an API which is agnostic to its own insides.
     # The inside might be anything, you call this to know you've got pandas
-    def to_pandas(self):
+    def to_pandas(self) -> pd.DataFrame:
         """
         Provides the dataset in a pandas format.
         """
