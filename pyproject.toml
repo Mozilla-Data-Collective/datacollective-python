@@ -6,6 +6,7 @@ build-backend = "uv_build"
 name = "datacollective"
 version = "0.0.16"
 dependencies = [
+    "pandas>=2.0.0",
     "python-dotenv>=1.0.0",
     "requests<2.29.0",
 ]

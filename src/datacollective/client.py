@@ -1,11 +1,14 @@
 import os
 import sys
 import time
+import tarfile
+import shutil
 from pathlib import Path
 from typing import Any, Optional
 
 import requests
 from dotenv import load_dotenv
+from .dataset import Dataset
 
 
 class ProgressBar:
@@ -285,3 +288,29 @@ class DataCollective:
 
         print(f"Dataset downloaded to: {full_file_path}")
         return full_file_path
+
+    def load_dataset(self, dataset: str) -> Dataset:
+
+        filepath = self.get_dataset(dataset)
+        extract_path = self._extract_dataset(filepath)
+        return Dataset(extract_path)
+
+    def _extract_dataset(self, filepath: str) -> str:
+
+        archive_suffix = ".tar.gz"
+        if filepath.endswith(archive_suffix):
+            extract_path = filepath[: -len(archive_suffix)]
+        else:
+            raise Exception(
+                f"Downloaded archive {filepath} does not end with {archive_suffix}"
+            )
+
+        if os.path.exists(extract_path):
+            print(f"Deleting old extract {extract_path}")
+            shutil.rmtree(extract_path)
+
+        print(f"Extracting {filepath} to {extract_path}")
+        with tarfile.open(filepath, "r:gz") as tar:
+            tar.extractall(path=extract_path)
+        print(f"Extracted {filepath} to {extract_path}")
+        return extract_path
