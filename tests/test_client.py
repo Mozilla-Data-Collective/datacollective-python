@@ -154,3 +154,90 @@ class TestDataCollectiveWithFixtures:
     def test_client_fixture_has_default_url(self, client):
         """Test that fixture-provided client has default URL."""
         assert client.api_url == "https://datacollective.mozillafoundation.org/api/"
+
+
+class TestGetDatasetDetails:
+    """Tests for get_dataset_details."""
+
+    @patch("datacollective.client.requests.get")
+    def test_get_dataset_details_success(self, mock_get, api_key):
+        mock_resp = mock_get.return_value
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"id": "abc123", "name": "Example Dataset"}
+
+        client = DataCollective(api_key=api_key)
+        result = client.get_dataset_details("abc123")
+
+        assert result == {"id": "abc123", "name": "Example Dataset"}
+
+        # Verify URL and Authorization header
+        called_url = mock_get.call_args[0][0]
+        called_headers = mock_get.call_args[1]["headers"]
+        assert called_url == client.api_url + "datasets/abc123"
+        assert called_headers["Authorization"] == f"Bearer {api_key}"
+
+    @pytest.mark.parametrize("bad_id", ["", " ", "   "])
+    @patch("datacollective.client.requests.get")
+    def test_get_dataset_details_empty_id_raises(self, mock_get, bad_id):
+        client = DataCollective(api_key="test-key")
+        with pytest.raises(ValueError, match="dataset_id is required"):
+            client.get_dataset_details(bad_id)
+        mock_get.assert_not_called()
+
+    @patch("datacollective.client.requests.get")
+    def test_get_dataset_details_404_raises_file_not_found(self, mock_get):
+        mock_resp = mock_get.return_value
+        mock_resp.status_code = 404
+
+        client = DataCollective(api_key="test-key")
+        with pytest.raises(FileNotFoundError, match="Dataset not found"):
+            client.get_dataset_details("missing-dataset")
+
+    @patch("datacollective.client.requests.get")
+    def test_get_dataset_details_403_raises_permission_error(self, mock_get):
+        mock_resp = mock_get.return_value
+        mock_resp.status_code = 403
+
+        client = DataCollective(api_key="test-key")
+        with pytest.raises(
+            PermissionError,
+            match="Access denied\. Private dataset requires organization membership",
+        ):
+            client.get_dataset_details("private-dataset")
+
+    @patch("datacollective.client.requests.get")
+    def test_get_dataset_details_other_http_error_propagates(self, mock_get):
+        mock_resp = mock_get.return_value
+        mock_resp.status_code = 500
+        http_err = requests.exceptions.HTTPError("500 Server Error: Internal Server Error")
+        mock_resp.raise_for_status.side_effect = http_err
+
+        client = DataCollective(api_key="test-key")
+        with pytest.raises(requests.exceptions.HTTPError):
+            client.get_dataset_details("abc123")
+
+
+def test_get_dataset_details_live_roundtrip():
+    from dotenv import load_dotenv
+    load_dotenv()
+    api_key = os.getenv("MDC_API_KEY")
+    dataset_id = "cmflnuzw414x7bnapn6iycjnv"  # Common Voice Scripted Speech 23.0 - Bengali
+
+    client = DataCollective(api_key=api_key)
+    details = client.get_dataset_details(dataset_id)
+
+    assert isinstance(details, dict)
+    assert details.get("id") == dataset_id
+    assert isinstance(details.get("slug"), str) and details["slug"]
+    assert isinstance(details.get("name"), str) and details["name"]
+    assert isinstance(details.get("locale"), str) and details["locale"]
+    assert isinstance(details.get("visibility"), str) and details["visibility"] in ("public", "private", "restricted")
+    assert isinstance(details.get("sizeBytes"), str)
+    assert isinstance(details.get("createdAt"), str) and details["createdAt"].endswith("Z")
+    assert isinstance(details.get("updatedAt"), str) and details["updatedAt"].endswith("Z")
+    org = details.get("organization")
+    assert isinstance(org, dict)
+    assert isinstance(org.get("name"), str) and org["name"]
+    assert isinstance(org.get("slug"), str) and org["slug"]
+    expected_dataset_url = client.api_url.replace("/api/", "/") + "datasets/" + dataset_id
+    assert details.get("datasetUrl") == expected_dataset_url

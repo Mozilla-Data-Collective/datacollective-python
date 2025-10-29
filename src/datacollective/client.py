@@ -318,3 +318,34 @@ class DataCollective:
             tar.extractall(path=extract_path)
         print(f"Extracted {filepath} to {extract_path}")
         return extract_path
+
+
+    def get_dataset_details(self, dataset_id: str) -> dict[str, Any]:
+        """
+        Retrieve details of a specific dataset.
+
+        Args:
+            dataset_id: The dataset ID (as shown in MDC platform).
+
+        Returns:
+            A dict with dataset details as returned by the API.
+
+        Raises:
+            ValueError: If dataset_id is empty.
+            FileNotFoundError: If the dataset does not exist (404).
+            PermissionError: If access is denied (403).
+            requests.HTTPError: For other non-2xx responses.
+        """
+        if not dataset_id or not dataset_id.strip():
+            raise ValueError("dataset_id is required")
+
+        dataset_details_url = self.api_url + "datasets/" + dataset_id
+        headers = {"Authorization": "Bearer " + self.api_key}
+
+        resp = requests.get(dataset_details_url, headers=headers)
+        if resp.status_code == 404:
+            raise FileNotFoundError("Dataset not found")
+        if resp.status_code == 403:
+            raise PermissionError("Access denied. Private dataset requires organization membership")
+        resp.raise_for_status()
+        return resp.json()
