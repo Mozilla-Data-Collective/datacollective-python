@@ -4,7 +4,7 @@ import sys
 import tarfile
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Optional, cast
 
 import requests
 from dotenv import load_dotenv
@@ -319,7 +319,6 @@ class DataCollective:
         print(f"Extracted {filepath} to {extract_path}")
         return extract_path
 
-
     def get_dataset_details(self, dataset_id: str) -> dict[str, Any]:
         """
         Retrieve details of a specific dataset.
@@ -340,12 +339,14 @@ class DataCollective:
             raise ValueError("dataset_id is required")
 
         dataset_details_url = self.api_url + "datasets/" + dataset_id
-        headers = {"Authorization": "Bearer " + self.api_key}
+        headers = {"Authorization": "Bearer " + self.api_key}  # type: ignore
 
         resp = requests.get(dataset_details_url, headers=headers)
         if resp.status_code == 404:
             raise FileNotFoundError("Dataset not found")
         if resp.status_code == 403:
-            raise PermissionError("Access denied. Private dataset requires organization membership")
+            raise PermissionError(
+                "Access denied. Private dataset requires organization membership"
+            )
         resp.raise_for_status()
-        return resp.json()
+        return cast(dict[str, Any], resp.json())

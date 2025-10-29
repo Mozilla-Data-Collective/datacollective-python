@@ -201,7 +201,7 @@ class TestGetDatasetDetails:
         client = DataCollective(api_key="test-key")
         with pytest.raises(
             PermissionError,
-            match="Access denied\. Private dataset requires organization membership",
+            match=r"Access denied\. Private dataset requires organization membership",
         ):
             client.get_dataset_details("private-dataset")
 
@@ -209,7 +209,9 @@ class TestGetDatasetDetails:
     def test_get_dataset_details_other_http_error_propagates(self, mock_get):
         mock_resp = mock_get.return_value
         mock_resp.status_code = 500
-        http_err = requests.exceptions.HTTPError("500 Server Error: Internal Server Error")
+        http_err = requests.exceptions.HTTPError(
+            "500 Server Error: Internal Server Error"
+        )
         mock_resp.raise_for_status.side_effect = http_err
 
         client = DataCollective(api_key="test-key")
@@ -219,9 +221,12 @@ class TestGetDatasetDetails:
 
 def test_get_dataset_details_live_roundtrip():
     from dotenv import load_dotenv
+
     load_dotenv()
     api_key = os.getenv("MDC_API_KEY")
-    dataset_id = "cmflnuzw414x7bnapn6iycjnv"  # Common Voice Scripted Speech 23.0 - Bengali
+    dataset_id = (
+        "cmflnuzw414x7bnapn6iycjnv"  # Common Voice Scripted Speech 23.0 - Bengali
+    )
 
     client = DataCollective(api_key=api_key)
     details = client.get_dataset_details(dataset_id)
@@ -231,13 +236,23 @@ def test_get_dataset_details_live_roundtrip():
     assert isinstance(details.get("slug"), str) and details["slug"]
     assert isinstance(details.get("name"), str) and details["name"]
     assert isinstance(details.get("locale"), str) and details["locale"]
-    assert isinstance(details.get("visibility"), str) and details["visibility"] in ("public", "private", "restricted")
+    assert isinstance(details.get("visibility"), str) and details["visibility"] in (
+        "public",
+        "private",
+        "restricted",
+    )
     assert isinstance(details.get("sizeBytes"), str)
-    assert isinstance(details.get("createdAt"), str) and details["createdAt"].endswith("Z")
-    assert isinstance(details.get("updatedAt"), str) and details["updatedAt"].endswith("Z")
+    assert isinstance(details.get("createdAt"), str) and details["createdAt"].endswith(
+        "Z"
+    )
+    assert isinstance(details.get("updatedAt"), str) and details["updatedAt"].endswith(
+        "Z"
+    )
     org = details.get("organization")
     assert isinstance(org, dict)
     assert isinstance(org.get("name"), str) and org["name"]
     assert isinstance(org.get("slug"), str) and org["slug"]
-    expected_dataset_url = client.api_url.replace("/api/", "/") + "datasets/" + dataset_id
+    expected_dataset_url = (
+        client.api_url.replace("/api/", "/") + "datasets/" + dataset_id
+    )
     assert details.get("datasetUrl") == expected_dataset_url
