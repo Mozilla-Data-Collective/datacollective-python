@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "datacollective"
-version = "0.0.31"
+version = "0.0.32"
 dependencies = [
     "pandas>=2.0.0",
     "python-dotenv>=1.0.0",
