@@ -10,4 +10,4 @@ from .client import DataCollective
 
 __all__ = ["DataCollective"]
 
-__version__ = "0.0.27"
+__version__ = "0.0.28"
