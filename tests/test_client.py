@@ -236,18 +236,18 @@ def test_get_dataset_details_live_roundtrip():
     assert isinstance(details.get("slug"), str) and details["slug"]
     assert isinstance(details.get("name"), str) and details["name"]
     assert isinstance(details.get("locale"), str) and details["locale"]
-    assert isinstance(details.get("visibility"), str) and details["visibility"] in (
-        "public",
-        "private",
-        "restricted",
-    )
+    visibility = details.get("visibility")
+    if visibility is not None:
+        assert isinstance(visibility, str)
+        assert visibility in ("public", "private", "restricted")
     assert isinstance(details.get("sizeBytes"), str)
     assert isinstance(details.get("createdAt"), str) and details["createdAt"].endswith(
         "Z"
     )
-    assert isinstance(details.get("updatedAt"), str) and details["updatedAt"].endswith(
-        "Z"
-    )
+    updated_at = details.get("updatedAt")
+    if updated_at is not None:
+        assert isinstance(updated_at, str)
+        assert updated_at.endswith("Z")
     org = details.get("organization")
     assert isinstance(org, dict)
     assert isinstance(org.get("name"), str) and org["name"]

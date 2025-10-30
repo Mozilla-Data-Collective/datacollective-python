@@ -59,7 +59,7 @@ class Dataset:
                     continue
 
                 # Store the corpus directory for reference
-                self.corpus_filepath = root
+                self.corpus_filepath = root  # type: ignore
                 full_path = os.path.join(root, file)
                 data_file_name = file[:-4]
                 if data_file_name not in SCRIPTED_SPEECH_SPLITS:
@@ -90,7 +90,7 @@ class Dataset:
                     continue
 
                 # Store the corpus directory for reference
-                self.corpus_filepath = root
+                self.corpus_filepath = root  # type: ignore
                 full_path = os.path.join(root, file)
                 return pd.read_csv(full_path, sep="\t", header="infer")
 
