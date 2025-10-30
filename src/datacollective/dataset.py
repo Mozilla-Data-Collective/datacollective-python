@@ -21,6 +21,7 @@ class Dataset:
 
     def __init__(self, directory: str):
         self.directory = directory
+        self.corpus_filepath = None
 
     @property
     def splits(self) -> list[str]:
@@ -58,6 +59,8 @@ class Dataset:
                     continue
 
                 full_path = os.path.join(root, file)
+                # Store the corpus directory for reference
+                self.corpus_filepath = full_path
                 data_file_name = file[:-4]
                 if data_file_name not in SCRIPTED_SPEECH_SPLITS:
                     continue
@@ -69,7 +72,6 @@ class Dataset:
             df = pd.read_csv(file, sep="\t", header="infer")
             df["split"] = split
             dfs.append(df)
-
         return pd.concat(dfs, ignore_index=True)
 
     def _get_spontaneous_speech_data(self) -> pd.DataFrame:
@@ -88,6 +90,8 @@ class Dataset:
                     continue
 
                 full_path = os.path.join(root, file)
+                # Store the corpus directory for reference
+                self.corpus_filepath = os.path.dirname(full_path)
                 return pd.read_csv(full_path, sep="\t", header="infer")
 
         raise Exception("Could nof find dataset file in directory")
