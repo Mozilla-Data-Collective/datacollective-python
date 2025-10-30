@@ -90,7 +90,7 @@ class Dataset:
                     continue
 
                 # Store the corpus directory for reference
-                self.corpus_filepath = os.path.dirname(root)
+                self.corpus_filepath = root
                 full_path = os.path.join(root, file)
                 return pd.read_csv(full_path, sep="\t", header="infer")
 
