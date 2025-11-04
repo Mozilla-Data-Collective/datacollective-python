@@ -12,6 +12,7 @@ SCRIPTED_SPEECH_SPLITS = [
     "other",
 ]
 
+
 def _load_scripted(root_dir: Path) -> pd.DataFrame:
     split_files: dict[str, Path] = {}
     for path in root_dir.rglob("*.tsv"):
@@ -20,9 +21,7 @@ def _load_scripted(root_dir: Path) -> pd.DataFrame:
             split_files[split_name] = path
 
     if not split_files:
-        raise RuntimeError(
-            f"No scripted split files found under `{str(root_dir)}`"
-        )
+        raise RuntimeError(f"No scripted split files found under `{str(root_dir)}`")
 
     frames = []
     for split, file_path in sorted(split_files.items()):
