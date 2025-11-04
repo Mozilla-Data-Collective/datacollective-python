@@ -1,14 +1,23 @@
+from __future__ import annotations
+
 import os
-import sys
 import tarfile
 import zipfile
 from pathlib import Path
 from typing import Any
+
 import pandas as pd
 import requests
 
-from datacollective.api import _get_api_url, _auth_headers, HTTP_TIMEOUT, ENV_DOWNLOAD_PATH
+from datacollective.api_utils import (
+    ENV_DOWNLOAD_PATH,
+    HTTP_TIMEOUT,
+    RATE_LIMIT_ERROR,
+    _auth_headers,
+    _get_api_url,
+)
 from datacollective.common_voice import _load_scripted, _load_spontaneous
+from datacollective.progress_bar import ProgressBar
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
@@ -38,10 +47,10 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
             "Access denied. Private dataset requires organization membership"
         )
     if resp.status_code == 429:
-        raise RuntimeError("Rate limit exceeded")
+        raise RuntimeError(RATE_LIMIT_ERROR)
 
     resp.raise_for_status()
-    return resp.json()
+    return resp.json()  # type: ignore
 
 
 def save_dataset_to_disk(
@@ -85,7 +94,7 @@ def save_dataset_to_disk(
             "Access denied. Private dataset requires organization membership"
         )
     if sess_resp.status_code == 429:
-        raise RuntimeError("Rate limit exceeded")
+        raise RuntimeError(RATE_LIMIT_ERROR)
     sess_resp.raise_for_status()
 
     payload = sess_resp.json()
@@ -97,7 +106,7 @@ def save_dataset_to_disk(
     target_path = base_dir / filename
     if target_path.exists() and not overwrite_existing:
         print(f"File already exists. Skipping download: `{str(target_path)}`")
-        return target_path
+        return Path(target_path)
 
     # Stream download to a temporary file for atomicity
     tmp_path = target_path.with_suffix(target_path.suffix + ".part")
@@ -106,26 +115,32 @@ def save_dataset_to_disk(
         download_url, headers=_auth_headers(), stream=True, timeout=HTTP_TIMEOUT
     ) as r:
         if r.status_code == 429:
-            raise RuntimeError("Rate limit exceeded")
+            raise RuntimeError(RATE_LIMIT_ERROR)
         r.raise_for_status()
-        total = int(r.headers.get("content-length", "0")) or None
-        bytes_read = 0
+        total = int(r.headers.get("content-length", "0"))
+
+        if show_progress:
+            print(f"Downloading dataset: {filename}")
+            progress_bar = ProgressBar(total)
+            # Show initial progress bar with fox at the start
+            progress_bar._display()
+        else:
+            print(f"Downloading dataset: {filename}")
 
         with open(tmp_path, "wb") as f:
             for chunk in r.iter_content(chunk_size=1 << 16):
                 if not chunk:
                     continue
                 f.write(chunk)
-                bytes_read += len(chunk)
                 if show_progress:
-                    _print_progress(bytes_read, total)
+                    progress_bar.update(len(chunk))
 
     if show_progress:
-        sys.stdout.write("\n")
+        progress_bar.finish()
 
     tmp_path.replace(target_path)
     print(f"Saved dataset to `{str(target_path)}`")
-    return target_path
+    return Path(target_path)
 
 
 def load_dataset(
@@ -171,7 +186,6 @@ def load_dataset(
         return _load_scripted(extract_dir)
     except Exception:
         return _load_spontaneous(extract_dir)
-
 
 
 def _resolve_download_dir(download_directory: str | None) -> Path:
