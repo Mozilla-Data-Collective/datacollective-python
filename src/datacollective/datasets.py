@@ -14,7 +14,9 @@ from datacollective.api_utils import (
     _get_api_url,
     api_request,
 )
-from datacollective.common_voice import _load_scripted, _load_spontaneous
+from datacollective.dataset_loading_scripts.registry import (
+    load_dataset_from_name_as_dataframe,
+)
 from datacollective.progress_bar import ProgressBar
 
 
@@ -124,7 +126,7 @@ def load_dataset(
 ) -> pd.DataFrame:
     """
     Download (if needed), extract, and load the dataset into a pandas DataFrame.
-    Uses dataset `details['name']` to decide scripted vs spontaneous Common Voice parsing.
+    Uses dataset `details['name']` to check in registry.py for dataset-specific loading logic.
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
         download_directory: Directory where to save the downloaded dataset.
@@ -151,17 +153,7 @@ def load_dataset(
     details = get_dataset_details(dataset_id)
     dataset_name = str(details.get("name", "")).lower()
 
-    # TODO: we need a better to support multiple dataset types in the future
-    if "scripted" in dataset_name:
-        return _load_scripted(extract_dir)
-    if "spontaneous" in dataset_name:
-        return _load_spontaneous(extract_dir)
-
-    # Fallback: infer by file layout
-    try:
-        return _load_scripted(extract_dir)
-    except Exception:
-        return _load_spontaneous(extract_dir)
+    return load_dataset_from_name_as_dataframe(dataset_name, extract_dir)
 
 
 def _resolve_download_dir(download_directory: str | None) -> Path:
