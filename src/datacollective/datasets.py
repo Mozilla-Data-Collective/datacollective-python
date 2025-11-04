@@ -7,14 +7,12 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import requests
 
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
     HTTP_TIMEOUT,
-    RATE_LIMIT_ERROR,
-    _auth_headers,
     _get_api_url,
+    api_request,
 )
 from datacollective.common_voice import _load_scripted, _load_spontaneous
 from datacollective.progress_bar import ProgressBar
@@ -38,19 +36,8 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
         raise ValueError("`dataset_id` must be a non-empty string")
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
-    resp = requests.get(url, headers=_auth_headers(), timeout=HTTP_TIMEOUT)
-
-    if resp.status_code == 404:
-        raise FileNotFoundError("Dataset not found")
-    if resp.status_code == 403:
-        raise PermissionError(
-            "Access denied. Private dataset requires organization membership"
-        )
-    if resp.status_code == 429:
-        raise RuntimeError(RATE_LIMIT_ERROR)
-
-    resp.raise_for_status()
-    return resp.json()  # type: ignore
+    resp = api_request("GET", url)
+    return dict(resp.json())
 
 
 def save_dataset_to_disk(
@@ -84,20 +71,9 @@ def save_dataset_to_disk(
 
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    sess_resp = requests.post(
-        session_url, headers=_auth_headers(), timeout=HTTP_TIMEOUT
-    )
-    if sess_resp.status_code == 404:
-        raise FileNotFoundError("Dataset not found")
-    if sess_resp.status_code == 403:
-        raise PermissionError(
-            "Access denied. Private dataset requires organization membership"
-        )
-    if sess_resp.status_code == 429:
-        raise RuntimeError(RATE_LIMIT_ERROR)
-    sess_resp.raise_for_status()
+    resp = api_request("POST", session_url)
+    payload: dict[str, Any] = dict(resp.json())
 
-    payload = sess_resp.json()
     download_url = payload.get("downloadUrl")
     filename = payload.get("filename")
     if not download_url or not filename:
@@ -111,12 +87,12 @@ def save_dataset_to_disk(
     # Stream download to a temporary file for atomicity
     tmp_path = target_path.with_suffix(target_path.suffix + ".part")
 
-    with requests.get(
-        download_url, headers=_auth_headers(), stream=True, timeout=HTTP_TIMEOUT
+    with api_request(
+        "GET",
+        download_url,
+        stream=True,
+        timeout=HTTP_TIMEOUT,
     ) as r:
-        if r.status_code == 429:
-            raise RuntimeError(RATE_LIMIT_ERROR)
-        r.raise_for_status()
         total = int(r.headers.get("content-length", "0"))
 
         if show_progress:
