@@ -171,6 +171,33 @@ def publish_with_bump(index: str = "pypi", part: str = "patch") -> int:
     return publish_package(index)
 
 
+def prepare_release(part: str = "patch") -> int:
+    """Run checks and bump version without publishing."""
+    print(f"🚀 Preparing release by bumping {part} version...")
+
+    print("📋 Current version:")
+    if show_version() != 0:
+        print("❌ Failed to get current version")
+        return 1
+
+    print("🔍 Running pre-release checks...")
+    if all_checks() != 0:
+        print("❌ Pre-release checks failed")
+        return 1
+
+    print("📦 Bumping version...")
+    if bump_version(part) != 0:
+        print("❌ Version bump failed")
+        return 1
+
+    print("📋 New version:")
+    if show_version() != 0:
+        print("❌ Failed to get new version")
+        return 1
+
+    return 0
+
+
 def all_checks() -> int:
     """Run all checks: format, lint, type check, and tests."""
     print("🚀 Running all checks...")
@@ -216,6 +243,7 @@ def main():
         print("  publish-test - Clean, build, and publish to TestPyPI")
         print("  publish-bump - Bump patch version and publish to PyPI")
         print("  publish-bump-test - Bump patch version and publish to TestPyPI")
+        print("  prepare-release - Run checks and bump patch version without publishing")
         print("  version    - Show current version")
         print("  bump-patch - Bump patch version (0.0.1 -> 0.0.2)")
         print("  bump-minor - Bump minor version (0.0.1 -> 0.1.0)")
@@ -242,6 +270,8 @@ def main():
         return publish_with_bump("pypi", "patch")
     elif command == "publish-bump-test":
         return publish_with_bump("testpypi", "patch")
+    elif command == "prepare-release":
+        return prepare_release("patch")
 
     commands = {
         "format": format_code,

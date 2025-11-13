@@ -3,6 +3,7 @@ name: Publish Packages
 on:
   pull_request:
     branches:
+      - main
       - test-pypi
       - pypi
     types:
@@ -44,25 +45,30 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Prepare release on main
+        if: github.event.pull_request.base.ref == 'main'
+        id: prepare_main
+        run: uv run python scripts/dev.py prepare-release
+
       - name: Publish to TestPyPI
         if: github.event.pull_request.base.ref == 'test-pypi'
         id: publish_testpypi
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
-        run: uv run python scripts/dev.py publish-bump-test
-
-      - name: Show repository status
-        if: github.event.pull_request.base.ref == 'test-pypi' && steps.publish_testpypi.conclusion == 'success'
-        run: git status --short
-
-      - name: Push version bump commit and tags
-        if: github.event.pull_request.base.ref == 'test-pypi' && steps.publish_testpypi.conclusion == 'success'
-        run: |
-          git push origin HEAD:${{ github.event.pull_request.base.ref }}
-          git push origin --tags
+        run: uv run python scripts/dev.py publish-test
 
       - name: Publish to PyPI
         if: github.event.pull_request.base.ref == 'pypi'
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: uv run python scripts/dev.py publish
+
+      - name: Show repository status
+        if: github.event.pull_request.base.ref == 'main' && steps.prepare_main.conclusion == 'success'
+        run: git status --short
+
+      - name: Push version bump commit and tags
+        if: github.event.pull_request.base.ref == 'main' && steps.prepare_main.conclusion == 'success'
+        run: |
+          git push origin HEAD:${{ github.event.pull_request.base.ref }}
+          git push origin --tags
