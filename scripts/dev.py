@@ -134,10 +134,11 @@ def publish_package(index: str = "pypi") -> int:
         return 1
 
     # Publish
+    publish_cmd = ["uv", "publish"]
     if index == "testpypi":
-        return run_command(["uv", "publish", "--index", "testpypi"])
-    else:
-        return run_command(["uv", "publish"])
+        publish_cmd.extend(["--publish-url", "https://test.pypi.org/legacy/"])
+        publish_cmd.extend(["--index-url", "https://test.pypi.org/simple/"])
+    return run_command(publish_cmd)
 
 
 def publish_with_bump(index: str = "pypi", part: str = "patch") -> int:
