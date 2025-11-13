@@ -48,7 +48,8 @@ jobs:
         if: github.event.pull_request.base.ref == 'test-pypi'
         id: publish_testpypi
         env:
-          UV_PUBLISH_TESTPYPI_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          UV_PUBLISH_TOKEN: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          UV_PUBLISH_USERNAME: __token__
         run: uv run python scripts/dev.py publish-bump-test
 
       - name: Show repository status
@@ -65,4 +66,5 @@ jobs:
         if: github.event.pull_request.base.ref == 'pypi'
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          UV_PUBLISH_USERNAME: __token__
         run: uv run python scripts/dev.py publish
