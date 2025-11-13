@@ -137,7 +137,6 @@ def publish_package(index: str = "pypi") -> int:
     publish_cmd = ["uv", "publish"]
     if index == "testpypi":
         publish_cmd.extend(["--publish-url", "https://test.pypi.org/legacy/"])
-        publish_cmd.extend(["--index-url", "https://test.pypi.org/simple/"])
     return run_command(publish_cmd)
 
 
