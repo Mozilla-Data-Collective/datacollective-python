@@ -201,7 +201,7 @@ class DataCollective:
             dataset (str): The name/ID of the dataset to download
             download_path (str, optional): Override the default download path for this download
             show_progress (bool): Whether to show the progress bar (default: True)
-            overwrite (bool): Whether to download a dataset that is already on disk.
+            overwrite (bool): Whether to download a dataset that is already on disk (default: False)
 
         Returns:
             str: The full path to the downloaded file, or None if download failed
@@ -255,12 +255,20 @@ class DataCollective:
         # Create the full file path
         full_file_path = os.path.join(final_download_path, dataset_filename)
 
-        if os.path.exists(full_file_path) and not overwrite:
-            print(
-                f"Dataset at {full_file_path} already exists. "
-                "Loading from disk instead of downloading again."
-            )
-            return full_file_path
+        # Don't try to re-download a dataset that already exists, unless
+        # `overwrite` is set to True.
+        if os.path.exists(full_file_path):
+            if overwrite:
+                print(
+                    f"Dataset at {full_file_path} already exists. "
+                    "However, `overwrite` is set to True, so downloading again."
+                )
+            else:
+                print(
+                    f"Dataset at {full_file_path} already exists. "
+                    "Loading from disk instead of downloading again."
+                )
+                return full_file_path
 
         # download dataset file
         try:
