@@ -192,6 +192,7 @@ class DataCollective:
         dataset: str,
         download_path: Optional[str] = None,
         show_progress: bool = True,
+        overwrite: bool = False
     ) -> Optional[str]:
         """
         Download a dataset from the DataCollective API.
@@ -200,6 +201,7 @@ class DataCollective:
             dataset (str): The name/ID of the dataset to download
             download_path (str, optional): Override the default download path for this download
             show_progress (bool): Whether to show the progress bar (default: True)
+            overwrite (bool): Whether to download a dataset that is already on disk (default: False)
 
         Returns:
             str: The full path to the downloaded file, or None if download failed
@@ -250,6 +252,24 @@ class DataCollective:
         dataset_file_url = response_data["downloadUrl"]
         dataset_filename = response_data["filename"]
 
+        # Create the full file path
+        full_file_path = os.path.join(final_download_path, dataset_filename)
+
+        # Don't try to re-download a dataset that already exists, unless
+        # `overwrite` is set to True.
+        if os.path.exists(full_file_path):
+            if overwrite:
+                print(
+                    f"Dataset at {full_file_path} already exists. "
+                    "However, `overwrite` is set to True, so downloading again."
+                )
+            else:
+                print(
+                    f"Dataset at {full_file_path} already exists. "
+                    "Loading from disk instead of downloading again."
+                )
+                return full_file_path
+
         # download dataset file
         try:
             headers = {"Authorization": "Bearer " + self.api_key}  # type: ignore
@@ -261,9 +281,6 @@ class DataCollective:
         except requests.exceptions.RequestException as e:
             print(f"Request Error Downloading File: {e}")
             return None
-
-        # Create the full file path
-        full_file_path = os.path.join(final_download_path, dataset_filename)
 
         # Get the total file size for the progress bar
         total_size = int(r.headers.get("content-length", 0))
@@ -290,9 +307,9 @@ class DataCollective:
         print(f"Dataset downloaded to: {full_file_path}")
         return full_file_path
 
-    def load_dataset(self, dataset: str) -> Dataset:
+    def load_dataset(self, dataset: str, overwrite: bool = False) -> Dataset:
 
-        filepath = self.get_dataset(dataset)
+        filepath = self.get_dataset(dataset, overwrite=overwrite)
         if not filepath:
             raise Exception("Downloading dataset failed")
 
