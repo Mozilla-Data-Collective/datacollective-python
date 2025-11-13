@@ -102,6 +102,9 @@ warn_no_return = true
 warn_unreachable = true
 strict_equality = true
 
+[tool.uv]
+preview = true
+
 [[tool.uv.index]]
 name = "testpypi"
 url = "https://test.pypi.org/simple/"
