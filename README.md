@@ -117,6 +117,19 @@ client = DataCollective(environment='development')
 client = DataCollective(environment='staging')
 ```
 
+## Release Workflow
+
+The project publishes from dedicated branches via GitHub Actions:
+
+- Merging a pull request into `test-pypi` triggers an automated TestPyPI release using `uv run python scripts/dev.py publish-bump-test`, which runs quality checks, bumps the version, publishes, and pushes the bump commit and tag back to the branch.
+- After validating the TestPyPI release, merge the same changes into `pypi` to publish to the production PyPI index via `uv run python scripts/dev.py publish`.
+
+Recommended local workflow before opening release pull requests:
+
+1. Run `uv run python scripts/dev.py all` to execute non-mutating formatting, linting, type checks, and tests.
+2. Use `uv run python scripts/dev.py publish-bump-test` if you need to rehearse the release locally—the command mirrors the automation but stops if the checks fail before consuming a version.
+3. Once the TestPyPI release looks good, `uv run python scripts/dev.py publish` will reuse the bumped version to push to PyPI.
+
 ## License
 
 This project is released under [MPL (Mozilla Public License) 2.0](./LICENSE).
