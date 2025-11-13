@@ -22,6 +22,12 @@ def format_code() -> int:
     return run_command(["uv", "run", "black", "src/", "tests/"])
 
 
+def format_check() -> int:
+    """Verify code formatting with Black without modifying files."""
+    print("🎨 Checking formatting with Black...")
+    return run_command(["uv", "run", "black", "--check", "src/", "tests/"])
+
+
 def lint_code() -> int:
     """Lint code with Ruff."""
     print("🔍 Linting code with Ruff...")
@@ -128,10 +134,10 @@ def publish_package(index: str = "pypi") -> int:
         return 1
 
     # Publish
+    publish_cmd = ["uv", "publish"]
     if index == "testpypi":
-        return run_command(["uv", "publish", "--index", "testpypi"])
-    else:
-        return run_command(["uv", "publish"])
+        publish_cmd.extend(["--publish-url", "https://test.pypi.org/legacy/"])
+    return run_command(publish_cmd)
 
 
 def publish_with_bump(index: str = "pypi", part: str = "patch") -> int:
@@ -142,6 +148,12 @@ def publish_with_bump(index: str = "pypi", part: str = "patch") -> int:
     print("📋 Current version:")
     if show_version() != 0:
         print("❌ Failed to get current version")
+        return 1
+
+    # Run all checks before bumping so we don't consume versions on failure
+    print("🔍 Running pre-publish checks...")
+    if all_checks() != 0:
+        print("❌ Pre-publish checks failed")
         return 1
 
     # Bump version
@@ -155,12 +167,6 @@ def publish_with_bump(index: str = "pypi", part: str = "patch") -> int:
         print("❌ Failed to get new version")
         return 1
 
-    # Run all checks before publishing
-    print("🔍 Running pre-publish checks...")
-    if all_checks() != 0:
-        print("❌ Pre-publish checks failed")
-        return 1
-
     # Publish
     return publish_package(index)
 
@@ -169,14 +175,9 @@ def all_checks() -> int:
     """Run all checks: format, lint, type check, and tests."""
     print("🚀 Running all checks...")
 
-    # Format first
-    if format_code() != 0:
-        print("❌ Formatting failed")
-        return 1
-
-    # Fix linting issues
-    if fix_lint() != 0:
-        print("❌ Lint fixing failed")
+    # Check formatting
+    if format_check() != 0:
+        print("❌ Formatting check failed")
         return 1
 
     # Run linting
