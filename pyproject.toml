@@ -135,5 +135,6 @@ dev = [
     "mypy>=1.17.1",
     "pre-commit>=4.3.0",
     "ruff>=0.12.12",
+    "pandas-stubs>=2.2.0.240909",
     "types-requests>=2.31.0.6",
 ]
