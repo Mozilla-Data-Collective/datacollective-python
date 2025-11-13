@@ -19,6 +19,8 @@ jobs:
   publish:
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
+    env:
+      UV_PREVIEW: "1"
 
     steps:
       - name: Checkout
