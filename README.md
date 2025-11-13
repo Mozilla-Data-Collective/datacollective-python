@@ -119,7 +119,7 @@ client = DataCollective(environment='staging')
 
 ## Release Workflow
 
-The project publishes from dedicated branches via GitHub Actions:
+The project publishes from dedicated branches via GitHub Actions. This is the preferred method for pushing to TestPyPi and PyPi:
 
 - Merging a pull request into `test-pypi` triggers an automated TestPyPI release using `uv run python scripts/dev.py publish-bump-test`, which runs quality checks, bumps the version, publishes, and pushes the bump commit and tag back to the branch.
 - After validating the TestPyPI release, merge the same changes into `pypi` to publish to the production PyPI index via `uv run python scripts/dev.py publish`.
