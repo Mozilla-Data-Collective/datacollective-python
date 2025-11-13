@@ -224,6 +224,9 @@ def test_get_dataset_details_live_roundtrip():
 
     load_dotenv()
     api_key = os.getenv("MDC_API_KEY")
+    if not api_key:
+        pytest.skip("MDC_API_KEY not set; skipping live roundtrip test")
+
     dataset_id = (
         "cmflnuzw414x7bnapn6iycjnv"  # Common Voice Scripted Speech 23.0 - Bengali
     )
