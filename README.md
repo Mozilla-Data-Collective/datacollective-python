@@ -51,6 +51,9 @@ MDC_DOWNLOAD_PATH=~/.mozdata/datasets # change to where you want to download dat
    client.get_dataset('mdc-dataset-id')
    ```
 
+> [!TIP]
+> You can find the `mdc-dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn` dataset id will be `cmflnuzw6lrt9e6ui4kwcshvn`.
+
 ## Configuration
 
 The client loads configuration from environment variables or `.env` files:
@@ -70,7 +73,8 @@ MDC_API_URL=https://datacollective.mozillafoundation.org/api
 MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 ```
 
-**Note:** Never commit `.env` files to version control as they contain sensitive information.
+> [!TIP]
+> Never commit `.env` files to version control as they contain sensitive information.
 
 ## Basic Usage
 
@@ -90,17 +94,22 @@ dataset = client.get_dataset('your-dataset-id')
 
 ## Load and query datasets
 
-**note:** today, this feature only works with Mozilla Common Voice datasets
-```
+> [!NOTE]
+> Today, this feature only works with Mozilla Common Voice datasets
+
+```python
 from datacollective import DataCollective
 
 client = DataCollective()
 
-dataset = client.load_dataset("<dataset-id>") # Load dasaset into memory
-df = dataset.to_pandas() # Convert to pandas for queryable form
-dataset.splits # A list of all splits available in the dataset
+# Load dataset into memory
+dataset = client.load_dataset("<dataset-id>")
+# Convert to pandas for queryable form
+df = dataset.to_pandas()
+# A list of all splits available in the dataset
+dataset.splits
+>> ["dev", "train"]
 ```
-
 
 ## Multiple Environments
 
