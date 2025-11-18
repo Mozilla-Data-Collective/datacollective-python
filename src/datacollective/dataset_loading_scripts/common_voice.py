@@ -14,6 +14,11 @@ SCRIPTED_SPEECH_SPLITS = [
 
 
 def _load_scripted(root_dir: Path) -> pd.DataFrame:
+    """
+    Load Common Voice spontaneous speech datasets from the given root directory.
+    The function searches for TSV files corresponding to predefined scripted speech splits,
+    reads them into DataFrames, adds a 'split' column, and concatenates them into a single DataFrame.
+    """
     split_files: dict[str, Path] = {}
     for path in root_dir.rglob("*.tsv"):
         split_name = path.stem
@@ -32,6 +37,11 @@ def _load_scripted(root_dir: Path) -> pd.DataFrame:
 
 
 def _load_spontaneous(root_dir: Path) -> pd.DataFrame:
+    """
+    Load Common Voice spontaneous speech datasets from the given root directory.
+    The function searches for a TSV file with a name starting with 'ss-corpus-',
+    reads it into a DataFrame, and returns it.
+    """
     for path in root_dir.rglob("*.tsv"):
         if path.name.startswith("ss-corpus-"):
             return pd.read_csv(path, sep="\t", header="infer")
