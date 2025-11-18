@@ -117,6 +117,20 @@ client = DataCollective(environment='development')
 client = DataCollective(environment='staging')
 ```
 
+## Release Workflow
+
+The repository uses branch-specific GitHub Actions for releases:
+
+- When a pull request is merged into `main`, the workflow runs `uv run python scripts/dev.py prepare-release`, which executes the full check suite, bumps the version, and pushes the commit and tag back to `main`.
+- Merging the updated `main` into `test-pypi` deploys that version to TestPyPI via `uv run python scripts/dev.py publish-test`.
+- After validating on TestPyPI, merging the same `main` commit into `pypi` runs `uv run python scripts/dev.py publish` to ship to the production index.
+
+Recommended local prep before opening release pull requests:
+
+1. Run `uv run python scripts/dev.py all` to make sure checks pass without modifying files.
+2. Optionally run `uv run python scripts/dev.py prepare-release` locally if you want to preview the version bump; the workflow performs the same operation when the PR merges.
+3. Once the automated bump lands on `main`, open PRs from `main` into `test-pypi` and then `pypi` to trigger the deploy pipelines.
+
 ## License
 
 This project is released under [MPL (Mozilla Public License) 2.0](./LICENSE).
