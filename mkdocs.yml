@@ -5,6 +5,7 @@ repo_name: datacollective-python
 nav:
   - Home: index.md
   - API Reference: api.md
+  - Release Workflow: release.md
 
 theme:
   icon:
