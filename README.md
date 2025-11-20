@@ -129,7 +129,9 @@ Recommended local prep before opening release pull requests:
 
 1. Run `uv run python scripts/dev.py all` to make sure checks pass without modifying files.
 2. Optionally run `uv run python scripts/dev.py prepare-release` locally if you want to rehearse the bump; the workflow performs the same steps when `main` changes.
-3. Follow the branch merge order (`main` ➜ `test-pypi`, `main` ➜ `pypi`) so TestPyPI always receives the version before production.
+
+### Merge Flow
+- Follow the branch merge order (`main` ➜ `test-pypi`, `main` ➜ `pypi`) so TestPyPI always receives the version before production.
 
 ## License
 
