@@ -192,7 +192,7 @@ class DataCollective:
         dataset: str,
         download_path: Optional[str] = None,
         show_progress: bool = True,
-        overwrite: bool = False
+        overwrite: bool = False,
     ) -> Optional[str]:
         """
         Download a dataset from the DataCollective API.
