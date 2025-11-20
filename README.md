@@ -121,15 +121,15 @@ client = DataCollective(environment='staging')
 
 The repository uses branch-specific GitHub Actions for releases:
 
-- When a pull request is merged into `main`, the workflow runs `uv run python scripts/dev.py prepare-release`, which executes the full check suite, bumps the version, and pushes the commit and tag back to `main`.
-- Merging the updated `main` into `test-pypi` deploys that version to TestPyPI via `uv run python scripts/dev.py publish-test`.
-- After validating on TestPyPI, merging the same `main` commit into `pypi` runs `uv run python scripts/dev.py publish` to ship to the production index.
+- When a pull request is merged into `main`, the workflow runs the full check suite, bumps the version, and pushes the resulting commit and git tag directly to `main`.
+- Merge the updated `main` into `test-pypi` to deploy that version to TestPyPI (`uv run python scripts/dev.py publish-test` runs automatically).
+- After validating on TestPyPI, merge `main` into `pypi` to deploy to the production PyPI index (`uv run python scripts/dev.py publish` runs automatically).
 
 Recommended local prep before opening release pull requests:
 
 1. Run `uv run python scripts/dev.py all` to make sure checks pass without modifying files.
-2. Optionally run `uv run python scripts/dev.py prepare-release` locally if you want to preview the version bump; the workflow performs the same operation when the PR merges.
-3. Once the automated bump lands on `main`, open PRs from `main` into `test-pypi` and then `pypi` to trigger the deploy pipelines.
+2. Optionally run `uv run python scripts/dev.py prepare-release` locally if you want to rehearse the bump; the workflow performs the same steps when `main` changes.
+3. Follow the branch merge order (`main` ➜ `test-pypi`, `main` ➜ `pypi`) so TestPyPI always receives the version before production.
 
 ## License
 

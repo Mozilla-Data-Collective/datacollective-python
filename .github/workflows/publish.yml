@@ -29,6 +29,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.base.ref }}
+          token: ${{ secrets.RELEASE_PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -50,6 +51,16 @@ jobs:
         id: prepare_main
         run: uv run python scripts/dev.py prepare-release
 
+      - name: Show repository status
+        if: github.event.pull_request.base.ref == 'main' && steps.prepare_main.conclusion == 'success'
+        run: git status --short
+
+      - name: Push version bump commit and tags
+        if: github.event.pull_request.base.ref == 'main' && steps.prepare_main.conclusion == 'success'
+        run: |
+          git push origin HEAD:${{ github.event.pull_request.base.ref }}
+          git push origin --tags
+
       - name: Publish to TestPyPI
         if: github.event.pull_request.base.ref == 'test-pypi'
         id: publish_testpypi
@@ -62,13 +73,3 @@ jobs:
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: uv run python scripts/dev.py publish
-
-      - name: Show repository status
-        if: github.event.pull_request.base.ref == 'main' && steps.prepare_main.conclusion == 'success'
-        run: git status --short
-
-      - name: Push version bump commit and tags
-        if: github.event.pull_request.base.ref == 'main' && steps.prepare_main.conclusion == 'success'
-        run: |
-          git push origin HEAD:${{ github.event.pull_request.base.ref }}
-          git push origin --tags

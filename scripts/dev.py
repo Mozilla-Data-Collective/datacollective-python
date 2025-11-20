@@ -185,6 +185,11 @@ def prepare_release(part: str = "patch") -> int:
         print("❌ Pre-release checks failed")
         return 1
 
+    # uv run may touch uv.lock when syncing environments; discard those changes
+    lock_path = Path("uv.lock")
+    if lock_path.exists():
+        run_command(["git", "checkout", "--", "uv.lock"])
+
     print("📦 Bumping version...")
     if bump_version(part) != 0:
         print("❌ Version bump failed")
