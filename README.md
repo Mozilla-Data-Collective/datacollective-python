@@ -121,7 +121,7 @@ client = DataCollective(environment='staging')
 
 The repository uses branch-specific GitHub Actions for releases:
 
-- When a pull request is merged into `main`, the workflow runs the full check suite, bumps the version, and pushes the resulting commit and git tag directly to `main`.
+- When a pull request is merged into `main`, the workflow runs the full check suite, bumps the version, and opens a `release/vX.Y.Z` pull request back onto `main`. Auto-merge is enabled on that PR, so once required checks pass the version commit lands on `main` automatically.
 - Merge the updated `main` into `test-pypi` to deploy that version to TestPyPI (`uv run python scripts/dev.py publish-test` runs automatically).
 - After validating on TestPyPI, merge `main` into `pypi` to deploy to the production PyPI index (`uv run python scripts/dev.py publish` runs automatically).
 
@@ -129,9 +129,12 @@ Recommended local prep before opening release pull requests:
 
 1. Run `uv run python scripts/dev.py all` to make sure checks pass without modifying files.
 2. Optionally run `uv run python scripts/dev.py prepare-release` locally if you want to rehearse the bump; the workflow performs the same steps when `main` changes.
+3. Follow the branch merge order (`main` ➜ `test-pypi`, `main` ➜ `pypi`) so TestPyPI always receives the version before production.
 
-### Merge Flow
-- Follow the branch merge order (`main` ➜ `test-pypi`, `main` ➜ `pypi`) so TestPyPI always receives the version before production.
+Required GitHub Actions secrets:
+
+- `TEST_PYPI_API_TOKEN` – token for publishing to TestPyPI (username `__token__`).
+- `PYPI_API_TOKEN` – token for publishing to PyPI (username `__token__`).
 
 ## License
 
