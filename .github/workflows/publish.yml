@@ -46,6 +46,12 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Configure push credentials
+        if: github.event.pull_request.base.ref == 'main'
+        run: |
+          echo "::add-mask::${{ secrets.RELEASE_PAT }}"
+          git remote set-url origin https://x-access-token:${{ secrets.RELEASE_PAT }}@github.com/${{ github.repository }}.git
+
       - name: Prepare release on main
         if: github.event.pull_request.base.ref == 'main'
         id: prepare_main
