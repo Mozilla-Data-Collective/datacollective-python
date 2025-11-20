@@ -64,8 +64,8 @@ jobs:
       - name: Push version bump commit and tags
         if: github.event.pull_request.base.ref == 'main' && steps.prepare_main.conclusion == 'success'
         run: |
-          git push origin HEAD:${{ github.event.pull_request.base.ref }}
-          git push origin --tags
+          git push https://x-access-token:${{ secrets.RELEASE_PAT }}@github.com/${{ github.repository }}.git HEAD:${{ github.event.pull_request.base.ref }}
+          git push https://x-access-token:${{ secrets.RELEASE_PAT }}@github.com/${{ github.repository }}.git --tags
 
       - name: Publish to TestPyPI
         if: github.event.pull_request.base.ref == 'test-pypi'
