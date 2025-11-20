@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 concurrency:
   group: publish-${{ github.event.pull_request.base.ref }}
@@ -18,7 +19,12 @@ concurrency:
 
 jobs:
   publish:
-    if: github.event.pull_request.merged == true
+    if: >
+      github.event.pull_request.merged == true &&
+      !(
+        github.event.pull_request.base.ref == 'main' &&
+        startsWith(github.event.pull_request.head.ref, 'release/')
+      )
     runs-on: ubuntu-latest
     env:
       UV_PREVIEW: "1"
@@ -29,7 +35,6 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.base.ref }}
-          token: ${{ secrets.RELEASE_PAT }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -46,26 +51,31 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-      - name: Configure push credentials
-        if: github.event.pull_request.base.ref == 'main'
-        run: |
-          echo "::add-mask::${{ secrets.RELEASE_PAT }}"
-          git remote set-url origin https://x-access-token:${{ secrets.RELEASE_PAT }}@github.com/${{ github.repository }}.git
-
       - name: Prepare release on main
         if: github.event.pull_request.base.ref == 'main'
         id: prepare_main
         run: uv run python scripts/dev.py prepare-release
 
+      - name: Create release branch
+        if: github.event.pull_request.base.ref == 'main'
+        run: git checkout -b release/tmp-${{ github.run_id }}
+
+      - name: Determine release version
+        if: github.event.pull_request.base.ref == 'main'
+        id: version_info
+        run: |
+          VERSION=$(python -c "import pathlib, re; text=pathlib.Path('pyproject.toml').read_text(); import re; match=re.search(r'^version = \"([^\"]+)\"', text, re.MULTILINE); print(match.group(1))")
+          echo "new_version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "NEW_VERSION=$VERSION" >> "$GITHUB_ENV"
+          git branch -M release/v$VERSION
+
       - name: Show repository status
         if: github.event.pull_request.base.ref == 'main' && steps.prepare_main.conclusion == 'success'
         run: git status --short
 
-      - name: Push version bump commit and tags
-        if: github.event.pull_request.base.ref == 'main' && steps.prepare_main.conclusion == 'success'
-        run: |
-          git push https://x-access-token:${{ secrets.RELEASE_PAT }}@github.com/${{ github.repository }}.git HEAD:${{ github.event.pull_request.base.ref }}
-          git push https://x-access-token:${{ secrets.RELEASE_PAT }}@github.com/${{ github.repository }}.git --tags
+      - name: Push release branch
+        if: github.event.pull_request.base.ref == 'main'
+        run: git push origin HEAD
 
       - name: Publish to TestPyPI
         if: github.event.pull_request.base.ref == 'test-pypi'
@@ -79,3 +89,41 @@ jobs:
         env:
           UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: uv run python scripts/dev.py publish
+
+      - name: Open release pull request
+        if: github.event.pull_request.base.ref == 'main'
+        id: create_release_pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = process.env.NEW_VERSION;
+            const head = `release/v${version}`;
+            const title = `Release ${version}`;
+            const body = [
+              `Automated release for version ${version}.`,
+              '',
+              'This pull request was created by the release workflow.'
+            ].join('\n');
+            const { data: pr } = await github.rest.pulls.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              head,
+              base: 'main',
+              body,
+              maintainer_can_modify: true
+            });
+            core.setOutput('pr_number', pr.number);
+
+      - name: Enable auto-merge on release PR
+        if: github.event.pull_request.base.ref == 'main'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ steps.create_release_pr.outputs.pr_number }}', 10);
+            await github.rest.pulls.enableAutoMerge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              merge_method: 'squash'
+            });
