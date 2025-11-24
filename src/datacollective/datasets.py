@@ -44,7 +44,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
 
 def save_dataset_to_disk(
     dataset_id: str,
-    download_directory: str,
+    download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
 ) -> Path:
@@ -122,7 +122,7 @@ def save_dataset_to_disk(
 
 
 def load_dataset(
-    dataset_id: str, download_directory: str, show_progress: bool = True
+    dataset_id: str, download_directory: str | None = None, show_progress: bool = True
 ) -> pd.DataFrame:
     """
     Download (if needed), extract, and load the dataset into a pandas DataFrame.
