@@ -34,8 +34,15 @@ dev = [
     "bump2version>=1.0.0",
 ]
 
+docs = [
+  "mkdocs",
+  "mkdocs-material",
+  "mkdocstrings-python",
+]
+
 [project.urls]
 Homepage = "https://github.com/Mozilla-Data-Collective/datacollective-python"
+Documentation = "https://Mozilla-Data-Collective.github.io/datacollective-python/"
 Issues = "https://github.com/Mozilla-Data-Collective/datacollective-python/issues"
 
 [project.scripts]

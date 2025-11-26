@@ -1,13 +1,9 @@
 """
 Mozilla Data Collective Python Client Library
-
-Usage:
-    from datacollective import DataCollective
-    client = DataCollective()
 """
 
-from .client import DataCollective
+from .datasets import get_dataset_details, load_dataset, save_dataset_to_disk
 
-__all__ = ["DataCollective"]
+__all__ = ["save_dataset_to_disk", "load_dataset", "get_dataset_details"]
 
 __version__ = "0.0.34"

@@ -1,10 +1,27 @@
+<p align="center">
+  <picture>
+    <!-- When the user prefers dark mode, show the white logo -->
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/mdc_logo_white.png">
+    <!-- When the user prefers light mode, show the black logo -->
+    <source media="(prefers-color-scheme: light)" srcset="./docs/mdc_logo.png">
+    <!-- Fallback: default to the black logo -->
+    <img src="./docs/mdc_logo.png" width="35%" alt="Project logo"/>
+  </picture>
+</p>
+
+<div align="center">
+
+[![Published](https://github.com/Mozilla-Data-Collective/datacollective-python/actions/workflows/publish.yml/badge.svg)](https://github.com/Mozilla-Data-Collective/datacollective-python/actions/workflows/publish.yml/)
+[![Docs](https://github.com/Mozilla-Data-Collective/datacollective-python/actions/workflows/docs.yml/badge.svg)](https://github.com/Mozilla-Data-Collective/datacollective-python/actions/workflows/docs.yml/)
+[![Tests](https://github.com/Mozilla-Data-Collective/datacollective-python/actions/workflows/tests.yml/badge.svg)](https://github.com/Mozilla-Data-Collective/datacollective-python/actions/workflows/tests.yml/)
+
+</div>
+
 # Mozilla Data Collective Python API Library
 
 Python library for interfacing with the [Mozilla Data Collective](https://datacollective.mozillafoundation.org/) REST API.
 
 ## Installation
-
-Install the package using pip:
 
 ```bash
 pip install datacollective
@@ -12,129 +29,42 @@ pip install datacollective
 
 ## Quick Start
 
-1. **Get your API key** from the Mozilla Data Collective dashboard
+1. **Get your API key** from the Mozilla Data Collective [dashboard](https://datacollective.mozillafoundation.org/api-reference)
 
-2. **Set up your environment**:
+2. **Set the API key in your environment variable (or create `.env` file add it there)**:
 
-If you have cloned the repository, you can run the following command:
-
-   ```bash
-   # Copy the example environment file
-   cp .env.example .env
-   ```
-
-Otherwise, copy and paste the following into a file called `.env` in your present working directory.
-
-```bash
-MDC_API_KEY=<MDC_API_KEY> # change to your MDC API Key
-MDC_API_URL=https://datacollective.mozillafoundation.org/api # change to MDC API URL endpoint
-MDC_DOWNLOAD_PATH=~/.mozdata/datasets # change to where you want to download datasets
+```
+export MDC_API_KEY=your-api-key-here
 ```
 
-3. **Configure your API key** by editing `.env`:
-   ```bash
-   # Required: Your MDC API key
-   MDC_API_KEY=your-api-key-here
-   
-   # Optional: Download path for datasets (defaults to ~/.mozdata/datasets)
-   MDC_DOWNLOAD_PATH=~/.mozdata/datasets
-   ```
+3. **Get your dataset ID from the last section of the dataset URL at the MDC website**. 
 
-4. **Start using the library**:
-   ```python
-   from datacollective import DataCollective
-   
-   # Initialize the client
-   client = DataCollective()
-   
-   # Download a dataset
-   client.get_dataset('mdc-dataset-id')
-   ```
+For example, in the URL `https://datacollective.mozillafoundation.org/datasets/cmflnuzw43exbql8uukllvnqg`, the dataset ID is `cmflnuzw43exbql8uukllvnqg`.
 
-## Configuration
+4. **Save a dataset locally**:
+```
+from datacollective import save_dataset_to_disk
 
-The client loads configuration from environment variables or `.env` files:
-
-- `MDC_API_KEY` - Your Mozilla Data Collective API key (required)
-- `MDC_API_URL` - API endpoint (defaults to production)
-- `MDC_DOWNLOAD_PATH` - Where to download datasets (defaults to `~/.mozdata/datasets`)
-
-### Environment Files
-
-Create a `.env` file in your project root:
-
-```bash
-# MDC API Configuration
-MDC_API_KEY=your-api-key-here
-MDC_API_URL=https://datacollective.mozillafoundation.org/api
-MDC_DOWNLOAD_PATH=~/.mozdata/datasets
+dataset = save_dataset_to_disk("your-dataset-id")
 ```
 
-**Note:** Never commit `.env` files to version control as they contain sensitive information.
+5. **Get information & metadata about a dataset**:
 
-## Basic Usage
+```
+from datacollective import get_dataset_details
 
-```python
-from datacollective import DataCollective
-
-# Initialize client (loads from .env automatically)
-client = DataCollective()
-
-# Verify your configuration
-print(f"API URL: {client.api_url}")
-print(f"Download path: {client.download_path}")
-
-# Download a dataset
-dataset = client.get_dataset('your-dataset-id')
+details = get_dataset_details("your-dataset-id")
 ```
 
-## Load and query datasets
+6. **Load the dataset into a pandas DataFrame _(Only Common Voice datasets are supported right now)_**:
 
-**note:** today, this feature only works with Mozilla Common Voice datasets
 ```
-from datacollective import DataCollective
+from datacollective import load_dataset
 
-client = DataCollective()
-
-dataset = client.load_dataset("<dataset-id>") # Load dasaset into memory
-df = dataset.to_pandas() # Convert to pandas for queryable form
-dataset.splits # A list of all splits available in the dataset
+dataset = load_dataset("your-dataset-id")
 ```
 
-
-## Multiple Environments
-
-You can use different environment configurations:
-
-```python
-# Production environment (default, uses .env)
-client = DataCollective()
-
-# Development environment (uses .env.development)
-client = DataCollective(environment='development')
-
-# Staging environment (uses .env.staging)  
-client = DataCollective(environment='staging')
-```
-
-## Release Workflow
-
-The repository uses branch-specific GitHub Actions for releases:
-
-- When a pull request is merged into `main`, the workflow runs the full check suite, bumps the version, and opens a `release/vX.Y.Z` pull request back onto `main`. Auto-merge is enabled on that PR, so once required checks pass the version commit lands on `main` automatically.
-- Merge the updated `main` into `test-pypi` to deploy that version to TestPyPI (`uv run python scripts/dev.py publish-test` runs automatically).
-- After validating on TestPyPI, merge `main` into `pypi` to deploy to the production PyPI index (`uv run python scripts/dev.py publish` runs automatically).
-
-Recommended local prep before opening release pull requests:
-
-1. Run `uv run python scripts/dev.py all` to make sure checks pass without modifying files.
-2. Optionally run `uv run python scripts/dev.py prepare-release` locally if you want to rehearse the bump; the workflow performs the same steps when `main` changes.
-3. Follow the branch merge order (`main` ➜ `test-pypi`, `main` ➜ `pypi`) so TestPyPI always receives the version before production.
-
-Required GitHub Actions secrets:
-
-- `TEST_PYPI_API_TOKEN` – token for publishing to TestPyPI (username `__token__`).
-- `PYPI_API_TOKEN` – token for publishing to PyPI (username `__token__`).
+## For more details, visit [our docs](https://Mozilla-Data-Collective.github.io/datacollective-python/)
 
 ## License
 
