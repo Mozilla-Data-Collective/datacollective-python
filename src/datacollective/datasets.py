@@ -122,7 +122,10 @@ def save_dataset_to_disk(
 
 
 def load_dataset(
-    dataset_id: str, download_directory: str | None = None, show_progress: bool = True
+    dataset_id: str,
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
 ) -> pd.DataFrame:
     """
     Download (if needed), extract, and load the dataset into a pandas DataFrame.
@@ -132,6 +135,7 @@ def load_dataset(
         download_directory: Directory where to save the downloaded dataset.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
+        overwrite_existing: Whether to overwrite existing files.
     Returns:
         A pandas DataFrame with the loaded dataset.
     Raises:
@@ -145,7 +149,7 @@ def load_dataset(
         dataset_id=dataset_id,
         download_directory=download_directory,
         show_progress=show_progress,
-        overwrite_existing=False,
+        overwrite_existing=overwrite_existing,
     )
     base_dir = _resolve_download_dir(download_directory)
     extract_dir = _extract_archive(archive_path, base_dir)
