@@ -29,15 +29,35 @@ pip install datacollective
 
 ## Quick Start
 
-1. **Get your API key** from the Mozilla Data Collective dashboard
+1. **Get your API key** from the Mozilla Data Collective [dashboard](https://datacollective.mozillafoundation.org/api-reference)
 
-2. **Set the API key in your environment variable**:
+2. **Set the API key in your environment variable (or create `.env` file add it there)**:
 
 ```
 export MDC_API_KEY=your-api-key-here
 ```
 
-3.**Use the client**:
+3. **Get your dataset ID from the last section of the dataset URL at the MDC website**. 
+
+For example, in the URL `https://datacollective.mozillafoundation.org/datasets/cmflnuzw43exbql8uukllvnqg`, the dataset ID is `cmflnuzw43exbql8uukllvnqg`.
+
+4. **Save a dataset locally**:
+```
+from datacollective import save_dataset_to_disk
+
+dataset = save_dataset_to_disk("your-dataset-id")
+```
+
+5. **Get information & metadata about a dataset**:
+
+```
+from datacollective import get_dataset_details
+
+details = get_dataset_details("your-dataset-id")
+```
+
+6. **Load the dataset into a pandas DataFrame _(Only Common Voice datasets are supported right now)_**:
+
 ```
 from datacollective import load_dataset
 
