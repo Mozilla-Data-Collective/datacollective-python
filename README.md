@@ -45,7 +45,7 @@ For example, in the URL `https://datacollective.mozillafoundation.org/datasets/c
 ```
 from datacollective import save_dataset_to_disk
 
-dataset = save_dataset_to_disk("your-dataset-id")
+dataset_path = save_dataset_to_disk("your-dataset-id")
 ```
 
 5. **Get information & metadata about a dataset**:
