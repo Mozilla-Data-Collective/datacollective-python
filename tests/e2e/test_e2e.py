@@ -13,7 +13,7 @@ MDC_TEST_API_URL = os.getenv("MDC_TEST_API_URL")
 
 pytestmark = pytest.mark.skipif(
     not (MDC_TEST_API_KEY and MDC_TEST_API_URL),
-    reason="Set MDC_API_KEY and MDC_TEST_API_URL to run live API tests.",
+    reason="Set MDC_TEST_API_KEY and MDC_TEST_API_URL to run live API tests.",
 )
 
 
