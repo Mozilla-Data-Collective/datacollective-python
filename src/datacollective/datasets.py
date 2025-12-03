@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+from fox_progress_bar import ProgressBar
 
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
@@ -17,7 +18,6 @@ from datacollective.api_utils import (
 from datacollective.dataset_loading_scripts.registry import (
     load_dataset_from_name_as_dataframe,
 )
-from fox_progress_bar import ProgressBar
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
