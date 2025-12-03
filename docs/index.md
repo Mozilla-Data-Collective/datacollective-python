@@ -123,10 +123,20 @@ print(info)
 
 For a detailed API reference, see the [API Reference](api.md) section of the documentation.
 
-## Release Workflow
-
 > [!NOTE]
 > This section is intended for maintainers of the `datacollective` library.
+
+## Tests
+
+Run the full test suite:
+```bash
+pytest -v
+```
+
+Note that the e2e tests require a valid `MDC_API_KEY` and a `MDC_TEST_API_URL` key set in your environment. Pytest will skip the live e2e tests automatically if either is missing.
+
+
+## Release Workflow
 
 Check out the [Release Workflow](release.md) document for details on how to
 publish new versions of the library to PyPI using GitHub Actions.
