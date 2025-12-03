@@ -8,17 +8,21 @@ from _pytest.monkeypatch import MonkeyPatch
 from datacollective import get_dataset_details, load_dataset
 
 MDC_API_KEY = os.getenv("MDC_API_KEY")
+MDC_TEST_API_URL = os.getenv("MDC_TEST_API_URL")
 
 pytestmark = pytest.mark.skipif(
-    not MDC_API_KEY,
-    reason="Set MDC_API_KEY to run live API tests.",
+    not (MDC_API_KEY and MDC_TEST_API_URL),
+    reason="Set MDC_API_KEY and MDC_TEST_API_URL to run live API tests.",
 )
 
 
 def test_get_dataset_details_live_api(
+    monkeypatch: MonkeyPatch,
     dataset_id: str = "cmhvzlidq0326mn07hk4do3pj",
 ) -> None:
-    """NOTE: This test calls a live MDC API endpoint."""
+    """NOTE: This test calls a live MDC API endpoint (dev)."""
+    monkeypatch.setenv("MDC_API_URL", MDC_TEST_API_URL)
+
     details = get_dataset_details(dataset_id)
 
     assert isinstance(details, dict)
@@ -31,9 +35,10 @@ def test_load_dataset_live_api(
     monkeypatch: MonkeyPatch,
     dataset_id: str = "cmhvzlidq0326mn07hk4do3pj",
 ) -> None:
-    """NOTE: This test calls a live MDC API endpoint."""
+    """NOTE: This test calls a live MDC API endpoint (dev)."""
 
     monkeypatch.setenv("MDC_DOWNLOAD_PATH", str(tmp_path))
+    monkeypatch.setenv("MDC_API_URL", MDC_TEST_API_URL)
 
     df = load_dataset(
         dataset_id,
