@@ -10,6 +10,8 @@ on:
     paths:
       - 'src/**'
       - 'tests/**'
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -30,5 +32,30 @@ jobs:
       - name: Install test dependencies
         run: pip install -e '.[dev]'
 
-      - name: Run Tests
-        run: pytest -v tests
+      - name: Run unit & integration tests (exclude e2e)
+        run: pytest -v --ignore=tests/e2e tests
+
+  run-e2e:
+    needs: run-tests
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main') ||
+      (github.event_name == 'release' && github.event.action == 'published')
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+          cache: "pip"
+
+      - name: Install test dependencies
+        run: pip install -e '.[dev]'
+
+      - name: Run e2e tests
+        run: pytest -q tests/e2e/test_e2e.py
