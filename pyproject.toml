@@ -121,7 +121,7 @@ explicit = true
 
 # Bump2version configuration
 [tool.bump2version]
-current_version = "0.0.3"
+current_version = "0.0.34"
 commit = true
 tag = true
 tag_name = "v{new_version}"
@@ -135,16 +135,3 @@ replace = 'version = "{new_version}"'
 filename = "src/datacollective/__init__.py"
 search = '__version__ = "{current_version}"'
 replace = '__version__ = "{new_version}"'
-
-[dependency-groups]
-dev = [
-    "black>=25.1.0",
-    "bump2version>=1.0.1",
-    "mypy>=1.17.1",
-    "pre-commit>=4.3.0",
-    "ruff>=0.12.12",
-    "pytest>=8.3.0",
-    "pytest-cov>=5.0.0",
-    "pandas-stubs>=2.2.0.240909",
-    "types-requests>=2.31.0.6",
-]
