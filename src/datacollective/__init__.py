@@ -6,4 +6,4 @@ from .datasets import get_dataset_details, load_dataset, save_dataset_to_disk
 
 __all__ = ["save_dataset_to_disk", "load_dataset", "get_dataset_details"]
 
-__version__ = "0.0.34"
+__version__ = "0.1.0"

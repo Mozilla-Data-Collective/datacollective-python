@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "datacollective"
-version = "0.0.34"
+version = "0.1.0"
 dependencies = [
     "fox-progress-bar>=0.1.1",
     "pandas>=2.0.0",

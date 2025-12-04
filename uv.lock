@@ -212,7 +212,7 @@ toml = [
 
 [[package]]
 name = "datacollective"
-version = "0.0.34"
+version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "fox-progress-bar" },
