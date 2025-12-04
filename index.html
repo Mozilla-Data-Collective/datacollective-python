@@ -436,6 +436,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#release-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -657,6 +668,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tests" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tests
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#release-workflow" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -777,11 +799,16 @@ to filter, aggregate, and analyze the data.</p>
 </span></code></pre></div>
 <h2 id="api-reference">API Reference</h2>
 <p>For a detailed API reference, see the <a href="api/">API Reference</a> section of the documentation.</p>
-<h2 id="release-workflow">Release Workflow</h2>
 <blockquote>
 <p>[!NOTE]
 This section is intended for maintainers of the <code>datacollective</code> library.</p>
 </blockquote>
+<h2 id="tests">Tests</h2>
+<p>Run the full test suite:
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pytest<span class="w"> </span>-v
+</span></code></pre></div></p>
+<p>Note that the e2e tests require a valid <code>MDC_TEST_API_KEY</code> and a <code>MDC_TEST_API_URL</code> key set in your environment. Pytest will skip the live e2e tests automatically if either is missing.</p>
+<h2 id="release-workflow">Release Workflow</h2>
 <p>Check out the <a href="release/">Release Workflow</a> document for details on how to
 publish new versions of the library to PyPI using GitHub Actions.</p>
 
