@@ -762,6 +762,10 @@ project root or present working directory.</p>
 contain secrets.</p>
 </blockquote>
 <h2 id="basic-usage">Basic Usage</h2>
+<blockquote>
+<p>[!TIP]
+You can find the <code>dataset-id</code> by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the <code>/datasets/</code> path. For example, for URL <code>https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn</code> dataset id will be <code>cmflnuzw6lrt9e6ui4kwcshvn</code>.</p>
+</blockquote>
 <h3 id="download-a-dataset">Download a dataset</h3>
 <p>Use <code>save_dataset_to_disk</code> to download a dataset to the configured download path:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_dataset_to_disk</span>
