@@ -33,6 +33,8 @@ pip install datacollective
 
 2. **Set the API key in your environment variable (or create `.env` file add it there)**:
 
+**IMPORTANT NOTE:** Before trying to access any dataset, make sure you have thoroughly **read and agreed** to the specific dataset's conditions & licensing terms.
+
 ```
 export MDC_API_KEY=your-api-key-here
 ```
