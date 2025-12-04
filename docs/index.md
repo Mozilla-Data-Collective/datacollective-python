@@ -133,7 +133,7 @@ Run the full test suite:
 pytest -v
 ```
 
-Note that the e2e tests require a valid `MDC_API_KEY` and a `MDC_TEST_API_URL` key set in your environment. Pytest will skip the live e2e tests automatically if either is missing.
+Note that the e2e tests require a valid `MDC_TEST_API_KEY` and a `MDC_TEST_API_URL` key set in your environment. Pytest will skip the live e2e tests automatically if either is missing.
 
 
 ## Release Workflow
