@@ -71,6 +71,9 @@ MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 
 ## Basic Usage
 
+
+**IMPORTANT NOTE:** Before trying to access any dataset, make sure you have thoroughly **read and agreed** to the specific dataset's conditions & licensing terms.
+
 > [!TIP]
 > You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn` dataset id will be `cmflnuzw6lrt9e6ui4kwcshvn`.
 
