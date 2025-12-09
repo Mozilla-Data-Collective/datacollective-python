@@ -113,6 +113,15 @@ def save_dataset_to_disk(
         # Show initial progress bar with fox at the start
         progress_bar._display()
 
+    # Skip download if file already exists
+    if download_plan.target_path.exists() and not overwrite_existing:
+        print(f"File already exists. Skipping download: `{str(download_plan.target_path)}`")
+        return Path(download_plan.target_path)
+    
+    # Remove any existing temporary file
+    if download_plan.tmp_path.exists():
+        download_plan.tmp_path.unlink()
+
     
     with api_request(
         "GET",
