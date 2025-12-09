@@ -48,6 +48,7 @@ class DownloadPlan:
     filename: str
     target_path: Path
     tmp_path: Path
+    size_bytes: int
 
 def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
     if not dataset_id or not dataset_id.strip():
@@ -62,7 +63,8 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
 
     download_url = payload.get("downloadUrl")
     filename = payload.get("filename")
-    if not download_url or not filename:
+    sizeBytes = payload.get("sizeBytes")
+    if not download_url or not filename or not sizeBytes:
         raise RuntimeError(f"Unexpected response format: {payload}")
 
     target_path = base_dir / filename
@@ -75,6 +77,7 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
         filename=filename,
         target_path=target_path,
         tmp_path=tmp_path,
+        size_bytes=sizeBytes,
     )
 
 
@@ -103,6 +106,13 @@ def save_dataset_to_disk(
         requests.HTTPError: For other non-2xx responses.
     """
     download_plan = _get_download_plan(dataset_id, download_directory)
+
+    progress_bar = None
+    if show_progress:
+        progress_bar = ProgressBar(download_plan.size_bytes)
+        # Show initial progress bar with fox at the start
+        progress_bar._display()
+
     
     with api_request(
         "GET",
@@ -110,25 +120,18 @@ def save_dataset_to_disk(
         stream=True,
         timeout=HTTP_TIMEOUT,
     ) as r:
-        total = int(r.headers.get("content-length", "0"))
 
-        if show_progress:
-            print(f"Downloading dataset: {download_plan.filename}")
-            progress_bar = ProgressBar(total)
-            # Show initial progress bar with fox at the start
-            progress_bar._display()
-        else:
-            print(f"Downloading dataset: {download_plan.filename}")
+        print(f"Downloading dataset: {download_plan.filename}")
 
         with open(download_plan.tmp_path, "wb") as f:
             for chunk in r.iter_content(chunk_size=1 << 16):
                 if not chunk:
                     continue
                 f.write(chunk)
-                if show_progress:
+                if progress_bar:
                     progress_bar.update(len(chunk))
 
-    if show_progress:
+    if progress_bar:
         progress_bar.finish()
 
     download_plan.tmp_path.replace(download_plan.target_path)
