@@ -80,6 +80,25 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
         size_bytes=sizeBytes,
     )
 
+def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBar | None) -> None:
+        
+    with api_request(
+        "GET",
+        download_plan.download_url,
+        stream=True,
+        timeout=HTTP_TIMEOUT,
+    ) as r:
+
+        print(f"Downloading dataset: {download_plan.filename}")
+
+        with open(download_plan.tmp_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1 << 16):
+                if not chunk:
+                    continue
+                f.write(chunk)
+                if progress_bar:
+                    progress_bar.update(len(chunk))
+
 
 def save_dataset_to_disk(
     dataset_id: str,
@@ -122,23 +141,7 @@ def save_dataset_to_disk(
     if download_plan.tmp_path.exists():
         download_plan.tmp_path.unlink()
 
-    
-    with api_request(
-        "GET",
-        download_plan.download_url,
-        stream=True,
-        timeout=HTTP_TIMEOUT,
-    ) as r:
-
-        print(f"Downloading dataset: {download_plan.filename}")
-
-        with open(download_plan.tmp_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1 << 16):
-                if not chunk:
-                    continue
-                f.write(chunk)
-                if progress_bar:
-                    progress_bar.update(len(chunk))
+    _execute_download_plan(download_plan, progress_bar)
 
     if progress_bar:
         progress_bar.finish()
