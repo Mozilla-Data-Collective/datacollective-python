@@ -5,6 +5,7 @@ import tarfile
 import zipfile
 from pathlib import Path
 from typing import Any
+from dataclasses import dataclass
 
 import pandas as pd
 from fox_progress_bar import ProgressBar
@@ -41,6 +42,63 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     resp = api_request("GET", url)
     return dict(resp.json())
 
+@dataclass
+class DownloadPlan:
+    download_url: str
+    filename: str
+    target_path: Path
+    tmp_path: Path
+    size_bytes: int
+
+def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
+    if not dataset_id or not dataset_id.strip():
+        raise ValueError("`dataset_id` must be a non-empty string")
+
+    base_dir = _resolve_download_dir(download_directory)
+
+    # Create a download session to get `downloadUrl` and `filename`
+    session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
+    resp = api_request("POST", session_url)
+    payload: dict[str, Any] = dict(resp.json())
+
+    download_url = payload.get("downloadUrl")
+    filename = payload.get("filename")
+    sizeBytes = payload.get("sizeBytes")
+    if not download_url or not filename or not sizeBytes:
+        raise RuntimeError(f"Unexpected response format: {payload}")
+
+    target_path = base_dir / filename
+
+    # Stream download to a temporary file for atomicity
+    tmp_path = target_path.with_suffix(target_path.suffix + ".part")
+
+    return DownloadPlan(
+        download_url=download_url,
+        filename=filename,
+        target_path=target_path,
+        tmp_path=tmp_path,
+        size_bytes=sizeBytes,
+    )
+
+def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBar | None) -> None:
+        
+    with api_request(
+        "GET",
+        download_plan.download_url,
+        stream=True,
+        timeout=HTTP_TIMEOUT,
+    ) as r:
+
+        print(f"Downloading dataset: {download_plan.filename}")
+
+        with open(download_plan.tmp_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=1 << 16):
+                if not chunk:
+                    continue
+                f.write(chunk)
+                if progress_bar:
+                    progress_bar.update(len(chunk))
+
 
 def save_dataset_to_disk(
     dataset_id: str,
@@ -66,59 +124,31 @@ def save_dataset_to_disk(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    if not dataset_id or not dataset_id.strip():
-        raise ValueError("`dataset_id` must be a non-empty string")
+    download_plan = _get_download_plan(dataset_id, download_directory)
 
-    base_dir = _resolve_download_dir(download_directory)
-
-    # Create a download session to get `downloadUrl` and `filename`
-    session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    resp = api_request("POST", session_url)
-    payload: dict[str, Any] = dict(resp.json())
-
-    download_url = payload.get("downloadUrl")
-    filename = payload.get("filename")
-    if not download_url or not filename:
-        raise RuntimeError(f"Unexpected response format: {payload}")
-
-    target_path = base_dir / filename
-    if target_path.exists() and not overwrite_existing:
-        print(f"File already exists. Skipping download: `{str(target_path)}`")
-        return Path(target_path)
-
-    # Stream download to a temporary file for atomicity
-    tmp_path = target_path.with_suffix(target_path.suffix + ".part")
-
-    with api_request(
-        "GET",
-        download_url,
-        stream=True,
-        timeout=HTTP_TIMEOUT,
-    ) as r:
-        total = int(r.headers.get("content-length", "0"))
-
-        if show_progress:
-            print(f"Downloading dataset: {filename}")
-            progress_bar = ProgressBar(total)
-            # Show initial progress bar with fox at the start
-            progress_bar._display()
-        else:
-            print(f"Downloading dataset: {filename}")
-
-        with open(tmp_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1 << 16):
-                if not chunk:
-                    continue
-                f.write(chunk)
-                if show_progress:
-                    progress_bar.update(len(chunk))
-
+    progress_bar = None
     if show_progress:
+        progress_bar = ProgressBar(download_plan.size_bytes)
+        # Show initial progress bar with fox at the start
+        progress_bar._display()
+
+    # Skip download if file already exists
+    if download_plan.target_path.exists() and not overwrite_existing:
+        print(f"File already exists. Skipping download: `{str(download_plan.target_path)}`")
+        return Path(download_plan.target_path)
+    
+    # Remove any existing temporary file
+    if download_plan.tmp_path.exists():
+        download_plan.tmp_path.unlink()
+
+    _execute_download_plan(download_plan, progress_bar)
+
+    if progress_bar:
         progress_bar.finish()
 
-    tmp_path.replace(target_path)
-    print(f"Saved dataset to `{str(target_path)}`")
-    return Path(target_path)
+    download_plan.tmp_path.replace(download_plan.target_path)
+    print(f"Saved dataset to `{str(download_plan.target_path)}`")
+    return Path(download_plan.target_path)
 
 
 def load_dataset(
