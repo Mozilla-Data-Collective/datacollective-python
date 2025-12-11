@@ -6,6 +6,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 from dataclasses import dataclass
+from requests.exceptions import ConnectionError
 
 import pandas as pd
 from fox_progress_bar import ProgressBar
@@ -81,23 +82,27 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
     )
 
 def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBar | None) -> None:
-        
-    with api_request(
-        "GET",
-        download_plan.download_url,
-        stream=True,
-        timeout=HTTP_TIMEOUT,
-    ) as r:
+    try:
+        with api_request(
+            "GET",
+            download_plan.download_url,
+            stream=True,
+            timeout=HTTP_TIMEOUT,
+        ) as r:
 
-        print(f"Downloading dataset: {download_plan.filename}")
+            print(f"Downloading dataset: {download_plan.filename}")
 
-        with open(download_plan.tmp_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1 << 16):
-                if not chunk:
-                    continue
-                f.write(chunk)
-                if progress_bar:
-                    progress_bar.update(len(chunk))
+            with open(download_plan.tmp_path, "ab") as f:
+                for chunk in r.iter_content(chunk_size=1 << 16):
+                    if not chunk:
+                        continue
+                    f.write(chunk)
+                    if progress_bar:
+                        progress_bar.update(len(chunk))
+
+    except Exception as e:
+        print(f"Download failed with {progress_bar.downloaded} bytes written. Run again with resume_download=True to resume.")
+        raise e
 
 
 def save_dataset_to_disk(
@@ -105,6 +110,7 @@ def save_dataset_to_disk(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
+    resume_download: bool = False,
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
@@ -156,6 +162,7 @@ def load_dataset(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
+    resume_download: bool = False,
 ) -> pd.DataFrame:
     """
     Download (if needed), extract, and load the dataset into a pandas DataFrame.
@@ -180,6 +187,7 @@ def load_dataset(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        resume_download=resume_download,
     )
     base_dir = _resolve_download_dir(download_directory)
     extract_dir = _extract_archive(archive_path, base_dir)
