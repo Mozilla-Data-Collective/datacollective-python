@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 from typing import Any
 from dataclasses import dataclass
-from requests.exceptions import ConnectionError
+from .errors import DownloadError
 
 import pandas as pd
 from fox_progress_bar import ProgressBar
@@ -105,13 +105,11 @@ def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBa
                         progress_bar.update(len(chunk))
 
     except (Exception, KeyboardInterrupt) as e:
-        print("")
-        if download_plan.checksum:
-            print(f"""Download failed with {progress_bar.downloaded} bytes written. Run again with resume_download="{download_plan.checksum}" to resume.""")
-        else:
-            print(f"""Download failed. Unfortunately this dataset does yet not support resuming downloads - please try again.""")
 
-        raise e
+        if download_plan.checksum:
+            raise DownloadError(f"""Download failed with {progress_bar.downloaded} bytes written. Run again with resume_download="{download_plan.checksum}" to resume.""") from e
+        else:
+            raise DownloadError(f"""Download failed. Unfortunately this dataset does yet not support resuming downloads - please try again.""") from e
 
 
 def save_dataset_to_disk(
