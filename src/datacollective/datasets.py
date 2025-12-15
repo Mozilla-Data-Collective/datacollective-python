@@ -50,6 +50,7 @@ class DownloadPlan:
     target_path: Path
     tmp_path: Path
     size_bytes: int
+    checksum: str | None # Some datasets sadly will not have checksums yet - we should close this up when they all are garuanteed to
 
 def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
     if not dataset_id or not dataset_id.strip():
@@ -65,6 +66,7 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
     download_url = payload.get("downloadUrl")
     filename = payload.get("filename")
     sizeBytes = int(payload.get("sizeBytes"))
+    checksum = payload.get("checksum")
     if not download_url or not filename or not sizeBytes:
         raise RuntimeError(f"Unexpected response format: {payload}")
 
@@ -79,6 +81,7 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
         target_path=target_path,
         tmp_path=tmp_path,
         size_bytes=sizeBytes,
+        checksum=checksum,
     )
 
 def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBar | None) -> None:
@@ -102,7 +105,11 @@ def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBa
 
     except (Exception, KeyboardInterrupt) as e:
         print("")
-        print(f"Download failed with {progress_bar.downloaded} bytes written. Run again with resume_download=True to resume.")
+        if download_plan.checksum:
+            print(f"Download failed with {progress_bar.downloaded} bytes written. Run again with resume_download={download_plan.checksum} to resume.")
+        else:
+            print(f"Download failed. Unfortunately this dataset does yet not support resuming downloads - please try again.")
+
         raise e
 
 
@@ -111,7 +118,7 @@ def save_dataset_to_disk(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
-    resume_download: bool = False,
+    resume_download: str | None = None, # checksum of existing download to resume
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
@@ -132,6 +139,8 @@ def save_dataset_to_disk(
         requests.HTTPError: For other non-2xx responses.
     """
     download_plan = _get_download_plan(dataset_id, download_directory)
+    if resume_download and resume_download != download_plan.checksum:
+        raise ValueError("Cannot resume download, checksum does not match. This is likely because the dataset has been updated since the previous download attempt.")
 
     progress_bar = None
     if show_progress:
