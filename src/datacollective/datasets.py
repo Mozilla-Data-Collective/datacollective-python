@@ -5,6 +5,8 @@ import tarfile
 import zipfile
 from pathlib import Path
 from typing import Any
+from dataclasses import dataclass
+from .errors import DownloadError
 
 import pandas as pd
 from fox_progress_bar import ProgressBar
@@ -12,6 +14,7 @@ from fox_progress_bar import ProgressBar
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
     HTTP_TIMEOUT,
+    _extract_checksum_from_api_reponse,
     _get_api_url,
     api_request,
 )
@@ -41,12 +44,83 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     resp = api_request("GET", url)
     return dict(resp.json())
 
+@dataclass
+class DownloadPlan:
+    download_url: str
+    filename: str
+    target_path: Path
+    tmp_path: Path
+    size_bytes: int
+    checksum: str | None # Some datasets sadly will not have checksums yet - we should close this up when they all are garuanteed to
+
+def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
+    if not dataset_id or not dataset_id.strip():
+        raise ValueError("`dataset_id` must be a non-empty string")
+
+    base_dir = _resolve_download_dir(download_directory)
+
+    # Create a download session to get `downloadUrl` and `filename`
+    session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
+    resp = api_request("POST", session_url)
+    payload: dict[str, Any] = dict(resp.json())
+
+    download_url = payload.get("downloadUrl")
+    filename = payload.get("filename")
+    sizeBytes = int(payload.get("sizeBytes"))
+    checksum = payload.get("checksum")
+    if not download_url or not filename or not sizeBytes:
+        raise RuntimeError(f"Unexpected response format: {payload}")
+
+    target_path = base_dir / filename
+
+    # Stream download to a temporary file for atomicity
+    tmp_path = target_path.with_suffix(target_path.suffix + ".part")
+
+    return DownloadPlan(
+        download_url=download_url,
+        filename=filename,
+        target_path=target_path,
+        tmp_path=tmp_path,
+        size_bytes=sizeBytes,
+        checksum=checksum,
+    )
+
+def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBar | None, headers: dict[str, str]) -> None:
+    try:
+        with api_request(
+            "GET",
+            download_plan.download_url,
+            stream=True,
+            timeout=HTTP_TIMEOUT,
+            headers=headers,
+        ) as response:
+            
+            if download_plan.checksum:
+                # Only validate checksum if we have one to check against
+                checksum = _extract_checksum_from_api_reponse(response)
+                if checksum != download_plan.checksum:
+                    raise ValueError(f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum}).")
+            
+            print(f"Downloading dataset: {download_plan.filename}")
+
+            with open(download_plan.tmp_path, "ab") as f:
+                for chunk in response.iter_content(chunk_size=1 << 16):
+                    if not chunk:
+                        continue
+                    f.write(chunk)
+                    if progress_bar:
+                        progress_bar.update(len(chunk))
+
+    except (Exception, KeyboardInterrupt) as e:
+        raise DownloadError(progress_bar.downloaded, download_plan.checksum) from e
+
 
 def save_dataset_to_disk(
     dataset_id: str,
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
+    resume_download: str | None = None, # checksum of existing download to resume
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
@@ -66,59 +140,43 @@ def save_dataset_to_disk(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    if not dataset_id or not dataset_id.strip():
-        raise ValueError("`dataset_id` must be a non-empty string")
+    download_plan = _get_download_plan(dataset_id, download_directory)
+    if resume_download and resume_download != download_plan.checksum:
+        raise ValueError("Cannot resume download, checksum does not match. This is likely because the dataset has been updated since the previous download attempt.")
 
-    base_dir = _resolve_download_dir(download_directory)
 
-    # Create a download session to get `downloadUrl` and `filename`
-    session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    resp = api_request("POST", session_url)
-    payload: dict[str, Any] = dict(resp.json())
 
-    download_url = payload.get("downloadUrl")
-    filename = payload.get("filename")
-    if not download_url or not filename:
-        raise RuntimeError(f"Unexpected response format: {payload}")
-
-    target_path = base_dir / filename
-    if target_path.exists() and not overwrite_existing:
-        print(f"File already exists. Skipping download: `{str(target_path)}`")
-        return Path(target_path)
-
-    # Stream download to a temporary file for atomicity
-    tmp_path = target_path.with_suffix(target_path.suffix + ".part")
-
-    with api_request(
-        "GET",
-        download_url,
-        stream=True,
-        timeout=HTTP_TIMEOUT,
-    ) as r:
-        total = int(r.headers.get("content-length", "0"))
-
-        if show_progress:
-            print(f"Downloading dataset: {filename}")
-            progress_bar = ProgressBar(total)
-            # Show initial progress bar with fox at the start
-            progress_bar._display()
+    # Skip download if file already exists
+    if download_plan.target_path.exists() and not overwrite_existing:
+        print(f"File already exists. Skipping download: `{str(download_plan.target_path)}`")
+        return Path(download_plan.target_path)
+    
+    
+    headers: dict[str, str] = {}
+    existing_size = 0
+    if download_plan.tmp_path.exists():
+        if resume_download:
+            existing_size = download_plan.tmp_path.stat().st_size
+            headers["Range"] = f"bytes={existing_size}-"
         else:
-            print(f"Downloading dataset: {filename}")
+            # Remove any existing temporary file if the download is not being resumed
+            download_plan.tmp_path.unlink()
 
-        with open(tmp_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1 << 16):
-                if not chunk:
-                    continue
-                f.write(chunk)
-                if show_progress:
-                    progress_bar.update(len(chunk))
-
+    progress_bar = None
     if show_progress:
+        progress_bar = ProgressBar(download_plan.size_bytes)
+        # Show initial progress bar with fox at the start
+        progress_bar.update(existing_size)
+        progress_bar._display()
+
+    _execute_download_plan(download_plan, progress_bar, headers)
+
+    if progress_bar:
         progress_bar.finish()
 
-    tmp_path.replace(target_path)
-    print(f"Saved dataset to `{str(target_path)}`")
-    return Path(target_path)
+    download_plan.tmp_path.replace(download_plan.target_path)
+    print(f"Saved dataset to `{str(download_plan.target_path)}`")
+    return Path(download_plan.target_path)
 
 
 def load_dataset(
@@ -126,6 +184,7 @@ def load_dataset(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
+    resume_download: bool = False,
 ) -> pd.DataFrame:
     """
     Download (if needed), extract, and load the dataset into a pandas DataFrame.
@@ -150,6 +209,7 @@ def load_dataset(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        resume_download=resume_download,
     )
     base_dir = _resolve_download_dir(download_directory)
     extract_dir = _extract_archive(archive_path, base_dir)
