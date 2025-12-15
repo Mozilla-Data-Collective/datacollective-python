@@ -100,7 +100,8 @@ def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBa
                     if progress_bar:
                         progress_bar.update(len(chunk))
 
-    except Exception as e:
+    except (Exception, KeyboardInterrupt) as e:
+        print("")
         print(f"Download failed with {progress_bar.downloaded} bytes written. Run again with resume_download=True to resume.")
         raise e
 
