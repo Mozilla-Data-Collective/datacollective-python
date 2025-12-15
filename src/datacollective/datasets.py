@@ -95,9 +95,11 @@ def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBa
             headers=headers,
         ) as response:
             
-            checksum = _extract_checksum_from_api_reponse(response)
-            if checksum != download_plan.checksum:
-                raise ValueError(f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum}).")
+            if download_plan.checksum:
+                # Only validate checksum if we have one to check against
+                checksum = _extract_checksum_from_api_reponse(response)
+                if checksum != download_plan.checksum:
+                    raise ValueError(f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum}).")
             
             print(f"Downloading dataset: {download_plan.filename}")
 
