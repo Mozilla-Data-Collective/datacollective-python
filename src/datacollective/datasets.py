@@ -84,13 +84,14 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
         checksum=checksum,
     )
 
-def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBar | None) -> None:
+def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBar | None, headers: dict[str, str]) -> None:
     try:
         with api_request(
             "GET",
             download_plan.download_url,
             stream=True,
             timeout=HTTP_TIMEOUT,
+            headers=headers,
         ) as r:
 
             print(f"Downloading dataset: {download_plan.filename}")
@@ -142,20 +143,30 @@ def save_dataset_to_disk(
     if resume_download and resume_download != download_plan.checksum:
         raise ValueError("Cannot resume download, checksum does not match. This is likely because the dataset has been updated since the previous download attempt.")
 
-    progress_bar = None
-    if show_progress:
-        progress_bar = ProgressBar(download_plan.size_bytes)
-        # Show initial progress bar with fox at the start
-        progress_bar._display()
+
 
     # Skip download if file already exists
     if download_plan.target_path.exists() and not overwrite_existing:
         print(f"File already exists. Skipping download: `{str(download_plan.target_path)}`")
         return Path(download_plan.target_path)
     
-    # Remove any existing temporary file
+    
+    headers: dict[str, str] = {}
+    existing_size = 0
     if download_plan.tmp_path.exists():
-        download_plan.tmp_path.unlink()
+        if resume_download:
+            existing_size = download_plan.tmp_path.stat().st_size
+            headers["Range"] = f"bytes={existing_size}-"
+        else:
+            # Remove any existing temporary file if the download is not being resumed
+            download_plan.tmp_path.unlink()
+
+    progress_bar = None
+    if show_progress:
+        progress_bar = ProgressBar(download_plan.size_bytes)
+        # Show initial progress bar with fox at the start
+        progress_bar.update(existing_size)
+        progress_bar._display()
 
     _execute_download_plan(download_plan, progress_bar)
 
