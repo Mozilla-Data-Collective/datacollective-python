@@ -4,7 +4,6 @@ class DownloadError(Exception):
 
     def __init__(
         self,
-        *,
         downloaded_bytes: int,
         checksum: str | None,
     ):
