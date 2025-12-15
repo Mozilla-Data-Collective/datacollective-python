@@ -107,9 +107,9 @@ def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBa
     except (Exception, KeyboardInterrupt) as e:
         print("")
         if download_plan.checksum:
-            print(f"Download failed with {progress_bar.downloaded} bytes written. Run again with resume_download={download_plan.checksum} to resume.")
+            print(f"""Download failed with {progress_bar.downloaded} bytes written. Run again with resume_download="{download_plan.checksum}" to resume.""")
         else:
-            print(f"Download failed. Unfortunately this dataset does yet not support resuming downloads - please try again.")
+            print(f"""Download failed. Unfortunately this dataset does yet not support resuming downloads - please try again.""")
 
         raise e
 
@@ -168,7 +168,7 @@ def save_dataset_to_disk(
         progress_bar.update(existing_size)
         progress_bar._display()
 
-    _execute_download_plan(download_plan, progress_bar)
+    _execute_download_plan(download_plan, progress_bar, headers)
 
     if progress_bar:
         progress_bar.finish()
