@@ -14,6 +14,7 @@ from fox_progress_bar import ProgressBar
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
     HTTP_TIMEOUT,
+    _extract_checksum_from_api_reponse,
     _get_api_url,
     api_request,
 )
@@ -92,12 +93,16 @@ def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBa
             stream=True,
             timeout=HTTP_TIMEOUT,
             headers=headers,
-        ) as r:
-
+        ) as response:
+            
+            checksum = _extract_checksum_from_api_reponse(response)
+            if checksum != download_plan.checksum:
+                raise ValueError(f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum}).")
+            
             print(f"Downloading dataset: {download_plan.filename}")
 
             with open(download_plan.tmp_path, "ab") as f:
-                for chunk in r.iter_content(chunk_size=1 << 16):
+                for chunk in response.iter_content(chunk_size=1 << 16):
                     if not chunk:
                         continue
                     f.write(chunk)

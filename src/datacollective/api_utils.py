@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import base64
 from typing import Any
 
 import requests
@@ -65,3 +66,11 @@ def _get_api_key() -> str:
 
 def _auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {_get_api_key()}"}
+
+
+def _extract_checksum_from_api_reponse(
+    api_response: requests.Response,
+) -> str | None:
+    repr_digest = api_response.headers.get("Repr-Digest")
+    algo, digest = repr_digest.split("=:")
+    return base64.b64decode(digest).hex()
