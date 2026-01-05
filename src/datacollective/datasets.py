@@ -6,7 +6,6 @@ import zipfile
 from pathlib import Path
 from typing import Any
 from dataclasses import dataclass
-from .errors import DownloadError
 
 import pandas as pd
 from fox_progress_bar import ProgressBar
@@ -21,6 +20,7 @@ from datacollective.api_utils import (
 from datacollective.dataset_loading_scripts.registry import (
     load_dataset_from_name_as_dataframe,
 )
+from datacollective.errors import DownloadError
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
