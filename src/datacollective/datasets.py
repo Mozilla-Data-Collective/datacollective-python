@@ -51,7 +51,7 @@ class DownloadPlan:
     target_path: Path
     tmp_path: Path
     size_bytes: int
-    checksum: str | None # Some datasets sadly will not have checksums yet - we should close this up when they all are garuanteed to
+    checksum: str | None # Some datasets sadly will not have checksums yet - we should close this up when they all are guaranteed to
 
 def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
     if not dataset_id or not dataset_id.strip():
@@ -120,7 +120,7 @@ def save_dataset_to_disk(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
-    resume_download: str | None = None, # checksum of existing download to resume
+    resume_download_checksum: str | None = None,
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
@@ -131,6 +131,7 @@ def save_dataset_to_disk(
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite existing files.
+        resume_download_checksum: Provide the checksum to resume a previously interrupted download.
     Returns:
         Path to the downloaded dataset archive.
     Raises:
@@ -141,10 +142,8 @@ def save_dataset_to_disk(
         requests.HTTPError: For other non-2xx responses.
     """
     download_plan = _get_download_plan(dataset_id, download_directory)
-    if resume_download and resume_download != download_plan.checksum:
+    if resume_download_checksum and resume_download_checksum != download_plan.checksum:
         raise ValueError("Cannot resume download, checksum does not match. This is likely because the dataset has been updated since the previous download attempt.")
-
-
 
     # Skip download if file already exists
     if download_plan.target_path.exists() and not overwrite_existing:
@@ -184,7 +183,7 @@ def load_dataset(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
-    resume_download: bool = False,
+    resume_download_checksum: str | None = None,
 ) -> pd.DataFrame:
     """
     Download (if needed), extract, and load the dataset into a pandas DataFrame.
@@ -195,6 +194,7 @@ def load_dataset(
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite existing files.
+        resume_download_checksum: Provide the checksum to resume a previously interrupted download.
     Returns:
         A pandas DataFrame with the loaded dataset.
     Raises:
@@ -209,7 +209,7 @@ def load_dataset(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
-        resume_download=resume_download,
+        resume_download_checksum=resume_download_checksum,
     )
     base_dir = _resolve_download_dir(download_directory)
     extract_dir = _extract_archive(archive_path, base_dir)
