@@ -66,7 +66,7 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
 
     download_url = payload.get("downloadUrl")
     filename = payload.get("filename")
-    size_bytes = int(payload.get("sizeBytes"))
+    size_bytes = payload.get("sizeBytes")
     checksum = payload.get("checksum")
     if not download_url or not filename or not size_bytes:
         raise RuntimeError(f"Unexpected response format: {payload}")
@@ -81,7 +81,7 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
         filename=filename,
         target_path=target_path,
         tmp_path=tmp_path,
-        size_bytes=size_bytes,
+        size_bytes=int(size_bytes),
         checksum=checksum,
     )
 
