@@ -72,5 +72,5 @@ def _extract_checksum_from_api_response(
     api_response: requests.Response,
 ) -> str | None:
     repr_digest = api_response.headers.get("Repr-Digest")
-    algo, digest, _ = tuple(repr_digest.split("=:"))
+    _, digest, _ = tuple(repr_digest.split("=:"))
     return base64.b64decode(digest).hex()
