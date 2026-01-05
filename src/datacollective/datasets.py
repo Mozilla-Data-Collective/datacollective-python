@@ -3,9 +3,9 @@ from __future__ import annotations
 import os
 import tarfile
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-from dataclasses import dataclass
 
 import pandas as pd
 from fox_progress_bar import ProgressBar
@@ -15,6 +15,7 @@ from datacollective.api_utils import (
     HTTP_TIMEOUT,
     _extract_checksum_from_api_response,
     _get_api_url,
+    _prepare_download_headers,
     api_request,
 )
 from datacollective.dataset_loading_scripts.registry import (
@@ -44,6 +45,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     resp = api_request("GET", url)
     return dict(resp.json())
 
+
 @dataclass
 class DownloadPlan:
     download_url: str
@@ -51,7 +53,10 @@ class DownloadPlan:
     target_path: Path
     tmp_path: Path
     size_bytes: int
-    checksum: str | None # Some datasets sadly will not have checksums yet - we should close this up when they all are guaranteed to
+    checksum: (
+        str | None
+    )  # Some datasets sadly will not have checksums yet - we should close this up when they all are guaranteed to
+
 
 def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
     if not dataset_id or not dataset_id.strip():
@@ -85,7 +90,12 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
         checksum=checksum,
     )
 
-def _execute_download_plan(download_plan: DownloadPlan, resume_download_checksum: str | None, show_progress: bool) -> None:
+
+def _execute_download_plan(
+    download_plan: DownloadPlan,
+    resume_download_checksum: str | None,
+    show_progress: bool,
+) -> None:
     """
     Execute the download plan, downloading the dataset to the temporary path.
     Args:
@@ -96,21 +106,14 @@ def _execute_download_plan(download_plan: DownloadPlan, resume_download_checksum
         DownloadError: If the download fails or is interrupted.
     """
 
-    headers: dict[str, str] = {}
-    existing_size = 0
-    if download_plan.tmp_path.exists():
-        if resume_download_checksum:
-            existing_size = download_plan.tmp_path.stat().st_size
-            headers["Range"] = f"bytes={existing_size}-"
-        else:
-            # Remove any existing temporary file if the download is not being resumed
-            download_plan.tmp_path.unlink()
-
+    headers, downloaded_bytes = _prepare_download_headers(
+        download_plan.tmp_path, resume_download_checksum
+    )
 
     progress_bar = None
     if show_progress:
         progress_bar = ProgressBar(download_plan.size_bytes)
-        progress_bar.update(existing_size)
+        progress_bar.update(downloaded_bytes)
         progress_bar._display()
     try:
         with api_request(
@@ -120,13 +123,14 @@ def _execute_download_plan(download_plan: DownloadPlan, resume_download_checksum
             timeout=HTTP_TIMEOUT,
             headers=headers,
         ) as response:
-            
             if download_plan.checksum:
                 # Only validate checksum if we have one to check against
                 checksum = _extract_checksum_from_api_response(response)
                 if checksum != download_plan.checksum:
-                    raise ValueError(f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum}).")
-            
+                    raise ValueError(
+                        f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum})."
+                    )
+
             print(f"Downloading dataset: {download_plan.filename}")
 
             with open(download_plan.tmp_path, "ab") as f:
@@ -134,14 +138,14 @@ def _execute_download_plan(download_plan: DownloadPlan, resume_download_checksum
                     if not chunk:
                         continue
                     f.write(chunk)
+                    downloaded_bytes = len(chunk)
                     if progress_bar:
-                        progress_bar.update(len(chunk))
+                        progress_bar.update(downloaded_bytes)
 
             if progress_bar:
                 progress_bar.finish()
     except (Exception, KeyboardInterrupt) as e:
-        downloaded = progress_bar.downloaded if progress_bar else existing_size
-        raise DownloadError(downloaded, download_plan.checksum) from e
+        raise DownloadError(downloaded_bytes, download_plan.checksum) from e
 
 
 def save_dataset_to_disk(
@@ -172,11 +176,18 @@ def save_dataset_to_disk(
     """
     download_plan = _get_download_plan(dataset_id, download_directory)
     if resume_download_checksum and resume_download_checksum != download_plan.checksum:
-        raise ValueError("Cannot resume download, checksum does not match. This is likely because the dataset has been updated since the previous download attempt.")
+        raise ValueError(
+            "Cannot resume download, checksum does not match. "
+            "This is likely because the dataset has been updated "
+            "since the previous download attempt."
+        )
 
     # Skip download if file already exists
     if download_plan.target_path.exists() and not overwrite_existing:
-        print(f"File already exists. Skipping download: `{str(download_plan.target_path)}`")
+        print(
+            f"File already exists. "
+            f"Skipping download: `{str(download_plan.target_path)}`"
+        )
         return Path(download_plan.target_path)
 
     _execute_download_plan(download_plan, resume_download_checksum, show_progress)
