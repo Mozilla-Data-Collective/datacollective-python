@@ -85,7 +85,33 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
         checksum=checksum,
     )
 
-def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBar | None, headers: dict[str, str]) -> None:
+def _execute_download_plan(download_plan: DownloadPlan, resume_download_checksum: str | None, show_progress: bool) -> None:
+    """
+    Execute the download plan, downloading the dataset to the temporary path.
+    Args:
+        download_plan: The DownloadPlan object with download details.
+        resume_download_checksum: Provide the checksum to resume a previously interrupted download.
+        show_progress: Whether to show a progress bar during download.
+    Raises:
+        DownloadError: If the download fails or is interrupted.
+    """
+
+    headers: dict[str, str] = {}
+    existing_size = 0
+    if download_plan.tmp_path.exists():
+        if resume_download_checksum:
+            existing_size = download_plan.tmp_path.stat().st_size
+            headers["Range"] = f"bytes={existing_size}-"
+        else:
+            # Remove any existing temporary file if the download is not being resumed
+            download_plan.tmp_path.unlink()
+
+
+    progress_bar = None
+    if show_progress:
+        progress_bar = ProgressBar(download_plan.size_bytes)
+        progress_bar.update(existing_size)
+        progress_bar._display()
     try:
         with api_request(
             "GET",
@@ -111,8 +137,11 @@ def _execute_download_plan(download_plan: DownloadPlan, progress_bar: ProgressBa
                     if progress_bar:
                         progress_bar.update(len(chunk))
 
+            if progress_bar:
+                progress_bar.finish()
     except (Exception, KeyboardInterrupt) as e:
-        raise DownloadError(progress_bar.downloaded, download_plan.checksum) from e
+        downloaded = progress_bar.downloaded if progress_bar else existing_size
+        raise DownloadError(downloaded, download_plan.checksum) from e
 
 
 def save_dataset_to_disk(
@@ -149,29 +178,8 @@ def save_dataset_to_disk(
     if download_plan.target_path.exists() and not overwrite_existing:
         print(f"File already exists. Skipping download: `{str(download_plan.target_path)}`")
         return Path(download_plan.target_path)
-    
-    
-    headers: dict[str, str] = {}
-    existing_size = 0
-    if download_plan.tmp_path.exists():
-        if resume_download:
-            existing_size = download_plan.tmp_path.stat().st_size
-            headers["Range"] = f"bytes={existing_size}-"
-        else:
-            # Remove any existing temporary file if the download is not being resumed
-            download_plan.tmp_path.unlink()
 
-    progress_bar = None
-    if show_progress:
-        progress_bar = ProgressBar(download_plan.size_bytes)
-        # Show initial progress bar with fox at the start
-        progress_bar.update(existing_size)
-        progress_bar._display()
-
-    _execute_download_plan(download_plan, progress_bar, headers)
-
-    if progress_bar:
-        progress_bar.finish()
+    _execute_download_plan(download_plan, resume_download_checksum, show_progress)
 
     download_plan.tmp_path.replace(download_plan.target_path)
     print(f"Saved dataset to `{str(download_plan.target_path)}`")
