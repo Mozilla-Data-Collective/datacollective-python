@@ -68,7 +68,7 @@ def _auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {_get_api_key()}"}
 
 
-def _extract_checksum_from_api_reponse(
+def _extract_checksum_from_api_response(
     api_response: requests.Response,
 ) -> str | None:
     repr_digest = api_response.headers.get("Repr-Digest")
