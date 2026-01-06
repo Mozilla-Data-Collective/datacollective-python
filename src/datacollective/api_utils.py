@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import os
 import base64
+import os
+from pathlib import Path
 from typing import Any
 
 import requests
@@ -68,9 +69,26 @@ def _auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {_get_api_key()}"}
 
 
-def _extract_checksum_from_api_reponse(
+def _extract_checksum_from_api_response(
     api_response: requests.Response,
 ) -> str | None:
     repr_digest = api_response.headers.get("Repr-Digest")
-    algo, digest, _ = tuple(repr_digest.split("=:"))
+    if not repr_digest:
+        return None
+    _, digest, _ = repr_digest.split("=:")
     return base64.b64decode(digest).hex()
+
+
+def _prepare_download_headers(
+    tmp_path: Path, resume_checksum: str | None
+) -> tuple[dict[str, str], int]:
+    """Prepare headers for download plan and determine existing file size for download."""
+    if not tmp_path.exists():  # invalid path
+        return {}, 0
+
+    if resume_checksum:
+        existing_size = tmp_path.stat().st_size
+        return {"Range": f"bytes={existing_size}-"}, existing_size
+
+    tmp_path.unlink()  # remove existing file if no resume checksum supplied
+    return {}, 0

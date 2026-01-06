@@ -1,4 +1,3 @@
-
 class DownloadError(Exception):
     """Exception raised when a download fails."""
 
@@ -13,6 +12,5 @@ class DownloadError(Exception):
 
     def __str__(self) -> str:
         if self.checksum:
-            return f"""Download failed with {self.downloaded_bytes} bytes written. Run again with resume_download="{self.checksum}" to resume."""
+            return f"""Download failed with {self.downloaded_bytes} bytes written. Run again with resume_download_checksum="{self.checksum}" to resume."""
         return "Download failed. Unfortunately this dataset does not support resuming downloads — please try again."
-        
