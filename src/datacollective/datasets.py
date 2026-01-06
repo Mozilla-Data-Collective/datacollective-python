@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tarfile
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -12,12 +13,15 @@ from fox_progress_bar import ProgressBar
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
     HTTP_TIMEOUT,
+    _extract_checksum_from_api_response,
     _get_api_url,
+    _prepare_download_headers,
     api_request,
 )
 from datacollective.dataset_loading_scripts.registry import (
     load_dataset_from_name_as_dataframe,
 )
+from datacollective.errors import DownloadError
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
@@ -42,30 +46,19 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     return dict(resp.json())
 
 
-def save_dataset_to_disk(
-    dataset_id: str,
-    download_directory: str | None = None,
-    show_progress: bool = True,
-    overwrite_existing: bool = False,
-) -> Path:
-    """
-    Download the dataset archive to a local directory and return the archive path.
-    Skips download if the target file already exists (unless `overwrite_existing=True`).
-    Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
-        download_directory: Directory where to save the downloaded dataset.
-            If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
-        show_progress: Whether to show a progress bar during download.
-        overwrite_existing: Whether to overwrite existing files.
-    Returns:
-        Path to the downloaded dataset archive.
-    Raises:
-        ValueError: If dataset_id is empty.
-        FileNotFoundError: If the dataset does not exist (404).
-        PermissionError: If access is denied (403) or download directory is not writable.
-        RuntimeError: If rate limit is exceeded (429) or unexpected response format.
-        requests.HTTPError: For other non-2xx responses.
-    """
+@dataclass
+class DownloadPlan:
+    download_url: str
+    filename: str
+    target_path: Path
+    tmp_path: Path
+    size_bytes: int
+    checksum: (
+        str | None
+    )  # Some datasets sadly will not have checksums yet - we should close this up when they all are guaranteed to
+
+
+def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
     if not dataset_id or not dataset_id.strip():
         raise ValueError("`dataset_id` must be a non-empty string")
 
@@ -78,47 +71,130 @@ def save_dataset_to_disk(
 
     download_url = payload.get("downloadUrl")
     filename = payload.get("filename")
-    if not download_url or not filename:
+    size_bytes = payload.get("sizeBytes")
+    checksum = payload.get("checksum")
+    if not download_url or not filename or not size_bytes:
         raise RuntimeError(f"Unexpected response format: {payload}")
 
     target_path = base_dir / filename
-    if target_path.exists() and not overwrite_existing:
-        print(f"File already exists. Skipping download: `{str(target_path)}`")
-        return Path(target_path)
 
     # Stream download to a temporary file for atomicity
     tmp_path = target_path.with_suffix(target_path.suffix + ".part")
 
-    with api_request(
-        "GET",
-        download_url,
-        stream=True,
-        timeout=HTTP_TIMEOUT,
-    ) as r:
-        total = int(r.headers.get("content-length", "0"))
+    return DownloadPlan(
+        download_url=download_url,
+        filename=filename,
+        target_path=target_path,
+        tmp_path=tmp_path,
+        size_bytes=int(size_bytes),
+        checksum=checksum,
+    )
 
-        if show_progress:
-            print(f"Downloading dataset: {filename}")
-            progress_bar = ProgressBar(total)
-            # Show initial progress bar with fox at the start
-            progress_bar._display()
-        else:
-            print(f"Downloading dataset: {filename}")
 
-        with open(tmp_path, "wb") as f:
-            for chunk in r.iter_content(chunk_size=1 << 16):
-                if not chunk:
-                    continue
-                f.write(chunk)
-                if show_progress:
-                    progress_bar.update(len(chunk))
+def _execute_download_plan(
+    download_plan: DownloadPlan,
+    resume_download_checksum: str | None,
+    show_progress: bool,
+) -> None:
+    """
+    Execute the download plan, downloading the dataset to the temporary path.
+    Args:
+        download_plan: The DownloadPlan object with download details.
+        resume_download_checksum: Provide the checksum to resume a previously interrupted download.
+        show_progress: Whether to show a progress bar during download.
+    Raises:
+        DownloadError: If the download fails or is interrupted.
+    """
 
+    headers, downloaded_bytes = _prepare_download_headers(
+        download_plan.tmp_path, resume_download_checksum
+    )
+
+    progress_bar = None
     if show_progress:
-        progress_bar.finish()
+        progress_bar = ProgressBar(download_plan.size_bytes)
+        progress_bar.update(downloaded_bytes)
+        progress_bar._display()
+    try:
+        with api_request(
+            "GET",
+            download_plan.download_url,
+            stream=True,
+            timeout=HTTP_TIMEOUT,
+            headers=headers,
+        ) as response:
+            if download_plan.checksum:
+                # Only validate checksum if we have one to check against
+                checksum = _extract_checksum_from_api_response(response)
+                if checksum != download_plan.checksum:
+                    raise ValueError(
+                        f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum})."
+                    )
 
-    tmp_path.replace(target_path)
-    print(f"Saved dataset to `{str(target_path)}`")
-    return Path(target_path)
+            print(f"Downloading dataset: {download_plan.filename}")
+
+            with open(download_plan.tmp_path, "ab") as f:
+                for chunk in response.iter_content(chunk_size=1 << 16):
+                    if not chunk:
+                        continue
+                    f.write(chunk)
+                    downloaded_bytes = len(chunk)
+                    if progress_bar:
+                        progress_bar.update(downloaded_bytes)
+
+            if progress_bar:
+                progress_bar.finish()
+    except (Exception, KeyboardInterrupt) as e:
+        raise DownloadError(downloaded_bytes, download_plan.checksum) from e
+
+
+def save_dataset_to_disk(
+    dataset_id: str,
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
+    resume_download_checksum: str | None = None,
+) -> Path:
+    """
+    Download the dataset archive to a local directory and return the archive path.
+    Skips download if the target file already exists (unless `overwrite_existing=True`).
+    Args:
+        dataset_id: The dataset ID (as shown in MDC platform).
+        download_directory: Directory where to save the downloaded dataset.
+            If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
+        show_progress: Whether to show a progress bar during download.
+        overwrite_existing: Whether to overwrite existing files.
+        resume_download_checksum: Provide the checksum to resume a previously interrupted download.
+    Returns:
+        Path to the downloaded dataset archive.
+    Raises:
+        ValueError: If dataset_id is empty.
+        FileNotFoundError: If the dataset does not exist (404).
+        PermissionError: If access is denied (403) or download directory is not writable.
+        RuntimeError: If rate limit is exceeded (429) or unexpected response format.
+        requests.HTTPError: For other non-2xx responses.
+    """
+    download_plan = _get_download_plan(dataset_id, download_directory)
+    if resume_download_checksum and resume_download_checksum != download_plan.checksum:
+        raise ValueError(
+            "Cannot resume download, checksum does not match. "
+            "This is likely because the dataset has been updated "
+            "since the previous download attempt."
+        )
+
+    # Skip download if file already exists
+    if download_plan.target_path.exists() and not overwrite_existing:
+        print(
+            f"File already exists. "
+            f"Skipping download: `{str(download_plan.target_path)}`"
+        )
+        return Path(download_plan.target_path)
+
+    _execute_download_plan(download_plan, resume_download_checksum, show_progress)
+
+    download_plan.tmp_path.replace(download_plan.target_path)
+    print(f"Saved dataset to `{str(download_plan.target_path)}`")
+    return Path(download_plan.target_path)
 
 
 def load_dataset(
@@ -126,6 +202,7 @@ def load_dataset(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
+    resume_download_checksum: str | None = None,
 ) -> pd.DataFrame:
     """
     Download (if needed), extract, and load the dataset into a pandas DataFrame.
@@ -136,6 +213,7 @@ def load_dataset(
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite existing files.
+        resume_download_checksum: Provide the checksum to resume a previously interrupted download.
     Returns:
         A pandas DataFrame with the loaded dataset.
     Raises:
@@ -150,6 +228,7 @@ def load_dataset(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        resume_download_checksum=resume_download_checksum,
     )
     base_dir = _resolve_download_dir(download_directory)
     extract_dir = _extract_archive(archive_path, base_dir)
