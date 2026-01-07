@@ -51,6 +51,10 @@ from datacollective import save_dataset_to_disk
 dataset_path = save_dataset_to_disk("your-dataset-id")
 ```
 
+> [!TIP]
+> **Automatic Resume:** If a download is interrupted (e.g., due to a network error or it gets stopped it manually), the next time you try download the same dataset at the same folder location, we will automatically resume from where the download left off!
+
+
 5. **Get information & metadata about a dataset**:
 
 ```

@@ -125,6 +125,35 @@ info = get_dataset_info("your-dataset-id")
 print(info)
 ```
 
+### Automatic Download Resume
+
+The SDK automatically handles interrupted downloads. If a download is interrupted
+for any reason (network error, user cancellation, system shutdown, etc.), the SDK
+will automatically resume from where it left off when you call `save_dataset_to_disk`
+or `load_dataset` again.
+
+**How it works:**
+
+1. When a download starts, the SDK creates a `.checksum` file alongside the partial
+   download (`.part` file) to track the download state.
+2. If the download is interrupted, both files are preserved.
+3. On the next download attempt, the SDK detects the partial download and resumes
+   from the last byte received.
+4. Once the download completes successfully, the temporary files are automatically
+   cleaned up.
+
+> [!TIP]
+> You don't need to do anything special to enable resume functionality, it works
+> automatically. Just call the same function again after an interruption.
+
+**Edge cases handled:**
+
+- If the dataset has been updated since the interrupted download, the SDK detects
+  the checksum mismatch and starts a fresh download.
+- If only partial files exist without proper tracking data, the SDK safely starts
+  a fresh download.
+
+
 ## API Reference
 
 For a detailed API reference, see the [API Reference](api.md) section of the documentation.
