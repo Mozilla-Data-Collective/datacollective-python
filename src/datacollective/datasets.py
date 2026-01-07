@@ -50,8 +50,8 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
 class DownloadPlan:
     download_url: str
     filename: str
-    target_path: Path
-    tmp_path: Path
+    target_filepath: Path
+    tmp_filepath: Path
     size_bytes: int
     checksum: (
         str | None
@@ -59,6 +59,27 @@ class DownloadPlan:
 
 
 def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
+    """
+    Create a download plan object for the given dataset ID that includes:
+    - a valid download URL created by the API for this download session
+    - the filename for the dataset archive
+    - the final target filepath on disk where the archive will be saved
+    - a temporary path for atomic download
+    - the size of the dataset in bytes
+    - the checksum of the dataset
+    Args:
+        dataset_id: The dataset ID (as shown in MDC platform).
+        download_directory: Directory where to save the downloaded dataset.
+            If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
+    Returns:
+        A DownloadPlan object with download details.
+    Raises:
+        ValueError: If dataset_id is empty.
+        FileNotFoundError: If the dataset does not exist (404).
+        PermissionError: If access is denied (403) or download directory is not writable.
+        RuntimeError: If rate limit is exceeded (429) or unexpected response format.
+        requests.HTTPError: For other non-2xx responses.
+    """
     if not dataset_id or not dataset_id.strip():
         raise ValueError("`dataset_id` must be a non-empty string")
 
@@ -76,16 +97,16 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
     if not download_url or not filename or not size_bytes:
         raise RuntimeError(f"Unexpected response format: {payload}")
 
-    target_path = base_dir / filename
+    target_filepath = base_dir / filename
 
     # Stream download to a temporary file for atomicity
-    tmp_path = target_path.with_suffix(target_path.suffix + ".part")
+    tmp_filepath = target_filepath.with_suffix(target_filepath.suffix + ".part")
 
     return DownloadPlan(
         download_url=download_url,
         filename=filename,
-        target_path=target_path,
-        tmp_path=tmp_path,
+        target_filepath=target_filepath,
+        tmp_filepath=tmp_filepath,
         size_bytes=int(size_bytes),
         checksum=checksum,
     )
@@ -107,7 +128,7 @@ def _execute_download_plan(
     """
 
     headers, downloaded_bytes = _prepare_download_headers(
-        download_plan.tmp_path, resume_download_checksum
+        download_plan.tmp_filepath, resume_download_checksum
     )
 
     progress_bar = None
@@ -133,7 +154,7 @@ def _execute_download_plan(
 
             print(f"Downloading dataset: {download_plan.filename}")
 
-            with open(download_plan.tmp_path, "ab") as f:
+            with open(download_plan.tmp_filepath, "ab") as f:
                 for chunk in response.iter_content(chunk_size=1 << 16):
                     if not chunk:
                         continue
@@ -183,18 +204,18 @@ def save_dataset_to_disk(
         )
 
     # Skip download if file already exists
-    if download_plan.target_path.exists() and not overwrite_existing:
+    if download_plan.target_filepath.exists() and not overwrite_existing:
         print(
             f"File already exists. "
-            f"Skipping download: `{str(download_plan.target_path)}`"
+            f"Skipping download: `{str(download_plan.target_filepath)}`"
         )
-        return Path(download_plan.target_path)
+        return Path(download_plan.target_filepath)
 
     _execute_download_plan(download_plan, resume_download_checksum, show_progress)
 
-    download_plan.tmp_path.replace(download_plan.target_path)
-    print(f"Saved dataset to `{str(download_plan.target_path)}`")
-    return Path(download_plan.target_path)
+    download_plan.tmp_filepath.replace(download_plan.target_filepath)
+    print(f"Saved dataset to `{str(download_plan.target_filepath)}`")
+    return Path(download_plan.target_filepath)
 
 
 def load_dataset(
