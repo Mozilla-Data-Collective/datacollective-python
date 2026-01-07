@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
+import requests
 from fox_progress_bar import ProgressBar
 
 from datacollective.api_utils import (
@@ -116,19 +117,20 @@ def _execute_download_plan(
         progress_bar.update(downloaded_bytes)
         progress_bar._display()
     try:
-        with api_request(
-            "GET",
+        # No need to call api_request here since its a presigned URL and does not need auth headers
+        with requests.get(
             download_plan.download_url,
             stream=True,
             timeout=HTTP_TIMEOUT,
             headers=headers,
         ) as response:
+            response.raise_for_status()
+            # Validate checksum if both expected checksum and response checksum exist.
             if download_plan.checksum:
-                # Only validate checksum if we have one to check against
-                checksum = _extract_checksum_from_api_response(response)
-                if checksum != download_plan.checksum:
+                response_checksum = _extract_checksum_from_api_response(response)
+                if response_checksum != download_plan.checksum:
                     raise ValueError(
-                        f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum})."
+                        f"Checksum from server ({response_checksum}) does not match expected checksum for dataset ({download_plan.checksum})."
                     )
 
             print(f"Downloading dataset: {download_plan.filename}")
