@@ -1,18 +1,18 @@
-from fox_progress_bar import ProgressBar
-from dataclasses import dataclass
 import os
-
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from fox_progress_bar import ProgressBar
+
 from datacollective.api_utils import (
-    HTTP_TIMEOUT,
     ENV_DOWNLOAD_PATH,
+    HTTP_TIMEOUT,
     _extract_checksum_from_api_response,
     _get_api_url,
     _prepare_download_headers,
     api_request,
 )
-
 from datacollective.errors import DownloadError
 
 
@@ -28,14 +28,14 @@ class DownloadPlan:
     )  # Some datasets sadly will not have checksums yet - we should close this up when they all are guaranteed to
 
 
-def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
+def get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
     """
     Create a download plan object for the given dataset ID that includes:
-    - a valid download URL created by the API for this download session
-    - the filename for the dataset archive
+    - a download session URL created by the API
+    - the filename for the dataset archive defined by the API
     - the final target filepath on disk where the archive will be saved
     - a temporary path for atomic download
-    - the size of the dataset in bytes
+    - the size of the dataset archive in bytes
     - the checksum of the dataset
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
@@ -53,7 +53,7 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
     if not dataset_id or not dataset_id.strip():
         raise ValueError("`dataset_id` must be a non-empty string")
 
-    base_dir = _resolve_download_dir(download_directory)
+    base_dir = resolve_download_dir(download_directory)
 
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
@@ -70,7 +70,7 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
     target_filepath = base_dir / filename
 
     # Stream download to a temporary file for atomicity
-    tmp_filepath = target_filepath.with_suffix(target_filepath.suffix + ".part")
+    tmp_filepath = target_filepath.with_name(target_filepath.name + ".part")
 
     return DownloadPlan(
         download_url=download_url,
@@ -82,13 +82,68 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
     )
 
 
-def _execute_download_plan(
+def determine_resume_state(download_plan: DownloadPlan) -> str | None:
+    """
+    Determine whether to resume a download based on existing files.
+
+    Returns:
+        resume_checksum: The checksum to use for resumption, or None if starting fresh.
+
+    Cases handled:
+        Case 1: .checksum and .part exist, checksum matches -> resume download.
+        Case 2: .checksum and .part exist, checksum does NOT match -> start fresh.
+        Case 3: .part exists but no .checksum -> start fresh (cannot safely resume).
+        Case 4: .checksum exists but no .part -> start fresh (orphaned checksum).
+        Case 5: Neither .checksum nor .part exist -> start fresh.
+    """
+    checksum_filepath = get_checksum_filepath(download_plan.target_filepath)
+    tmp_filepath = download_plan.tmp_filepath
+
+    part_exists = tmp_filepath.exists()
+    checksum_file_exists = checksum_filepath.exists()
+    stored_checksum = (
+        _read_checksum_file(checksum_filepath) if checksum_file_exists else None
+    )
+
+    # Case 1: Both .part and .checksum exist
+    if part_exists and checksum_file_exists and stored_checksum:
+        if stored_checksum == download_plan.checksum:
+            # Checksum matches -> resume download
+            print("Resuming previously interrupted download...")
+            return stored_checksum
+        else:
+            # Case 2: Checksum does not match, i.e. dataset was updated -> start fresh
+            print(
+                "Dataset has been updated since the previous download attempt. "
+                "Starting fresh download..."
+            )
+            cleanup_partial_download(tmp_filepath, checksum_filepath)
+            return None
+
+    # Case 3: .part exists but no .checksum: cannot safely resume -> start fresh
+    if part_exists and not checksum_file_exists:
+        print(
+            "Partial download found without checksum file. Starting fresh download..."
+        )
+        cleanup_partial_download(tmp_filepath, checksum_filepath)
+        return None
+
+    # Case 4: .checksum exists but no .part -> start fresh
+    if checksum_file_exists and not part_exists:
+        cleanup_partial_download(tmp_filepath, checksum_filepath)
+        return None
+
+    # Case 5: Neither .checksum nor .part exist -> start fresh
+    return None
+
+
+def execute_download_plan(
     download_plan: DownloadPlan,
     resume_download_checksum: str | None,
     show_progress: bool,
 ) -> None:
     """
-    Execute the download plan, downloading the dataset to the temporary path.
+    Execute the download plan, downloading the dataset to a temporary path.
     Args:
         download_plan: The DownloadPlan object with download details.
         resume_download_checksum: Provide the checksum to resume a previously interrupted download.
@@ -139,7 +194,7 @@ def _execute_download_plan(
         raise DownloadError(downloaded_bytes, download_plan.checksum) from e
 
 
-def _resolve_download_dir(download_directory: str | None) -> Path:
+def resolve_download_dir(download_directory: str | None) -> Path:
     """
     Resolve and ensure the download directory exists and is writable.
 
@@ -159,3 +214,28 @@ def _resolve_download_dir(download_directory: str | None) -> Path:
     if not os.access(p, os.W_OK):
         raise PermissionError(f"Directory `{str(p)}` is not writable")
     return p
+
+
+def get_checksum_filepath(target_filepath: Path) -> Path:
+    """Return the path to the .checksum file for a given target file."""
+    return target_filepath.with_suffix(target_filepath.suffix + ".checksum")
+
+
+def write_checksum_file(checksum_filepath: Path, checksum: str) -> None:
+    """Write the checksum to the .checksum file."""
+    checksum_filepath.write_text(checksum)
+
+
+def _read_checksum_file(checksum_filepath: Path) -> str | None:
+    """Read the checksum from the .checksum file, or None if it doesn't exist."""
+    if not checksum_filepath.exists():
+        return None
+    return checksum_filepath.read_text().strip()
+
+
+def cleanup_partial_download(tmp_filepath: Path, checksum_filepath: Path) -> None:
+    """Remove partial download files (.part and .checksum)."""
+    if tmp_filepath.exists():
+        tmp_filepath.unlink()
+    if checksum_filepath.exists():
+        checksum_filepath.unlink()

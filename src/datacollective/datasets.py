@@ -14,7 +14,15 @@ from datacollective.api_utils import (
 from datacollective.dataset_loading_scripts.registry import (
     load_dataset_from_name_as_dataframe,
 )
-from datacollective.errors import DownloadError
+from datacollective.download import (
+    cleanup_partial_download,
+    determine_resume_state,
+    execute_download_plan,
+    get_checksum_filepath,
+    get_download_plan,
+    resolve_download_dir,
+    write_checksum_file,
+)
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
@@ -44,18 +52,18 @@ def save_dataset_to_disk(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
-    resume_download_checksum: str | None = None,
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
     Skips download if the target file already exists (unless `overwrite_existing=True`).
+    Automatically resumes interrupted downloads if a matching .checksum file exists from a
+    previous attempt.
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
         download_directory: Directory where to save the downloaded dataset.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite existing files.
-        resume_download_checksum: Provide the checksum to resume a previously interrupted download.
     Returns:
         Path to the downloaded dataset archive.
     Raises:
@@ -65,15 +73,10 @@ def save_dataset_to_disk(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    download_plan = _get_download_plan(dataset_id, download_directory)
-    if resume_download_checksum and resume_download_checksum != download_plan.checksum:
-        raise ValueError(
-            "Cannot resume download, checksum does not match. "
-            "This is likely because the dataset has been updated "
-            "since the previous download attempt."
-        )
+    download_plan = get_download_plan(dataset_id, download_directory)
+    checksum_filepath = get_checksum_filepath(download_plan.target_filepath)
 
-    # Skip download if file already exists
+    # Case 1: Skip download if complete dataset archive already exists
     if download_plan.target_filepath.exists() and not overwrite_existing:
         print(
             f"File already exists. "
@@ -81,9 +84,26 @@ def save_dataset_to_disk(
         )
         return Path(download_plan.target_filepath)
 
-    _execute_download_plan(download_plan, resume_download_checksum, show_progress)
+    # If overwriting, clean up any existing complete or partial download files
+    if overwrite_existing:
+        cleanup_partial_download(download_plan.tmp_filepath, checksum_filepath)
+        if download_plan.target_filepath.exists():
+            download_plan.target_filepath.unlink()
 
+    # Determine whether to resume download based on existing .checksum and .part files
+    resume_checksum = determine_resume_state(download_plan)
+
+    # Write checksum file before starting download (for potential resume later)
+    if download_plan.checksum and not resume_checksum:
+        write_checksum_file(checksum_filepath, download_plan.checksum)
+
+    execute_download_plan(download_plan, resume_checksum, show_progress)
+
+    # Download complete. Rename temp file to target and remove checksum file
     download_plan.tmp_filepath.replace(download_plan.target_filepath)
+    if checksum_filepath.exists():
+        checksum_filepath.unlink()
+
     print(f"Saved dataset to `{str(download_plan.target_filepath)}`")
     return Path(download_plan.target_filepath)
 
@@ -93,18 +113,18 @@ def load_dataset(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
-    resume_download_checksum: str | None = None,
 ) -> pd.DataFrame:
     """
     Download (if needed), extract, and load the dataset into a pandas DataFrame.
     Uses dataset `details['name']` to check in registry.py for dataset-specific loading logic.
+    Automatically resumes interrupted downloads if a .checksum file exists from a
+    previous attempt.
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
         download_directory: Directory where to save the downloaded dataset.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite existing files.
-        resume_download_checksum: Provide the checksum to resume a previously interrupted download.
     Returns:
         A pandas DataFrame with the loaded dataset.
     Raises:
@@ -119,37 +139,14 @@ def load_dataset(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
-        resume_download_checksum=resume_download_checksum,
     )
-    base_dir = _resolve_download_dir(download_directory)
+    base_dir = resolve_download_dir(download_directory)
     extract_dir = _extract_archive(archive_path, base_dir)
 
     details = get_dataset_details(dataset_id)
     dataset_name = str(details.get("name", "")).lower()
 
     return load_dataset_from_name_as_dataframe(dataset_name, extract_dir)
-
-
-def _resolve_download_dir(download_directory: str | None) -> Path:
-    """
-    Resolve and ensure the download directory exists and is writable.
-
-    Args:
-        download_directory (str | None): User-specified download directory.
-            If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
-
-    Returns:
-        The resolved Path object for the download directory.
-    """
-    if download_directory and download_directory.strip():
-        base = download_directory
-    else:
-        base = os.getenv(ENV_DOWNLOAD_PATH, "~/.mozdata/datasets")
-    p = Path(os.path.expanduser(base))
-    p.mkdir(parents=True, exist_ok=True)
-    if not os.access(p, os.W_OK):
-        raise PermissionError(f"Directory `{str(p)}` is not writable")
-    return p
 
 
 def _strip_archive_suffix(path: Path) -> Path:
