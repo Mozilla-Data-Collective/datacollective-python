@@ -31,19 +31,20 @@ class DownloadPlan:
 
 def get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
     """
-    Create a download plan object for the given dataset ID that includes:
-    - a download session URL created by the API
-    - the filename for the dataset archive defined by the API
-    - the final target filepath on disk where the archive will be saved
-    - a temporary path for atomic download
-    - the size of the dataset archive in bytes
-    - the checksum of the dataset
+    Send a POST request to the API to receive the download session details for a dataset.
+
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
         download_directory: Directory where to save the downloaded dataset.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
     Returns:
-        A DownloadPlan object with download details.
+        a DownloadPlan containing:
+        - a download session URL created by the API
+        - the filename for the dataset archive defined by the API
+        - the final target filepath on disk where the archive will be saved
+        - a temporary path for atomic download
+        - the size of the dataset archive in bytes
+        - the checksum of the dataset
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
@@ -157,14 +158,15 @@ def execute_download_plan(
         DownloadError: If the download fails or is interrupted.
     """
 
-    headers, downloaded_bytes = _prepare_download_headers(
+    headers, downloaded_bytes_so_far = _prepare_download_headers(
         download_plan.tmp_filepath, resume_download_checksum
     )
 
     progress_bar = None
+    print(f"Downloading dataset: {download_plan.filename}")
     if show_progress:
         progress_bar = ProgressBar(download_plan.size_bytes)
-        progress_bar.update(downloaded_bytes)
+        progress_bar.update(downloaded_bytes_so_far)
         progress_bar._display()
     try:
         with api_request(
@@ -182,21 +184,28 @@ def execute_download_plan(
                         f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum})."
                     )
 
-            print(f"Downloading dataset: {download_plan.filename}")
-
             with open(download_plan.tmp_filepath, "ab") as f:
+                session_downloaded_bytes = 0
+                total_downloaded_bytes = downloaded_bytes_so_far
                 for chunk in response.iter_content(chunk_size=1 << 16):
                     if not chunk:
                         continue
                     f.write(chunk)
-                    downloaded_bytes = len(chunk)
+                    downloaded_bytes_so_far = len(chunk)
+                    session_downloaded_bytes += downloaded_bytes_so_far
+                    total_downloaded_bytes += downloaded_bytes_so_far
                     if progress_bar:
-                        progress_bar.update(downloaded_bytes)
+                        progress_bar.update(downloaded_bytes_so_far)
 
             if progress_bar:
                 progress_bar.finish()
     except (Exception, KeyboardInterrupt) as e:
-        raise DownloadError(downloaded_bytes, download_plan.checksum) from e
+        raise DownloadError(
+            session_downloaded_bytes,
+            total_downloaded_bytes,
+            download_plan.size_bytes,
+            download_plan.checksum,
+        ) from e
 
 
 def resolve_download_dir(download_directory: str | None) -> Path:
