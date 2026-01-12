@@ -9,7 +9,6 @@ from requests import HTTPError
 from datacollective import get_dataset_details, load_dataset, save_dataset_to_disk
 from datacollective.api_utils import _prepare_download_headers, api_request
 from datacollective.download import (
-    get_checksum_filepath,
     get_download_plan,
     write_checksum_file,
 )
@@ -98,11 +97,10 @@ def test_resume_download(
     try:
         # Get download plan to know the expected checksum and file paths
         plan = get_download_plan(dataset_id, str(tmp_path))
-        checksum_filepath = get_checksum_filepath(plan.target_filepath)
 
         # Write the checksum file (as save_dataset_to_disk would do before downloading)
         if plan.checksum:
-            write_checksum_file(checksum_filepath, plan.checksum)
+            write_checksum_file(plan.checksum_filepath, plan.checksum)
 
         # Start a real download but interrupt it after downloading some bytes
         # We'll download only a portion by manually streaming and stopping early
@@ -134,7 +132,7 @@ def test_resume_download(
         assert plan.tmp_filepath.exists(), (
             "Part file should exist after partial download"
         )
-        assert checksum_filepath.exists(), "Checksum file should exist"
+        assert plan.checksum_filepath.exists(), "Checksum file should exist"
         partial_size = plan.tmp_filepath.stat().st_size
         assert partial_size > 0, "Part file should have some content"
         assert partial_size < plan.size_bytes, (
@@ -161,7 +159,7 @@ def test_resume_download(
         "Final file should be complete"
     )
     # Cleanup files should be gone
-    assert not checksum_filepath.exists(), (
+    assert not plan.checksum_filepath.exists(), (
         "Checksum file should be removed after completion"
     )
     assert not plan.tmp_filepath.exists(), (

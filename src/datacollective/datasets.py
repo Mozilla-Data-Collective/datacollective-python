@@ -18,7 +18,6 @@ from datacollective.download import (
     cleanup_partial_download,
     determine_resume_state,
     execute_download_plan,
-    get_checksum_filepath,
     get_download_plan,
     resolve_download_dir,
     write_checksum_file,
@@ -74,7 +73,6 @@ def save_dataset_to_disk(
         requests.HTTPError: For other non-2xx responses.
     """
     download_plan = get_download_plan(dataset_id, download_directory)
-    checksum_filepath = get_checksum_filepath(download_plan.target_filepath)
 
     # Case 1: Skip download if complete dataset archive already exists
     if download_plan.target_filepath.exists() and not overwrite_existing:
@@ -86,7 +84,9 @@ def save_dataset_to_disk(
 
     # If overwriting, clean up any existing complete or partial download files
     if overwrite_existing:
-        cleanup_partial_download(download_plan.tmp_filepath, checksum_filepath)
+        cleanup_partial_download(
+            download_plan.tmp_filepath, download_plan.checksum_filepath
+        )
         if download_plan.target_filepath.exists():
             download_plan.target_filepath.unlink()
 
@@ -95,14 +95,14 @@ def save_dataset_to_disk(
 
     # Write checksum file before starting download (for potential resume later)
     if download_plan.checksum and not resume_checksum:
-        write_checksum_file(checksum_filepath, download_plan.checksum)
+        write_checksum_file(download_plan.checksum_filepath, download_plan.checksum)
 
     execute_download_plan(download_plan, resume_checksum, show_progress)
 
     # Download complete. Rename temp file to target and remove checksum file
     download_plan.tmp_filepath.replace(download_plan.target_filepath)
-    if checksum_filepath.exists():
-        checksum_filepath.unlink()
+    if download_plan.checksum_filepath.exists():
+        download_plan.checksum_filepath.unlink()
 
     print(f"Saved dataset to `{str(download_plan.target_filepath)}`")
     return Path(download_plan.target_filepath)

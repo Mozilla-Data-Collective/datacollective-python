@@ -26,6 +26,7 @@ class DownloadPlan:
     checksum: (
         str | None
     )  # Some datasets sadly will not have checksums yet - we should close this up when they all are guaranteed to
+    checksum_filepath: Path
 
 
 def get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
@@ -72,6 +73,8 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
     # Stream download to a temporary file for atomicity
     tmp_filepath = target_filepath.with_name(target_filepath.name + ".part")
 
+    checksum_filepath = _get_checksum_filepath(target_filepath)
+
     return DownloadPlan(
         download_url=download_url,
         filename=filename,
@@ -79,6 +82,7 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
         tmp_filepath=tmp_filepath,
         size_bytes=int(size_bytes),
         checksum=checksum,
+        checksum_filepath=checksum_filepath,
     )
 
 
@@ -96,13 +100,14 @@ def determine_resume_state(download_plan: DownloadPlan) -> str | None:
         Case 4: .checksum exists but no .part -> start fresh (orphaned checksum).
         Case 5: Neither .checksum nor .part exist -> start fresh.
     """
-    checksum_filepath = get_checksum_filepath(download_plan.target_filepath)
     tmp_filepath = download_plan.tmp_filepath
 
     part_exists = tmp_filepath.exists()
-    checksum_file_exists = checksum_filepath.exists()
+    checksum_file_exists = download_plan.checksum_filepath.exists()
     stored_checksum = (
-        _read_checksum_file(checksum_filepath) if checksum_file_exists else None
+        _read_checksum_file(download_plan.checksum_filepath)
+        if checksum_file_exists
+        else None
     )
 
     # Case 1: Both .part and .checksum exist
@@ -117,7 +122,7 @@ def determine_resume_state(download_plan: DownloadPlan) -> str | None:
                 "Dataset has been updated since the previous download attempt. "
                 "Starting fresh download..."
             )
-            cleanup_partial_download(tmp_filepath, checksum_filepath)
+            cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
             return None
 
     # Case 3: .part exists but no .checksum: cannot safely resume -> start fresh
@@ -125,12 +130,12 @@ def determine_resume_state(download_plan: DownloadPlan) -> str | None:
         print(
             "Partial download found without checksum file. Starting fresh download..."
         )
-        cleanup_partial_download(tmp_filepath, checksum_filepath)
+        cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
         return None
 
     # Case 4: .checksum exists but no .part -> start fresh
     if checksum_file_exists and not part_exists:
-        cleanup_partial_download(tmp_filepath, checksum_filepath)
+        cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
         return None
 
     # Case 5: Neither .checksum nor .part exist -> start fresh
@@ -216,7 +221,7 @@ def resolve_download_dir(download_directory: str | None) -> Path:
     return p
 
 
-def get_checksum_filepath(target_filepath: Path) -> Path:
+def _get_checksum_filepath(target_filepath: Path) -> Path:
     """Return the path to the .checksum file for a given target file."""
     return target_filepath.with_suffix(target_filepath.suffix + ".checksum")
 
