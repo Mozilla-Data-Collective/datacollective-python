@@ -54,9 +54,7 @@ class DownloadPlan:
     target_path: Path
     tmp_path: Path
     size_bytes: int
-    checksum: (
-        str | None
-    )  # Some datasets sadly will not have checksums yet - we should close this up when they all are guaranteed to
+    checksum: str | None
 
 
 def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
@@ -117,7 +115,6 @@ def _execute_download_plan(
         progress_bar.update(downloaded_bytes)
         progress_bar._display()
     try:
-        # No need to call api_request here since its a presigned URL and does not need auth headers
         with requests.get(
             download_plan.download_url,
             stream=True,
