@@ -13,10 +13,10 @@ from fox_progress_bar import ProgressBar
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
     HTTP_TIMEOUT,
-    _extract_checksum_from_api_response,
+    _auth_headers,
     _get_api_url,
     _prepare_download_headers,
-    api_request,
+    send_api_request,
 )
 from datacollective.dataset_loading_scripts.registry import (
     load_dataset_from_name_as_dataframe,
@@ -42,7 +42,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
         raise ValueError("`dataset_id` must be a non-empty string")
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
-    resp = api_request("GET", url)
+    resp = send_api_request(method="GET", url=url, headers=_auth_headers())
     return dict(resp.json())
 
 
@@ -53,9 +53,7 @@ class DownloadPlan:
     target_path: Path
     tmp_path: Path
     size_bytes: int
-    checksum: (
-        str | None
-    )  # Some datasets sadly will not have checksums yet - we should close this up when they all are guaranteed to
+    checksum: str | None
 
 
 def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
@@ -66,7 +64,7 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
 
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    resp = api_request("POST", session_url)
+    resp = send_api_request(method="POST", url=session_url, headers=_auth_headers())
     payload: dict[str, Any] = dict(resp.json())
 
     download_url = payload.get("downloadUrl")
@@ -106,7 +104,7 @@ def _execute_download_plan(
         DownloadError: If the download fails or is interrupted.
     """
 
-    headers, downloaded_bytes = _prepare_download_headers(
+    resume_headers, downloaded_bytes = _prepare_download_headers(
         download_plan.tmp_path, resume_download_checksum
     )
 
@@ -116,21 +114,13 @@ def _execute_download_plan(
         progress_bar.update(downloaded_bytes)
         progress_bar._display()
     try:
-        with api_request(
-            "GET",
-            download_plan.download_url,
+        with send_api_request(
+            method="GET",
+            url=download_plan.download_url,
             stream=True,
             timeout=HTTP_TIMEOUT,
-            headers=headers,
+            headers=resume_headers,
         ) as response:
-            if download_plan.checksum:
-                # Only validate checksum if we have one to check against
-                checksum = _extract_checksum_from_api_response(response)
-                if checksum != download_plan.checksum:
-                    raise ValueError(
-                        f"Checksum from server ({checksum}) does not match expected checksum for dataset ({download_plan.checksum})."
-                    )
-
             print(f"Downloading dataset: {download_plan.filename}")
 
             with open(download_plan.tmp_path, "ab") as f:
