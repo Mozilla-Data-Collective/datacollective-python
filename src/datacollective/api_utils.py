@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import base64
 import os
 from pathlib import Path
 from typing import Any
@@ -67,16 +66,6 @@ def _get_api_key() -> str:
 
 def _auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {_get_api_key()}"}
-
-
-def _extract_checksum_from_api_response(
-    api_response: requests.Response,
-) -> str | None:
-    repr_digest = api_response.headers.get("Repr-Digest")
-    if not repr_digest:
-        return None
-    _, digest, _ = repr_digest.split("=:")
-    return base64.b64decode(digest).hex()
 
 
 def _prepare_download_headers(
