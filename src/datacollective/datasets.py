@@ -8,6 +8,7 @@ from typing import Any
 
 import pandas as pd
 from fox_progress_bar import ProgressBar
+import requests
 
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
@@ -89,10 +90,10 @@ def save_dataset_to_disk(
     # Stream download to a temporary file for atomicity
     tmp_path = target_path.with_suffix(target_path.suffix + ".part")
 
-    with api_request(
-        "GET",
-        download_url,
-        stream=True,
+
+    with requests.request(
+        method="GET",
+        url=download_url,
         timeout=HTTP_TIMEOUT,
     ) as r:
         total = int(r.headers.get("content-length", "0"))
