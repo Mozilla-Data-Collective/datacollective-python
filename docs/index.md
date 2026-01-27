@@ -17,16 +17,14 @@ Install from PyPI:
 pip install datacollective
 ```
 
-You can also use uv or other Python tooling as desired, as long as the package datacollective is installed in your environment.
-
 
 ## Getting an API Key
 
 To use the Mozilla Data Collective API, you need an API key:
 
-1. Sign in to the Mozilla Data Collective dashboard.
-2. Create or retrieve an API key from your account/settings page.
-3. Keep your key secret and do not commit it to version control.
+1. Sign up to the [Mozilla Data Collective](https://datacollective.mozillafoundation.org/) platform.
+2. Create or retrieve an API key from your Account -> Credentials page.
+3. Store your key secret in a `.env` file and do not commit it to version control (git).
 
 ## Configuration
 
