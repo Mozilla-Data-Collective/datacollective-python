@@ -171,11 +171,11 @@ def execute_download_plan(
         progress_bar._display()
     try:
         with send_api_request(
-            "GET",
-            download_plan.download_url,
+            method="GET",
+            url=download_plan.download_url,
             stream=True,
             timeout=HTTP_TIMEOUT,
-            headers=headers,
+            extra_headers=headers,
             include_auth_headers=False,
         ) as response:
             with open(download_plan.tmp_filepath, "ab") as f:

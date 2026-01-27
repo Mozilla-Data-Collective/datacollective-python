@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 import platform
 from pathlib import Path
-from typing import Any
 
 import requests
 
@@ -19,41 +18,52 @@ RATE_LIMIT_ERROR = "Rate limit exceeded. Please try again later."
 def send_api_request(
     method: str,
     url: str,
-    *,
-    headers: dict[str, str] | None = None,
-    include_auth_headers: bool = True,
+    stream: bool = False,
+    extra_headers: dict[str, str] | None = None,
     timeout: tuple[int, int] | None = None,
-    raise_known_errors: bool = True,
-    **kwargs: Any,
+    include_auth_headers: bool = True,
 ) -> requests.Response:
     """
-    Send an HTTP request with default MDC auth headers and timeout, and
-    normalize common error codes (403/404/429) to exceptions.
+    Send an HTTP request to the MDC API with appropriate headers and error handling.
+    Args:
+        method: HTTP method (e.g., 'GET', 'POST').
+        url: Full URL for the API endpoint.
+        stream: Whether to stream the response (default: False).
+        extra_headers: Additional headers to include in the request (default: None). E.g. for resuming
+        timeout: A tuple specifying (connect timeout, read timeout) in seconds (default: None).
+        include_auth_headers: Whether to include authentication (API KEY) headers (default: True).
+    Returns:
+        The HTTP response object.
+    Raises:
+        FileNotFoundError: If the resource is not found (404).
+        PermissionError: If access is denied (403).
+        RuntimeError: If rate limit is exceeded (429).
+        ValueError: If API key is missing when authentication is required.
+        requests.HTTPError: For other non-2xx responses.
     """
-    default_headers = {
-        "User-Agent": _get_user_agent(),
-    }
+    headers = {"User-Agent": _get_user_agent()}
     if include_auth_headers:
-        default_headers.update(_auth_headers())
-    merged_headers = {**default_headers, **(headers or {})}
+        headers.update(_auth_headers())
+    if extra_headers:
+        headers.update(extra_headers)
+
     resp = requests.request(
         method=method.upper(),
         url=url,
-        headers=merged_headers,
+        stream=stream,
+        headers=headers,
         timeout=HTTP_TIMEOUT if timeout is None else timeout,
-        **kwargs,
     )
 
-    if raise_known_errors:
-        if resp.status_code == 404:
-            raise FileNotFoundError("Dataset not found")
-        if resp.status_code == 403:
-            raise PermissionError(
-                "Access denied. Private dataset requires organization membership"
-            )
-        if resp.status_code == 429:
-            raise RuntimeError(RATE_LIMIT_ERROR)
-        resp.raise_for_status()
+    if resp.status_code == 404:
+        raise FileNotFoundError("Dataset not found")
+    if resp.status_code == 403:
+        raise PermissionError(
+            "Access denied. Private dataset requires organization membership"
+        )
+    if resp.status_code == 429:
+        raise RuntimeError(RATE_LIMIT_ERROR)
+    resp.raise_for_status()
 
     return resp
 
@@ -91,7 +101,16 @@ def _get_user_agent() -> str:
 def _prepare_download_headers(
     tmp_path: Path, resume_checksum: str | None
 ) -> tuple[dict[str, str], int]:
-    """Prepare headers for download plan and determine existing file size for download."""
+    """
+    Prepare headers for download plan and determine existing file size for download resumption.
+    Args:
+        tmp_path: Path to the temporary file for download.
+        resume_checksum: Checksum string to verify for resuming download (if any).
+    Returns:
+        A tuple containing:
+        - A dict of headers to include in the download request.
+        - The size of the existing file in bytes (0 if not resuming).
+    """
     if not tmp_path.exists():  # invalid path
         return {}, 0
 
