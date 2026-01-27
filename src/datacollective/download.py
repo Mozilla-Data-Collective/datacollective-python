@@ -24,7 +24,7 @@ class DownloadPlan:
     size_bytes: int
     checksum: (
         str | None
-    )  # Some datasets sadly will not have checksums yet - we should close this up when they all are guaranteed to
+    )  # We allow None if the API does not return a checksum, but that's generally unexpected.
     checksum_filepath: Path
 
 
@@ -59,12 +59,13 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
     resp = send_api_request(method="POST", url=session_url)
-    payload: dict[str, Any] = dict(resp.json())
 
+    payload: dict[str, Any] = dict(resp.json())
     download_url = payload.get("downloadUrl")
     filename = payload.get("filename")
     size_bytes = payload.get("sizeBytes")
     checksum = payload.get("checksum")
+
     if not download_url or not filename or not size_bytes:
         raise RuntimeError(f"Unexpected response format: {payload}")
 
@@ -102,6 +103,7 @@ def determine_resume_state(download_plan: DownloadPlan) -> str | None:
     """
     tmp_filepath = download_plan.tmp_filepath
 
+    # Check existence of .part and .checksum files
     part_exists = tmp_filepath.exists()
     checksum_file_exists = download_plan.checksum_filepath.exists()
     stored_checksum = (
