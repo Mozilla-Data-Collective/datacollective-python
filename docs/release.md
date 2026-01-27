@@ -3,7 +3,7 @@
 This project uses:
 
 - `pyproject.toml` as the single source of truth for the version.
-- `bump2version` to bump the version and create Git tags.
+- `bump-my-version` to bump the version and create Git tags.
 - GitHub Releases to trigger automatic publishing to PyPI via GitHub Actions.
 
 Publishing to PyPI happens **only** when a GitHub Release is created for a version tag (for example, `v0.1.0`).
@@ -15,10 +15,10 @@ Publishing to PyPI happens **only** when a GitHub Release is created for a versi
 Before doing a release, make sure you have:
 
 - Push access to the main repository.
-- A local Python environment with `bump2version` installed:
+- A local Python environment with `bump-my-version` installed:
 
 ```bash
-pip install bump2version
+uv tool install bump-my-version
 ```
 
 - An up-to-date local clone:
@@ -50,19 +50,37 @@ Decide what type of version bump you need according to [Semantic Versioning](htt
 - `minor`: new features, backwards compatible (e.g. `0.0.34` → `0.1.0`)
 - `major`: breaking changes (e.g. `0.0.34` → `1.0.0`)
 
+Check the potential versioning paths with:
+
+```bash
+bump-my-version show-bump
+```
+
+And verify that the version you plan to release is the expected one:
+
+```bash
+bump-my-version show --increment minor new_version
+```
+
+Finally, you can run a dry run to see what will happen:
+
+```bash
+bump-my-version bump minor --dry-run -vv
+```
+
 ---
 
-## 3. Bump the version using bump2version
+## 3. Bump the version using bump-my-version
 
 Run **one** of the following from the repository root:
 
 ```bash
 # choose exactly one:
-bump2version patch
+bump-my-version bump patch
 # or
-bump2version minor
+bump-my-version bump minor
 # or
-bump2version major
+bump-my-version bump major
 ```
 
 What this does:
@@ -136,6 +154,6 @@ pip install --upgrade datacollective==X.Y.Z
 
 - **Single source of truth**: The version is defined only in `pyproject.toml`. Do **not** manually edit `__version__` or other files for versioning.
 
-- **Tag format**: Always use `vX.Y.Z` tags (for example, `v0.0.35`). The `bump2version` configuration enforces this.
+- **Tag format**: Always use `vX.Y.Z` tags (for example, `v0.0.35`). The `bump-my-version` configuration enforces this.
 
 - **Manual workflow dispatch (advanced)**: In rare cases, you can re-run the publish job from the `Actions` tab using `workflow_dispatch`, but normally you should always go through a GitHub Release.
