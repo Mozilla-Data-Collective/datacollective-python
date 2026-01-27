@@ -5,6 +5,7 @@ import platform
 from pathlib import Path
 
 import requests
+from dotenv import find_dotenv, load_dotenv
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
 ENV_API_KEY = "MDC_API_KEY"
@@ -13,6 +14,8 @@ ENV_DOWNLOAD_PATH = "MDC_DOWNLOAD_PATH"
 HTTP_TIMEOUT = (10, 60)  # (connect, read)
 
 RATE_LIMIT_ERROR = "Rate limit exceeded. Please try again later."
+
+load_dotenv(find_dotenv())
 
 
 def send_api_request(

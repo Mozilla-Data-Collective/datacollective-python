@@ -29,14 +29,22 @@ pip install datacollective
 
 ## Quick Start
 
+**IMPORTANT NOTE:** Before trying to access any dataset, make sure you have thoroughly **read and agreed** to the specific dataset's conditions & licensing terms.
+
 1. **Get your API key** from the Mozilla Data Collective [dashboard](https://datacollective.mozillafoundation.org/api-reference)
 
-2. **Set the API key in your environment variable (or create `.env` file add it there)**:
+2. **Set the API key in your environment variable**:
 
-**IMPORTANT NOTE:** Before trying to access any dataset, make sure you have thoroughly **read and agreed** to the specific dataset's conditions & licensing terms.
+**Option A:** Run this command in your terminal (replace `your-api-key-here` with your actual API key):
 
 ```
 export MDC_API_KEY=your-api-key-here
+```
+
+**Option B:** Create a `.env` file in your project directory and add this line:
+
+```
+MDC_API_KEY=your-api-key-here
 ```
 
 3. **Get your dataset ID from the last section of the dataset URL at the MDC website**. 
