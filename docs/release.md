@@ -14,14 +14,14 @@ Publishing to PyPI happens **only** when a GitHub Release is created for a versi
 
 Before doing a release, make sure you have:
 
-- Push access to the main repository.
+- Push access to the repository in the `main` branch.
 - A local Python environment with `bump2version` installed:
 
 ```bash
 pip install bump2version
 ```
 
-- An up-to-date local clone:
+- An up-to-date local clone with all changes merged into `main`:
 
 ```bash
 git checkout main
