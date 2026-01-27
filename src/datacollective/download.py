@@ -58,7 +58,7 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
 
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    resp = send_api_request("POST", session_url)
+    resp = send_api_request(method="POST", url=session_url)
     payload: dict[str, Any] = dict(resp.json())
 
     download_url = payload.get("downloadUrl")
@@ -176,7 +176,7 @@ def execute_download_plan(
             stream=True,
             timeout=HTTP_TIMEOUT,
             extra_headers=headers,
-            include_auth_headers=False,
+            include_auth_headers=False,  # Download URL is pre-signed, no auth needed
         ) as response:
             with open(download_plan.tmp_filepath, "ab") as f:
                 # Iterate over response in 64KB chunks to avoid using too much memory
