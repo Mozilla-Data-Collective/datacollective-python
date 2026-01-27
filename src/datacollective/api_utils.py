@@ -32,7 +32,7 @@ def send_api_request(
     default_headers = {
         "User-Agent": _get_user_agent(),
     }
-    merged_headers = {**default_headers, **(headers or {})}
+    merged_headers = {**default_headers, **_auth_headers(), **(headers or {})}
     resp = requests.request(
         method=method.upper(),
         url=url,

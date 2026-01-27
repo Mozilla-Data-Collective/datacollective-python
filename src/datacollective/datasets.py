@@ -8,7 +8,6 @@ from typing import Any
 import pandas as pd
 
 from datacollective.api_utils import (
-    _auth_headers,
     _get_api_url,
     send_api_request,
 )
@@ -43,7 +42,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
         raise ValueError("`dataset_id` must be a non-empty string")
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
-    resp = send_api_request(method="GET", url=url, headers=_auth_headers())
+    resp = send_api_request(method="GET", url=url)
     return dict(resp.json())
 
 
