@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import os
 import platform
-from pathlib import Path
 from typing import Any
 
 import requests
@@ -83,18 +82,3 @@ def _get_user_agent() -> str:
     python_version = platform.python_version()
     system = platform.system()
     return f"datacollective-python/{__version__} (Python {python_version}; {system})"
-
-
-def _prepare_download_headers(
-    tmp_path: Path, resume_checksum: str | None
-) -> tuple[dict[str, str], int]:
-    """Prepare headers for download plan and determine existing file size for download."""
-    if not tmp_path.exists():  # invalid path
-        return {}, 0
-
-    if resume_checksum:
-        existing_size = tmp_path.stat().st_size
-        return {"Range": f"bytes={existing_size}-"}, existing_size
-
-    tmp_path.unlink()  # remove existing file if no resume checksum supplied
-    return {}, 0
