@@ -152,6 +152,13 @@ or `load_dataset` again.
   a fresh download.
 
 
+### Automatically check for extracted archives
+
+The `load_dataset` function avoids redundant extraction by automatically detecting existing files. 
+It checks if the dataset archive is already downloaded and the folder is extracted under the same name. 
+This behavior applies when `overwrite_existing=False` and `overwrite_extracted=False`. 
+The SDK identifies the data if the extracted folder name matches the archive name without the extension.
+
 ## API Reference
 
 For a detailed API reference, see the [API Reference](api.md) section of the documentation.
