@@ -35,15 +35,13 @@ pip install datacollective
 
 2. **Set the API key in your environment variable**:
 
-    1. Either run this command in your terminal (replace `your-api-key-here` with your actual API key):
+**Option A:** Run this command in your terminal (replace `your-api-key-here` with your actual API key):
 
 ```
 export MDC_API_KEY=your-api-key-here
 ```
 
-**OR**
-
-    2. Create a `.env` file in your project directory and add this line:
+**Option B:** Create a `.env` file in your project directory and add this line:
 
 ```
 MDC_API_KEY=your-api-key-here
