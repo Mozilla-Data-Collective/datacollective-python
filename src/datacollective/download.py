@@ -36,6 +36,7 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
         dataset_id: The dataset ID (as shown in MDC platform).
         download_directory: Directory where to save the downloaded dataset.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
+
     Returns:
         a DownloadPlan containing:
         - a download session URL created by the API
@@ -44,6 +45,7 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
         - a temporary path for atomic download
         - the size of the dataset archive in bytes
         - the checksum of the dataset
+
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
@@ -91,15 +93,18 @@ def determine_resume_state(download_plan: DownloadPlan) -> str | None:
     """
     Determine whether to resume a download based on existing files.
 
-    Returns:
-        resume_checksum: The checksum to use for resumption, or None if starting fresh.
-
     Cases handled:
         Case 1: .checksum and .part exist, checksum matches -> resume download.
         Case 2: .checksum and .part exist, checksum does NOT match -> start fresh.
         Case 3: .part exists but no .checksum -> start fresh (cannot safely resume).
         Case 4: .checksum exists but no .part -> start fresh (orphaned checksum).
         Case 5: Neither .checksum nor .part exist -> start fresh.
+
+    Args:
+        download_plan: The DownloadPlan object with download details.
+
+    Returns:
+        resume_checksum: The checksum to use for resumption, or None if starting fresh.
     """
     tmp_filepath = download_plan.tmp_filepath
 
@@ -151,10 +156,12 @@ def execute_download_plan(
 ) -> None:
     """
     Execute the download plan, downloading the dataset to a temporary path.
+
     Args:
         download_plan: The DownloadPlan object with download details.
         resume_download_checksum: Provide the checksum to resume a previously interrupted download.
         show_progress: Whether to show a progress bar during download.
+
     Raises:
         DownloadError: If the download fails or is interrupted.
     """

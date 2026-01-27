@@ -27,10 +27,13 @@ from datacollective.download import (
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     """
     Return dataset details from the MDC API as a dictionary.
+
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
+
     Returns:
         A dict with dataset details as returned by the API.
+
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
@@ -57,14 +60,17 @@ def save_dataset_to_disk(
     Skips download if the target file already exists (unless `overwrite_existing=True`).
     Automatically resumes interrupted downloads if a matching .checksum file exists from a
     previous attempt.
+
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
         download_directory: Directory where to save the downloaded dataset.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite existing files.
+
     Returns:
         Path to the downloaded dataset archive.
+
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
@@ -119,14 +125,17 @@ def load_dataset(
     Uses dataset `details['name']` to check in registry.py for dataset-specific loading logic.
     Automatically resumes interrupted downloads if a .checksum file exists from a
     previous attempt.
+
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
         download_directory: Directory where to save the downloaded dataset.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite existing files.
+
     Returns:
         A pandas DataFrame with the loaded dataset.
+
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
@@ -152,8 +161,10 @@ def load_dataset(
 def _strip_archive_suffix(path: Path) -> Path:
     """
     Strip known archive suffixes from the filename.
+
     Args:
         path: Path to the archive file.
+
     Returns:
         Path with the archive suffix removed.
     """
@@ -171,11 +182,14 @@ def _strip_archive_suffix(path: Path) -> Path:
 def _extract_archive(archive_path: Path, dest_dir: Path) -> Path:
     """
     Extract the given archive (.tar.gz, .tgz, .zip) into `dest_dir`.
+
     Args:
         archive_path: Path to the archive file.
         dest_dir: Directory where to extract the contents.
+
     Returns:
         Path to the extracted root directory.
+
     Raises:
         ValueError: If the archive type is unsupported.
     """

@@ -36,8 +36,10 @@ def send_api_request(
         extra_headers: Additional headers to include in the request (default: None). E.g. for resuming
         timeout: A tuple specifying (connect timeout, read timeout) in seconds (default: None).
         include_auth_headers: Whether to include authentication (API KEY) headers (default: True).
+
     Returns:
         The HTTP response object.
+
     Raises:
         FileNotFoundError: If the resource is not found (404).
         PermissionError: If access is denied (403).
@@ -107,9 +109,11 @@ def _prepare_download_headers(
 ) -> tuple[dict[str, str], int]:
     """
     Prepare headers for download plan and determine existing file size for download resumption.
+
     Args:
         tmp_path: Path to the temporary file for download.
         resume_checksum: Checksum string to verify for resuming download (if any).
+
     Returns:
         A tuple containing:
         - A dict of headers to include in the download request.
