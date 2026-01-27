@@ -176,6 +176,7 @@ def execute_download_plan(
             stream=True,
             timeout=HTTP_TIMEOUT,
             headers=headers,
+            include_auth_headers=False,
         ) as response:
             with open(download_plan.tmp_filepath, "ab") as f:
                 # Iterate over response in 64KB chunks to avoid using too much memory

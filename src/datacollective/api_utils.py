@@ -21,6 +21,7 @@ def send_api_request(
     url: str,
     *,
     headers: dict[str, str] | None = None,
+    include_auth_headers: bool = True,
     timeout: tuple[int, int] | None = None,
     raise_known_errors: bool = True,
     **kwargs: Any,
@@ -32,7 +33,9 @@ def send_api_request(
     default_headers = {
         "User-Agent": _get_user_agent(),
     }
-    merged_headers = {**default_headers, **_auth_headers(), **(headers or {})}
+    if include_auth_headers:
+        default_headers.update(_auth_headers())
+    merged_headers = {**default_headers, **(headers or {})}
     resp = requests.request(
         method=method.upper(),
         url=url,

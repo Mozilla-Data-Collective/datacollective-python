@@ -7,7 +7,7 @@ from _pytest.monkeypatch import MonkeyPatch
 from requests import HTTPError
 
 from datacollective import get_dataset_details, load_dataset, save_dataset_to_disk
-from datacollective.api_utils import _prepare_download_headers, api_request
+from datacollective.api_utils import _prepare_download_headers, send_api_request
 from datacollective.download import (
     get_download_plan,
     write_checksum_file,
@@ -107,12 +107,13 @@ def test_resume_download(
 
         headers, _ = _prepare_download_headers(plan.tmp_filepath, None)
 
-        with api_request(
+        with send_api_request(
             "GET",
             plan.download_url,
             stream=True,
             timeout=(10, 30),
             headers=headers,
+            include_auth_headers=False,
         ) as response:
             bytes_to_download = min(
                 1024 * 10, plan.size_bytes // 4
