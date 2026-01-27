@@ -112,7 +112,7 @@ def test_resume_download(
             plan.download_url,
             stream=True,
             timeout=(10, 30),
-            headers=headers,
+            extra_headers=headers,
             include_auth_headers=False,
         ) as response:
             bytes_to_download = min(
