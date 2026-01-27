@@ -118,7 +118,7 @@ explicit = true
 
 # Bump2version configuration
 [tool.bump2version]
-current_version = "0.0.34"
+current_version = "0.2.0"
 commit = true
 tag = true
 tag_name = "v{new_version}"
