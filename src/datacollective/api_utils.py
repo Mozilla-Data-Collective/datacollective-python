@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
+import platform
 from pathlib import Path
 from typing import Any
 
@@ -19,7 +20,7 @@ RATE_LIMIT_ERROR = "Rate limit exceeded. Please try again later."
 load_dotenv()
 
 
-def api_request(
+def send_api_request(
     method: str,
     url: str,
     *,
@@ -32,7 +33,10 @@ def api_request(
     Send an HTTP request with default MDC auth headers and timeout, and
     normalize common error codes (403/404/429) to exceptions.
     """
-    merged_headers = {**_auth_headers(), **(headers or {})}
+    default_headers = {
+        "User-Agent": _get_user_agent(),
+    }
+    merged_headers = {**default_headers, **(headers or {})}
     resp = requests.request(
         method=method.upper(),
         url=url,
@@ -72,14 +76,17 @@ def _auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {_get_api_key()}"}
 
 
-def _extract_checksum_from_api_response(
-    api_response: requests.Response,
-) -> str | None:
-    repr_digest = api_response.headers.get("Repr-Digest")
-    if not repr_digest:
-        return None
-    _, digest, _ = repr_digest.split("=:")
-    return base64.b64decode(digest).hex()
+def _get_user_agent() -> str:
+    """Generate a user agent string with SDK name, version, and Python runtime info."""
+    # Import here to avoid circular dependency
+    try:
+        from datacollective import __version__
+    except ImportError:
+        __version__ = "unknown"
+
+    python_version = platform.python_version()
+    system = platform.system()
+    return f"datacollective-python/{__version__} (Python {python_version}; {system})"
 
 
 def _prepare_download_headers(
@@ -95,3 +102,13 @@ def _prepare_download_headers(
 
     tmp_path.unlink()  # remove existing file if no resume checksum supplied
     return {}, 0
+
+
+def _extract_checksum_from_api_response(
+    api_response: requests.Response,
+) -> str | None:
+    repr_digest = api_response.headers.get("Repr-Digest")
+    if not repr_digest:
+        return None
+    _, digest, _ = repr_digest.split("=:")
+    return base64.b64decode(digest).hex()

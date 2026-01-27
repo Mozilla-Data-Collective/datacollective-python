@@ -11,7 +11,7 @@ from datacollective.api_utils import (
     _extract_checksum_from_api_response,
     _get_api_url,
     _prepare_download_headers,
-    api_request,
+    send_api_request,
 )
 from datacollective.errors import DownloadError
 
@@ -59,7 +59,7 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
 
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    resp = api_request("POST", session_url)
+    resp = send_api_request("POST", session_url)
     payload: dict[str, Any] = dict(resp.json())
 
     download_url = payload.get("downloadUrl")
@@ -169,7 +169,7 @@ def execute_download_plan(
         progress_bar.update(downloaded_bytes_so_far)
         progress_bar._display()
     try:
-        with api_request(
+        with send_api_request(
             "GET",
             download_plan.download_url,
             stream=True,
