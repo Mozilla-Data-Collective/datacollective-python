@@ -7,14 +7,14 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from fox_progress_bar import ProgressBar
 import requests
+from fox_progress_bar import ProgressBar
 
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
     HTTP_TIMEOUT,
     _get_api_url,
-    api_request,
+    send_api_request,
 )
 from datacollective.dataset_loading_scripts.registry import (
     load_dataset_from_name_as_dataframe,
@@ -39,7 +39,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
         raise ValueError("`dataset_id` must be a non-empty string")
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
-    resp = api_request("GET", url)
+    resp = send_api_request(method="GET", url=url)
     return dict(resp.json())
 
 
@@ -74,7 +74,7 @@ def save_dataset_to_disk(
 
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    resp = api_request("POST", session_url)
+    resp = send_api_request("POST", session_url)
     payload: dict[str, Any] = dict(resp.json())
 
     download_url = payload.get("downloadUrl")
@@ -89,7 +89,6 @@ def save_dataset_to_disk(
 
     # Stream download to a temporary file for atomicity
     tmp_path = target_path.with_suffix(target_path.suffix + ".part")
-
 
     with requests.request(
         method="GET",
@@ -113,7 +112,6 @@ def save_dataset_to_disk(
                 f.write(chunk)
                 if show_progress:
                     progress_bar.update(len(chunk))
-
     if show_progress:
         progress_bar.finish()
 
