@@ -162,6 +162,8 @@ def execute_download_plan(
     )
 
     progress_bar = None
+    session_downloaded_bytes = 0
+    total_downloaded_bytes = downloaded_bytes_so_far
     print(f"Downloading dataset: {download_plan.filename}")
     if show_progress:
         progress_bar = ProgressBar(download_plan.size_bytes)
@@ -176,8 +178,7 @@ def execute_download_plan(
             headers=headers,
         ) as response:
             with open(download_plan.tmp_filepath, "ab") as f:
-                session_downloaded_bytes = 0
-                total_downloaded_bytes = downloaded_bytes_so_far
+                # Iterate over response in 64KB chunks to avoid using too much memory
                 for chunk in response.iter_content(chunk_size=1 << 16):
                     if not chunk:
                         continue
@@ -192,10 +193,10 @@ def execute_download_plan(
                 progress_bar.finish()
     except (Exception, KeyboardInterrupt) as e:
         raise DownloadError(
-            session_downloaded_bytes,
-            total_downloaded_bytes,
-            download_plan.size_bytes,
-            download_plan.checksum,
+            session_bytes=session_downloaded_bytes,
+            total_downloaded_bytes=total_downloaded_bytes,
+            total_archive_bytes=download_plan.size_bytes,
+            checksum=download_plan.checksum,
         ) from e
 
 
