@@ -23,11 +23,12 @@ def send_api_request(
     url: str,
     stream: bool = False,
     extra_headers: dict[str, str] | None = None,
-    timeout: tuple[int, int] | None = None,
+    timeout: tuple[int, int] | None = HTTP_TIMEOUT,
     include_auth_headers: bool = True,
 ) -> requests.Response:
     """
     Send an HTTP request to the MDC API with appropriate headers and error handling.
+
     Args:
         method: HTTP method (e.g., 'GET', 'POST').
         url: Full URL for the API endpoint.
@@ -55,7 +56,7 @@ def send_api_request(
         url=url,
         stream=stream,
         headers=headers,
-        timeout=HTTP_TIMEOUT if timeout is None else timeout,
+        timeout=timeout,
     )
 
     if resp.status_code == 404:
