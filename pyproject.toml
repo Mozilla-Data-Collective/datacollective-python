@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "datacollective"
-version = "0.2.0"  # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
+version = "0.3.0"  # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
 dependencies = [
     "fox-progress-bar>=0.1.1",
     "pandas>=2.0.0",
@@ -58,7 +58,7 @@ explicit = true
 
 # bump-my-version configuration
 [tool.bumpversion]
-current_version = "0.2.0"  # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
+current_version = "0.3.0"  # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
 search = "{current_version}"
