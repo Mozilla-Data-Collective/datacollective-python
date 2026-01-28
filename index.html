@@ -422,6 +422,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Get dataset details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automatic-download-resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Download Resume
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -654,6 +671,23 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Get dataset details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#automatic-download-resume" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Download Resume
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -722,13 +756,12 @@
 <p>Install from PyPI:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>datacollective
 </span></code></pre></div>
-<p>You can also use uv or other Python tooling as desired, as long as the package datacollective is installed in your environment.</p>
 <h2 id="getting-an-api-key">Getting an API Key</h2>
 <p>To use the Mozilla Data Collective API, you need an API key:</p>
 <ol>
-<li>Sign in to the Mozilla Data Collective dashboard.</li>
-<li>Create or retrieve an API key from your account/settings page.</li>
-<li>Keep your key secret and do not commit it to version control.</li>
+<li>Sign up to the <a href="https://datacollective.mozillafoundation.org/">Mozilla Data Collective</a> platform.</li>
+<li>Create or retrieve an API key from your Account -&gt; Credentials page.</li>
+<li>Store your key secret in a <code>.env</code> file and do not commit it to version control (git).</li>
 </ol>
 <h2 id="configuration">Configuration</h2>
 <p>The client reads configuration from environment variables and <code>.env</code> files.</p>
@@ -802,6 +835,33 @@ to filter, aggregate, and analyze the data.</p>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">get_dataset_details</span><span class="p">(</span><span class="s2">&quot;your-dataset-id&quot;</span><span class="p">)</span>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
 </span></code></pre></div>
+<h3 id="automatic-download-resume">Automatic Download Resume</h3>
+<p>The SDK automatically handles interrupted downloads. If a download is interrupted
+for any reason (network error, user cancellation, system shutdown, etc.), the SDK
+will automatically resume from where it left off when you call <code>save_dataset_to_disk</code>
+or <code>load_dataset</code> again.</p>
+<p><strong>How it works:</strong></p>
+<ol>
+<li>When a download starts, the SDK creates a <code>.checksum</code> file alongside the partial
+   download (<code>.part</code> file) to track the download state.</li>
+<li>If the download is interrupted, both files are preserved.</li>
+<li>On the next download attempt, the SDK detects the partial download and resumes
+   from the last byte received.</li>
+<li>Once the download completes successfully, the temporary files are automatically
+   cleaned up.</li>
+</ol>
+<blockquote>
+<p>[!TIP]
+You don't need to do anything special to enable resume functionality, it works
+automatically. Just call the same function again after an interruption.</p>
+</blockquote>
+<p><strong>Edge cases handled:</strong></p>
+<ul>
+<li>If the dataset has been updated since the interrupted download, the SDK detects
+  the checksum mismatch and starts a fresh download.</li>
+<li>If only partial files exist without proper tracking data, the SDK safely starts
+  a fresh download.</li>
+</ul>
 <h2 id="api-reference">API Reference</h2>
 <p>For a detailed API reference, see the <a href="api/">API Reference</a> section of the documentation.</p>
 <blockquote>
