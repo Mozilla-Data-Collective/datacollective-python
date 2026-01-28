@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 import tarfile
 import zipfile
 from pathlib import Path
@@ -58,15 +59,16 @@ def save_dataset_to_disk(
     """
     Download the dataset archive to a local directory and return the archive path.
     Skips download if the target file already exists (unless `overwrite_existing=True`).
+
     Automatically resumes interrupted downloads if a matching .checksum file exists from a
     previous attempt.
 
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
-        download_directory: Directory where to save the downloaded dataset.
+        download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
-        overwrite_existing: Whether to overwrite existing files.
+        overwrite_existing: Whether to overwrite the existing archive file.
 
     Returns:
         Path to the downloaded dataset archive.
@@ -119,20 +121,31 @@ def load_dataset(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
+    overwrite_extracted: bool = False,
 ) -> pd.DataFrame:
     """
-    Download (if needed), extract, and load the dataset into a pandas DataFrame.
+    Download (if needed), extract (if not already extracted), and load the dataset into a pandas DataFrame.
+
+    If the dataset archive already exists in the download directory, it will not be re-downloaded
+    unless `overwrite_existing=True`.
+
+    If there is a directory with the same name as the archive file without the suffix extension, we assume
+    it has already been extracted, and it will not be re-extracted unless `overwrite_extracted=True`.
+
     Uses dataset `details['name']` to check in registry.py for dataset-specific loading logic.
+
     Automatically resumes interrupted downloads if a .checksum file exists from a
     previous attempt.
 
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
-        download_directory: Directory where to save the downloaded dataset.
+        download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
-        overwrite_existing: Whether to overwrite existing files.
-
+        overwrite_existing: Whether to overwrite existing archive.
+        overwrite_extracted: Whether to overwrite existing extracted files by re-extracting the archive file.
+            Only makes sense when overwrite_existing is False.
+            Will check in the download directory for existing extracted files with the default naming of the folder.
     Returns:
         A pandas DataFrame with the loaded dataset.
 
@@ -150,7 +163,11 @@ def load_dataset(
         overwrite_existing=overwrite_existing,
     )
     base_dir = resolve_download_dir(download_directory)
-    extract_dir = _extract_archive(archive_path, base_dir)
+    extract_dir = _extract_archive(
+        archive_path=archive_path,
+        dest_dir=base_dir,
+        overwrite_extracted=overwrite_extracted,
+    )
 
     details = get_dataset_details(dataset_id)
     dataset_name = str(details.get("name", "")).lower()
@@ -158,35 +175,18 @@ def load_dataset(
     return load_dataset_from_name_as_dataframe(dataset_name, extract_dir)
 
 
-def _strip_archive_suffix(path: Path) -> Path:
+def _extract_archive(
+    archive_path: Path, dest_dir: Path, overwrite_extracted: bool
+) -> Path:
     """
-    Strip known archive suffixes from the filename.
-
-    Args:
-        path: Path to the archive file.
-
-    Returns:
-        Path with the archive suffix removed.
-    """
-    name = path.name
-    if name.endswith(".tar.gz"):
-        return path.with_name(name[: -len(".tar.gz")])
-    if name.endswith(".tgz"):
-        return path.with_name(name[: -len(".tgz")])
-    if name.endswith(".zip"):
-        return path.with_name(name[: -len(".zip")])
-    # Unknown; drop one suffix if present
-    return path.with_suffix("")
-
-
-def _extract_archive(archive_path: Path, dest_dir: Path) -> Path:
-    """
-    Extract the given archive (.tar.gz, .tgz, .zip) into `dest_dir`.
+    Extract the given archive (.tar.gz, .zip) into `dest_dir`. If the extracted
+    directory already exists (check if the default extracted folder exists) and overwrite_extracted is False,
+    skip extraction.
 
     Args:
         archive_path: Path to the archive file.
         dest_dir: Directory where to extract the contents.
-
+        overwrite_extracted: Whether to overwrite existing extracted files.
     Returns:
         Path to the extracted root directory.
 
@@ -197,10 +197,16 @@ def _extract_archive(archive_path: Path, dest_dir: Path) -> Path:
     # Extract into a dedicated directory under `dest_dir` using stripped name
     target = dest_dir / extract_root.name
     if target.exists():
-        # Keep it simple and ensure fresh state
-        import shutil
+        if not overwrite_extracted:
+            print(
+                f"Extracted directory already exists. "
+                f"Skipping extraction: `{str(target)}`"
+            )
+            return target
 
+        print(f"Overwriting existing extracted directory: `{str(target)}`")
         shutil.rmtree(target)
+
     target.mkdir(parents=True, exist_ok=True)
 
     if archive_path.suffix == ".zip":
@@ -214,3 +220,22 @@ def _extract_archive(archive_path: Path, dest_dir: Path) -> Path:
             f"Unsupported archive type for `{archive_path.name}`. Expected .tar.gz, .tgz, or .zip."
         )
     return target
+
+
+def _strip_archive_suffix(path: Path) -> Path:
+    """
+    Strip known archive suffixes from the filename.
+    Args:
+        path: Path to the archive file.
+    Returns:
+        Path with the archive suffix removed.
+    """
+    name = path.name
+    if name.endswith(".tar.gz"):
+        return path.with_name(name[: -len(".tar.gz")])
+    if name.endswith(".tgz"):
+        return path.with_name(name[: -len(".tgz")])
+    if name.endswith(".zip"):
+        return path.with_name(name[: -len(".zip")])
+    # Unknown; drop one suffix if present
+    return path.with_suffix("")
