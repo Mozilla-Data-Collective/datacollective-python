@@ -117,9 +117,9 @@ to filter, aggregate, and analyze the data.
 You can retrieve info from the datasheet of a dataset without downloading it:
 
 ```python
-from datacollective import get_dataset_info
+from datacollective import get_dataset_details
 
-info = get_dataset_info("your-dataset-id")
+info = get_dataset_details("your-dataset-id")
 print(info)
 ```
 

@@ -31,8 +31,10 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
 
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
+
     Returns:
         A dict with dataset details as returned by the API.
+
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
@@ -69,6 +71,7 @@ def save_dataset_to_disk(
         overwrite_existing: Whether to overwrite the existing archive file.
     Returns:
         Path to the downloaded dataset archive.
+
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
@@ -144,6 +147,7 @@ def load_dataset(
             Will check in the download directory for existing extracted files with the default naming of the folder.
     Returns:
         A pandas DataFrame with the loaded dataset.
+
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
@@ -184,6 +188,7 @@ def _extract_archive(
         overwrite_extracted: Whether to overwrite existing extracted files.
     Returns:
         Path to the extracted root directory.
+
     Raises:
         ValueError: If the archive type is unsupported.
     """
@@ -208,7 +213,7 @@ def _extract_archive(
             zf.extractall(target)
     elif archive_path.name.endswith(".tar.gz") or archive_path.suffix == ".tgz":
         with tarfile.open(archive_path, "r:gz") as tf:
-            tf.extractall(target)
+            tf.extractall(path=target, filter="fully_trusted")
     else:
         raise ValueError(
             f"Unsupported archive type for `{archive_path.name}`. Expected .tar.gz, .tgz, or .zip."

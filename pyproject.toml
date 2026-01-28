@@ -4,7 +4,7 @@ build-backend = "uv_build"
 
 [project]
 name = "datacollective"
-version = "0.2.0"
+version = "0.2.0"  # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
 dependencies = [
     "fox-progress-bar>=0.1.1",
     "pandas>=2.0.0",
@@ -29,7 +29,7 @@ dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pre-commit>=3.0.0",
-    "bump2version>=1.0.0",
+    "bump-my-version>=1.2.6",
 ]
 
 docs = [
@@ -44,68 +44,8 @@ Documentation = "https://Mozilla-Data-Collective.github.io/datacollective-python
 Issues = "https://github.com/Mozilla-Data-Collective/datacollective-python/issues"
 
 [project.scripts]
-format = "black:patched_main"
 lint = "ruff:__main__"
 typecheck = "mypy:__main__"
-
-# Black configuration
-[tool.black]
-line-length = 88
-target-version = ['py311']
-include = '\.pyi?$'
-extend-exclude = '''
-/(
-  # directories
-  \.eggs
-  | \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | build
-  | dist
-)/
-'''
-
-# Ruff configuration (fast linter)
-[tool.ruff]
-target-version = "py311"
-line-length = 88
-
-[tool.ruff.lint]
-select = [
-    "E",  # pycodestyle errors
-    "W",  # pycodestyle warnings
-    "F",  # pyflakes
-    "I",  # isort
-    "B",  # flake8-bugbear
-    "C4", # flake8-comprehensions
-    "UP", # pyupgrade
-]
-ignore = [
-    "E501",  # line too long, handled by black
-    "B008",  # do not perform function calls in argument defaults
-    "C901",  # too complex
-]
-
-[tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
-
-# MyPy configuration
-[tool.mypy]
-python_version = "3.11"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
 
 [tool.uv]
 preview = true
@@ -116,19 +56,24 @@ url = "https://test.pypi.org/simple/"
 publish-url = "https://test.pypi.org/legacy/"
 explicit = true
 
-# Bump2version configuration
-[tool.bump2version]
-current_version = "0.0.34"
-commit = true
-tag = true
+# bump-my-version configuration
+[tool.bumpversion]
+current_version = "0.2.0"  # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
+parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
+serialize = ["{major}.{minor}.{patch}"]
+search = "{current_version}"
+replace = "{new_version}"
+regex = false
+ignore_missing_version = false
+tag = false
+sign_tags = false
 tag_name = "v{new_version}"
+tag_message = "Bump version: {current_version} → {new_version}"
+allow_dirty = false
+commit = false
+message = "Bump version: {current_version} → {new_version}"
+commit_args = ""
 
-[[tool.bump2version.files]]
-filename = "pyproject.toml"
-search = 'version = "{current_version}"'
-replace = 'version = "{new_version}"'
 
-[[tool.bump2version.files]]
+[[tool.bumpversion.files]]
 filename = "src/datacollective/__init__.py"
-search = '__version__ = "{current_version}"'
-replace = '__version__ = "{new_version}"'
