@@ -208,7 +208,7 @@ def _extract_archive(archive_path: Path, dest_dir: Path) -> Path:
             zf.extractall(target)
     elif archive_path.name.endswith(".tar.gz") or archive_path.suffix == ".tgz":
         with tarfile.open(archive_path, "r:gz") as tf:
-            tf.extractall(target)
+            tf.extractall(path=target, filter="fully_trusted")
     else:
         raise ValueError(
             f"Unsupported archive type for `{archive_path.name}`. Expected .tar.gz, .tgz, or .zip."
