@@ -436,6 +436,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#automatically-check-for-extracted-archives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatically check for extracted archives
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -685,6 +696,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#automatically-check-for-extracted-archives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatically check for extracted archives
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -862,6 +884,11 @@ automatically. Just call the same function again after an interruption.</p>
 <li>If only partial files exist without proper tracking data, the SDK safely starts
   a fresh download.</li>
 </ul>
+<h3 id="automatically-check-for-extracted-archives">Automatically check for extracted archives</h3>
+<p>The <code>load_dataset</code> function avoids redundant extraction by automatically detecting existing files. 
+It checks if the dataset archive is already downloaded and the folder is extracted under the same name. 
+This behavior applies when <code>overwrite_existing=False</code> and <code>overwrite_extracted=False</code>. 
+The SDK identifies the data if the extracted folder name matches the archive name without the extension.</p>
 <h2 id="api-reference">API Reference</h2>
 <p>For a detailed API reference, see the <a href="api/">API Reference</a> section of the documentation.</p>
 <blockquote>
