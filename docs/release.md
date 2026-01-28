@@ -91,7 +91,7 @@ This will update the version in `pyproject.toml` and `__init__.py`.
 Commit the version bump and push to the `main` branch:
 
 ```bash
-git add pyproject.toml datacollective/__init__.py
+git add pyproject.toml src/datacollective/__init__.py uv.lock
 git commit -m "Bump version to X.Y.Z"
 git push origin main
 ```
