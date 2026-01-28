@@ -20,7 +20,7 @@ Before doing a release, make sure you have:
 uv tool install bump-my-version
 ```
 
-- An up-to-date local clone in the `main` branch:
+- An up-to-date local clone with all changes merged into `main`:
 
 ```bash
 git checkout main

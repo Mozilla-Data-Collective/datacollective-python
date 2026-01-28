@@ -2,6 +2,8 @@
 
 ::: datacollective.datasets
 
+::: datacollective.download
+
 ::: datacollective.api_utils
 
 ::: datacollective.dataset_loading_scripts.registry
