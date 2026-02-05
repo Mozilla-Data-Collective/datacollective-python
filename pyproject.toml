@@ -8,6 +8,7 @@ version = "0.3.0"  # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UP
 dependencies = [
     "fox-progress-bar>=0.1.1",
     "pandas>=2.0.0",
+    "pydantic>=2.7.0",
     "python-dotenv>=1.0.0",
     "requests>=2.32.5",
 ]
