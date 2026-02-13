@@ -1,77 +1,72 @@
 import sys
 from pathlib import Path
 import json
-import re
-import unicodedata
-from bs4 import BeautifulSoup
+import requests
+import xml.etree.ElementTree as ET
 
 # Add src to path to allow imports from datacollective
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from datacollective.datasets import get_dataset_details
 
-def slugify(value: str) -> str:
-    """
-    Normalizes string, converts to lowercase, removes non-alpha characters,
-    and converts spaces and other separators to hyphens.
-    """
-    value = str(value)
-    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore').decode('ascii')
-    value = value.lower().strip()
-    value = re.sub(r'[\s._-]+', '-', value)
-    value = re.sub(r'[^\w-]+', '', value)
-    return value
-
+SITEMAP_URL = "https://datacollective.mozillafoundation.org/sitemap.xml"
+DATASET_URL_PREFIX = "https://datacollective.mozillafoundation.org/datasets/"
 
 def generate_slugs():
     """
-    Parses the datasets.html file to generate a JSON file mapping slugs to dataset IDs.
-    This script requires `beautifulsoup4` and `lxml` to be installed.
+    Fetches dataset IDs from the sitemap, gets their details, and generates
+    a JSON file mapping slugs to dataset IDs.
     """
-    print("Generating dataset slugs from HTML...")
+    print("Generating dataset slugs from sitemap.xml (may take a while :p)...")
     slugs = {}
 
-    # Path to the source HTML file
-    html_path = Path(__file__).parent.parent / "src" / "datacollective" / "data" / "datasets.html"
-    if not html_path.exists():
-        print(f"HTML file not found at {html_path}")
-        print("Aborting slug generation.")
+    try:
+        response = requests.get(SITEMAP_URL)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        print(f"Failed to fetch sitemap: {e}")
         return
 
-    with open(html_path, "r", encoding="utf-8") as f:
-        html_content = f.read()
+    root = ET.fromstring(response.content)
+    # The sitemap has a namespace, which we need to handle
+    namespace = {'sitemap': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
+    
+    dataset_ids = []
+    for loc in root.findall('sitemap:url/sitemap:loc', namespace):
+        url = loc.text
+        if url and url.startswith(DATASET_URL_PREFIX):
+            dataset_id = url.replace(DATASET_URL_PREFIX, '')
+            if dataset_id:
+                dataset_ids.append(dataset_id)
+    total_datasets = len(dataset_ids)
+    print(f"Found {total_datasets} dataset IDs in sitemap.")
 
-    soup = BeautifulSoup(html_content, 'lxml')
+    for i, dataset_id in enumerate(dataset_ids, start=1):
+        try:
+            print(f"({i}/{total_datasets}) Fetching details for {dataset_id}... ", end="")
+            details = get_dataset_details(dataset_id)
+            
+            org = details.get("organization")
+            if org and isinstance(org, dict):
+                org_slug = org.get("slug")
+            else:
+                org_slug = None
+            
+            dataset_slug = details.get("slug")
 
-    # Find all dataset cards, which are <a> tags with hrefs starting with /datasets/
-    dataset_cards = soup.find_all('a', href=re.compile(r'^/datasets/'))
-
-    for card in dataset_cards:
-        href = card.get('href')
-        if not href:
+            if org_slug and dataset_slug:
+                full_slug = f"{org_slug}/{dataset_slug}"
+                slugs[full_slug] = dataset_id
+                print("OK")
+            else:
+                print(f"Skipping dataset {dataset_id} due to missing slug or organization info.")
+        except Exception as e:
+            print(f"Could not fetch details for dataset {dataset_id}. Error: {e}")
+            # This could be a private dataset not accessible without auth, or another issue.
             continue
-        dataset_id = href.split('/')[-1]
-
-        dataset_name_tag = card.find('h3')
-        if not dataset_name_tag:
-            print(f"Skipping dataset with missing name for href: {href}")
-            continue
-        dataset_slug = slugify(dataset_name_tag.get_text(strip=True))
-
-        card_title_div = card.find('div', attrs={'data-slot': 'card-title'})
-        org_div = card_title_div.find_previous_sibling('div') if card_title_div else None
-        if not org_div:
-            print(f"Skipping dataset with missing organization div for href: {href}")
-            continue
-        org_slug = slugify(org_div.get_text(strip=True))
-
-        if org_slug and dataset_slug and dataset_id:
-            full_slug = f"{org_slug}/{dataset_slug}"
-            slugs[full_slug] = dataset_id
-        else:
-            print(f"Skipping dataset with missing info for href: {href}")
 
     if not slugs:
-        print("No slugs were generated. Check the HTML file or parsing logic.")
+        print("No slugs were generated. This could be an issue with the sitemap or the API.")
         return
 
     output_path = Path(__file__).parent.parent / "src" / "datacollective" / "data" / "slugs.json"
