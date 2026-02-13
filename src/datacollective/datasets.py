@@ -23,6 +23,7 @@ from datacollective.download import (
     resolve_download_dir,
     write_checksum_file,
 )
+from datacollective.slug_utils import resolve_slug_or_id
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
@@ -30,7 +31,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     Return dataset details from the MDC API as a dictionary.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID or slug (as shown in MDC platform).
 
     Returns:
         A dict with dataset details as returned by the API.
@@ -45,6 +46,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     if not dataset_id or not dataset_id.strip():
         raise ValueError("`dataset_id` must be a non-empty string")
 
+    dataset_id = resolve_slug_or_id(dataset_id)
     url = f"{_get_api_url()}/datasets/{dataset_id}"
     resp = send_api_request(method="GET", url=url)
     return dict(resp.json())
@@ -64,7 +66,7 @@ def save_dataset_to_disk(
     previous attempt.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID or slug (as shown in MDC platform).
         download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
@@ -80,6 +82,7 @@ def save_dataset_to_disk(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
+    dataset_id = resolve_slug_or_id(dataset_id)
     download_plan = get_download_plan(dataset_id, download_directory)
 
     # Case 1: Skip download if complete dataset archive already exists
@@ -138,7 +141,7 @@ def load_dataset(
     previous attempt.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID or slug (as shown in MDC platform).
         download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
@@ -156,6 +159,7 @@ def load_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
+    dataset_id = resolve_slug_or_id(dataset_id)
     archive_path = save_dataset_to_disk(
         dataset_id=dataset_id,
         download_directory=download_directory,
