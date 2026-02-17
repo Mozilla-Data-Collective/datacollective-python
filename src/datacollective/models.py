@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -56,7 +56,8 @@ class DatasetSubmissionSubmitInput(NonEmptyStrModel):
     intendedUsage: str
     ethicalReviewProcess: str
     exclusivityOptOut: bool
-    fileUploadId: str
+    fileUploadId: str | None = None
+    status: Literal["submitted"] = "submitted"
 
 
 class DatasetSubmission(BaseModel):
