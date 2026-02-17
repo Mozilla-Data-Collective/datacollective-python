@@ -17,12 +17,7 @@ from datacollective.models import UploadPart
 class UploadSession:
     fileUploadId: str
     uploadId: str
-    bucket: str
-    key: str
     partSize: int
-    partNumber: int
-    presignedUrl: str
-    expiresAt: str
 
 
 @dataclass
@@ -70,8 +65,13 @@ class UploadState:
 @dataclass(frozen=True)
 class PresignedPartUrl:
     partNumber: int
-    presignedUrl: str
+    url: str
     expiresAt: str
+
+    @property
+    def presignedUrl(self) -> str:
+        """Backward-compatible alias for the presigned URL."""
+        return self.url
 
 
 def initiate_upload(
@@ -92,9 +92,8 @@ def initiate_upload(
     if file_size <= 0:
         raise ValueError("`file_size` must be a positive integer")
 
-    url = f"{_get_api_url()}/upload/initiate"
+    url = f"{_get_api_url()}/submissions/{submission_id}/uploads"
     payload = {
-        "submissionId": submission_id,
         "filename": filename,
         "fileSize": file_size,
         "mimeType": mime_type,
@@ -104,61 +103,57 @@ def initiate_upload(
     return UploadSession(
         fileUploadId=str(data.get("fileUploadId", "")),
         uploadId=str(data.get("uploadId", "")),
-        bucket=str(data.get("bucket", "")),
-        key=str(data.get("key", "")),
         partSize=int(data.get("partSize", 0)),
-        partNumber=int(data.get("partNumber", 1)),
-        presignedUrl=str(data.get("presignedUrl", "")),
-        expiresAt=str(data.get("expiresAt", "")),
     )
 
 
-def get_presigned_part_url(file_upload_id: str, chunk_index: int) -> PresignedPartUrl:
+def get_presigned_part_url(file_upload_id: str, part_number: int) -> PresignedPartUrl:
     """
-    Request a presigned URL for a specific multipart chunk.
+    Request a presigned URL for a specific multipart part.
 
     Args:
         file_upload_id: File upload ID.
-        chunk_index: Zero-based chunk index.
+        part_number: 1-based multipart part number.
     """
     _require_non_empty(file_upload_id, "file_upload_id")
-    if chunk_index < 0:
-        raise ValueError("`chunk_index` must be a non-negative integer")
+    if part_number < 1:
+        raise ValueError("`part_number` must be a positive integer")
 
-    url = f"{_get_api_url()}/upload/presigned-url"
-    resp = send_api_request(
-        "GET",
-        url,
-        params={"fileUploadId": file_upload_id, "chunkIndex": chunk_index},
-    )
+    url = f"{_get_api_url()}/uploads/{file_upload_id}/parts/{part_number}"
+    resp = send_api_request("GET", url)
     data = dict(resp.json())
+    presigned_url = data.get("url") or data.get("presignedUrl", "")
     return PresignedPartUrl(
-        partNumber=int(data.get("partNumber", chunk_index + 1)),
-        presignedUrl=str(data.get("presignedUrl", "")),
+        partNumber=int(data.get("partNumber", part_number)),
+        url=str(presigned_url),
         expiresAt=str(data.get("expiresAt", "")),
     )
 
 
 def complete_upload(
-    file_upload_id: str, upload_id: str, parts: list[UploadPart], checksum: str
+    file_upload_id: str,
+    upload_id: str | None,
+    parts: list[UploadPart],
+    checksum: str,
 ) -> dict[str, Any]:
     """
     Complete a multipart upload and persist the checksum.
     """
     _require_non_empty(file_upload_id, "file_upload_id")
-    _require_non_empty(upload_id, "upload_id")
     _require_non_empty(checksum, "checksum")
+    if upload_id is not None:
+        _require_non_empty(upload_id, "upload_id")
     if not parts:
         raise ValueError("`parts` must contain at least one uploaded part")
 
-    url = f"{_get_api_url()}/upload/complete"
+    url = f"{_get_api_url()}/uploads/{file_upload_id}"
     payload = {
-        "fileUploadId": file_upload_id,
-        "uploadId": upload_id,
         "parts": [part.model_dump() for part in parts],
         "checksum": checksum,
     }
-    resp = send_api_request("POST", url, json_body=payload)
+    if upload_id:
+        payload["uploadId"] = upload_id
+    resp = send_api_request("PUT", url, json_body=payload)
     return dict(resp.json())
 
 
@@ -209,7 +204,6 @@ def upload_dataset_file(
         else:
             print(f"Resuming upload from `{str(state_file)}`")
 
-    session: UploadSession | None = None
     if not state:
         session = initiate_upload(submission_id, final_filename, file_size, mime_type)
         if not session.fileUploadId or not session.uploadId or session.partSize <= 0:
@@ -247,14 +241,8 @@ def upload_dataset_file(
             if part_number in parts_by_number:
                 continue
 
-            presigned_url = ""
-            if session and part_number == session.partNumber and session.presignedUrl:
-                presigned_url = session.presignedUrl
-            else:
-                presigned = get_presigned_part_url(
-                    state.fileUploadId, chunk_index=part_index
-                )
-                presigned_url = presigned.presignedUrl
+            presigned = get_presigned_part_url(state.fileUploadId, part_number)
+            presigned_url = presigned.url
 
             response = _upload_part(presigned_url, chunk)
             etag = _extract_etag(response)
