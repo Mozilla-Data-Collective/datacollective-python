@@ -7,7 +7,7 @@ from datacollective.models import (
     DatasetSubmissionDraftInput,
     DatasetSubmissionSubmitInput,
 )
-from datacollective.uploads import upload_dataset_file
+from datacollective.upload import upload_dataset_file
 
 
 def create_submission_draft(name: str, long_description: str) -> dict[str, Any]:
@@ -21,7 +21,7 @@ def create_submission_draft(name: str, long_description: str) -> dict[str, Any]:
     payload = DatasetSubmissionDraftInput(
         name=name, longDescription=long_description
     ).model_dump()
-    url = f"{_get_api_url()}/datasets/submission"
+    url = f"{_get_api_url()}/submissions"
     resp = send_api_request("POST", url, json_body=payload)
     return dict(resp.json())
 
@@ -40,8 +40,9 @@ def submit_submission(
         raise ValueError("`submission_id` must be a non-empty string")
 
     model = DatasetSubmissionSubmitInput.model_validate(submission_fields)
-    url = f"{_get_api_url()}/datasets/submission/{submission_id}/submit"
-    resp = send_api_request("POST", url, json_body=model.model_dump())
+    url = f"{_get_api_url()}/submissions/{submission_id}"
+    payload = model.model_dump(exclude_none=True)
+    resp = send_api_request("PATCH", url, json_body=payload)
     return dict(resp.json())
 
 
