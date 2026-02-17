@@ -13,7 +13,7 @@ from .submissions import (
     create_submission_with_upload,
     submit_submission,
 )
-from .uploads import (
+from .upload import (
     complete_upload,
     get_presigned_part_url,
     initiate_upload,
