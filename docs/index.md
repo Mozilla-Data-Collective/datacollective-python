@@ -123,6 +123,7 @@ submit_fields = {
     "intendedUsage": "Intended usage",
     "ethicalReviewProcess": "Ethical review",
     "exclusivityOptOut": True,
+    "agreeToSubmit": True,
 }
 
 response = create_submission_with_upload(

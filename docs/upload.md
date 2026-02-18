@@ -66,6 +66,7 @@ submission_fields = {
     "intendedUsage": "Intended use of the dataset",
     "ethicalReviewProcess": "Description of ethical review",
     "exclusivityOptOut": True,
+    "agreeToSubmit": True,
 }
 
 # Upload and submit in one call
@@ -118,15 +119,16 @@ When submitting a dataset, you must provide the following fields:
 
 ### Usage Information
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `other` | `str` | Additional information about the dataset |
-| `restrictions` | `str` | Any restrictions on dataset use |
-| `forbiddenUsage` | `str` | Explicitly forbidden use cases |
-| `additionalConditions` | `str` | Additional conditions for use |
-| `intendedUsage` | `str` | Intended use of the dataset |
-| `ethicalReviewProcess` | `str` | Description of ethical review conducted |
-| `exclusivityOptOut` | `bool` | Whether to opt out of exclusivity |
+| Field                  | Type | Description                                                                     |
+|------------------------|------|---------------------------------------------------------------------------------|
+| `other`                | `str` | Additional information about the dataset                                        |
+| `restrictions`         | `str` | Any restrictions on dataset use                                                 |
+| `forbiddenUsage`       | `str` | Explicitly forbidden use cases                                                  |
+| `additionalConditions` | `str` | Additional conditions for use                                                   |
+| `intendedUsage`        | `str` | Intended use of the dataset                                                     |
+| `ethicalReviewProcess` | `str` | Description of ethical review conducted                                         |
+| `exclusivityOptOut`    | `bool` | Whether to opt out of exclusivity                                               |
+| `agreeToSubmit`        | `bool` | Whether the uploader agrees to submit their dataset for review (must be `True`) |
 
 ### Contact Information
 
@@ -334,6 +336,7 @@ submission_fields = {
     "intendedUsage": "Training and evaluating speech recognition models",
     "ethicalReviewProcess": "IRB approved under protocol #12345",
     "exclusivityOptOut": True,
+    "agreeToSubmit": True,
     
     # Contacts
     "pointOfContactFullName": "Jane Doe",
@@ -393,6 +396,7 @@ submission_fields = DatasetSubmissionSubmitInput(
     intendedUsage="ASR model training",
     ethicalReviewProcess="IRB approved",
     exclusivityOptOut=True,
+    agreeToSubmit=True,
 )
 
 response = create_submission_with_upload(

@@ -56,6 +56,7 @@ class DatasetSubmissionSubmitInput(NonEmptyStrModel):
     intendedUsage: str
     ethicalReviewProcess: str
     exclusivityOptOut: bool
+    agreeToSubmit: bool
     fileUploadId: str | None = None
     status: Literal["submitted"] = "submitted"
 

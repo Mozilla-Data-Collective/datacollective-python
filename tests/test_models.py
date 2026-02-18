@@ -48,6 +48,7 @@ def test_submit_input_rejects_empty_strings() -> None:
         "intendedUsage": "Intended usage",
         "ethicalReviewProcess": "Ethical review",
         "exclusivityOptOut": True,
+        "agreeToSubmit": True,
         "fileUploadId": "cuid",
     }
 
