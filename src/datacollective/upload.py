@@ -3,14 +3,22 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import requests
+from fox_progress_bar import ProgressBar
 
-from datacollective.api_utils import HTTP_TIMEOUT, _get_api_url, send_api_request
+from datacollective.api_utils import _get_api_url, send_api_request, _format_bytes
 from datacollective.models import UploadPart
+
+# Longer read timeout for uploading potentially large chunks
+UPLOAD_TIMEOUT = (10, 300)
+# Retry configuration for part uploads
+MAX_UPLOAD_RETRIES = 3
+RETRY_BACKOFF_SECONDS = 2
 
 
 @dataclass(frozen=True)
@@ -164,6 +172,8 @@ def upload_dataset_file(
     filename: str | None = None,
     state_path: str | None = None,
     resume: bool = True,
+    verbose: bool = False,
+    show_progress: bool = True,
 ) -> UploadState:
     """
     Upload a dataset file using multipart uploads with resumable state.
@@ -176,6 +186,8 @@ def upload_dataset_file(
         state_path: Optional path to persist upload state. Defaults to
             `<filename>.mdc-upload.json` alongside the archive.
         resume: Whether to reuse an existing upload state file.
+        verbose: Whether to print status messages during the upload.
+        show_progress: Whether to show a progress bar during upload.
     """
     _require_non_empty(file_path, "file_path")
     _require_non_empty(submission_id, "submission_id")
@@ -199,12 +211,22 @@ def upload_dataset_file(
             or state.filename != final_filename
             or state.submissionId != submission_id
         ):
-            print("Upload state does not match file or submission. Restarting upload.")
+            if verbose:
+                print(
+                    "Upload state does not match file or submission. "
+                    "Restarting upload."
+                )
             state = None
         else:
-            print(f"Resuming upload from `{str(state_file)}`")
+            if verbose:
+                print(f"Resuming upload from `{str(state_file)}`")
 
     if not state:
+        if verbose:
+            print(
+                f"Initiating upload for '{final_filename}' "
+                f"({_format_bytes(file_size)})..."
+            )
         session = initiate_upload(submission_id, final_filename, file_size, mime_type)
         if not session.fileUploadId or not session.uploadId or session.partSize <= 0:
             raise RuntimeError("Upload initiation did not return expected fields")
@@ -226,6 +248,24 @@ def upload_dataset_file(
         raise RuntimeError("Invalid upload configuration (expected parts <= 0)")
 
     parts_by_number = _normalize_parts(state)
+    already_uploaded = len(parts_by_number)
+
+    if verbose and already_uploaded > 0:
+        print(
+            f"Resuming: {already_uploaded}/{expected_parts} parts already uploaded."
+        )
+
+    if verbose:
+        print(f"Uploading file: {final_filename}")
+
+    # Set up progress bar
+    progress_bar: ProgressBar | None = None
+    if show_progress:
+        progress_bar = ProgressBar(file_size)
+        # Account for already-uploaded parts in the progress bar
+        if already_uploaded > 0:
+            progress_bar.update(already_uploaded * state.partSize)
+            progress_bar._display()
 
     hasher = hashlib.sha256()
     bytes_read = 0
@@ -244,11 +284,17 @@ def upload_dataset_file(
             presigned = get_presigned_part_url(state.fileUploadId, part_number)
             presigned_url = presigned.url
 
-            response = _upload_part(presigned_url, chunk)
+            response = _upload_part_with_retry(presigned_url, chunk)
             etag = _extract_etag(response)
             parts_by_number[part_number] = etag
             state.parts.append(UploadPart(partNumber=part_number, etag=etag))
             save_upload_state(state_file, state)
+
+            if progress_bar:
+                progress_bar.update(len(chunk))
+
+    if progress_bar:
+        progress_bar.finish()
 
     if bytes_read != state.fileSize:
         raise RuntimeError(
@@ -269,7 +315,14 @@ def upload_dataset_file(
     ]
     save_upload_state(state_file, state)
 
+    if verbose:
+        print("Completing multipart upload...")
+
     complete_upload(state.fileUploadId, state.uploadId, state.parts, state.checksum)
+
+    if verbose:
+        print(f"Upload complete. File upload ID: {state.fileUploadId}")
+
     return state
 
 
@@ -316,9 +369,29 @@ def _normalize_parts(state: UploadState) -> dict[int, str]:
 def _upload_part(presigned_url: str, payload: bytes) -> requests.Response:
     if not presigned_url:
         raise ValueError("Missing presigned URL for upload part")
-    resp = requests.put(presigned_url, data=payload, timeout=HTTP_TIMEOUT)
+    resp = requests.put(presigned_url, data=payload, timeout=UPLOAD_TIMEOUT)
     resp.raise_for_status()
     return resp
+
+
+def _upload_part_with_retry(
+    presigned_url: str,
+    payload: bytes,
+    max_retries: int = MAX_UPLOAD_RETRIES,
+) -> requests.Response:
+    """Upload a single part with automatic retries on transient failures."""
+    last_exc: Exception | None = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            return _upload_part(presigned_url, payload)
+        except (requests.ConnectionError, requests.Timeout) as exc:
+            last_exc = exc
+            if attempt < max_retries:
+                wait = RETRY_BACKOFF_SECONDS * attempt
+                time.sleep(wait)
+    raise RuntimeError(
+        f"Failed to upload part after {max_retries} attempts"
+    ) from last_exc
 
 
 def _extract_etag(response: requests.Response) -> str:
