@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import logging
 import os
 import platform
 from pathlib import Path
 
 import requests
 from dotenv import find_dotenv, load_dotenv
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
 ENV_API_KEY = "MDC_API_KEY"
@@ -52,6 +55,8 @@ def send_api_request(
         headers.update(_auth_headers())
     if extra_headers:
         headers.update(extra_headers)
+
+    logger.debug(f"API request: {method.upper()} {url} (stream={stream})")
 
     resp = requests.request(
         method=method.upper(),

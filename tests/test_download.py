@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import logging
+
 import pytest
 
 from datacollective.download import (
@@ -26,7 +28,7 @@ def _make_download_plan(
 
 
 def test_case1_checksum_and_part_exist_checksum_matches_returns_checksum(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Case 1: .checksum and .part exist, checksum matches -> resume download."""
     plan = _make_download_plan(tmp_path, checksum="matching_checksum")
@@ -35,15 +37,15 @@ def test_case1_checksum_and_part_exist_checksum_matches_returns_checksum(
     plan.tmp_filepath.write_text("partial data")
     plan.checksum_filepath.write_text("matching_checksum")
 
-    result = determine_resume_state(plan)
+    with caplog.at_level(logging.INFO, logger="datacollective.download"):
+        result = determine_resume_state(plan)
 
     assert result == "matching_checksum"
-    captured = capsys.readouterr()
-    assert "Resuming previously interrupted download" in captured.out
+    assert "Resuming previously interrupted download" in caplog.text
 
 
 def test_case2_checksum_and_part_exist_checksum_mismatch_cleans_up_returns_none(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Case 2: .checksum and .part exist, checksum does NOT match -> start fresh."""
     plan = _make_download_plan(tmp_path, checksum="new_checksum")
@@ -52,17 +54,17 @@ def test_case2_checksum_and_part_exist_checksum_mismatch_cleans_up_returns_none(
     plan.tmp_filepath.write_text("partial data")
     plan.checksum_filepath.write_text("old_checksum")
 
-    result = determine_resume_state(plan)
+    with caplog.at_level(logging.INFO, logger="datacollective.download"):
+        result = determine_resume_state(plan)
 
     assert result is None
     assert not plan.tmp_filepath.exists()
     assert not plan.checksum_filepath.exists()
-    captured = capsys.readouterr()
-    assert "Dataset has been updated" in captured.out
+    assert "Dataset has been updated" in caplog.text
 
 
 def test_case3_part_exists_no_checksum_cleans_up_returns_none(
-    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
     """Case 3: .part exists but no .checksum -> start fresh (cannot safely resume)."""
     plan = _make_download_plan(tmp_path)
@@ -70,12 +72,12 @@ def test_case3_part_exists_no_checksum_cleans_up_returns_none(
     # Create only .part file
     plan.tmp_filepath.write_text("partial data")
 
-    result = determine_resume_state(plan)
+    with caplog.at_level(logging.WARNING, logger="datacollective.download"):
+        result = determine_resume_state(plan)
 
     assert result is None
     assert not plan.tmp_filepath.exists()
-    captured = capsys.readouterr()
-    assert "Partial download found without checksum file" in captured.out
+    assert "Partial download found without checksum file" in caplog.text
 
 
 def test_case4_checksum_exists_no_part_cleans_up_returns_none(tmp_path: Path) -> None:

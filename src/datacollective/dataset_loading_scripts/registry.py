@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 import pandas as pd
@@ -6,6 +7,8 @@ from datacollective.dataset_loading_scripts.common_voice import (
     _load_scripted,
     _load_spontaneous,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def load_dataset_from_name_as_dataframe(
@@ -26,8 +29,10 @@ def load_dataset_from_name_as_dataframe(
         ValueError: If the dataset name is not supported for loading.
     """
     if "scripted" in dataset_name:
+        logger.debug(f"Routing dataset {dataset_name} to scripted loader")
         return _load_scripted(extract_dir)
     if "spontaneous" in dataset_name:
+        logger.debug(f"Routing dataset {dataset_name} to spontaneous loader")
         return _load_spontaneous(extract_dir)
 
     raise ValueError(
