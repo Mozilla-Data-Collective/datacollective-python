@@ -55,6 +55,8 @@ def create_submission_with_upload(
     filename: str | None = None,
     state_path: str | None = None,
     resume: bool = True,
+    verbose: bool = True,
+    show_progress: bool = True,
 ) -> dict[str, Any]:
     """
     Convenience helper to create a submission, upload a file, and submit.
@@ -68,11 +70,19 @@ def create_submission_with_upload(
         filename: Optional filename override.
         state_path: Optional path to persist upload state.
         resume: Whether to resume a previous upload session.
+        verbose: Whether to print status messages during the process.
+        show_progress: Whether to show a progress bar during upload.
     """
+    if verbose:
+        print(f"Creating submission draft for '{name}'...")
+
     draft = create_submission_draft(name=name, long_description=long_description)
     submission_id = draft.get("submissionId")
     if not submission_id:
         raise RuntimeError("Draft creation did not return a submissionId")
+
+    if verbose:
+        print(f"Draft created. Submission ID: {submission_id}")
 
     upload_state = upload_dataset_file(
         file_path=file_path,
@@ -81,6 +91,8 @@ def create_submission_with_upload(
         filename=filename,
         state_path=state_path,
         resume=resume,
+        verbose=verbose,
+        show_progress=show_progress,
     )
 
     if isinstance(submission_fields, DatasetSubmissionSubmitInput):
@@ -95,8 +107,15 @@ def create_submission_with_upload(
         raise ValueError("`fileUploadId` does not match the completed upload")
     payload["fileUploadId"] = upload_state.fileUploadId
 
+    if verbose:
+        print("Submitting dataset for review...")
+
     response = submit_submission(
         submission_id, DatasetSubmissionSubmitInput.model_validate(payload)
     )
     response.setdefault("fileUploadId", upload_state.fileUploadId)
+
+    if verbose:
+        print("Submission complete!")
+
     return response
