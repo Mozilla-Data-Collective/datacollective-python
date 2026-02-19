@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import shutil
 import tarfile
 import zipfile
@@ -23,6 +24,8 @@ from datacollective.download import (
     resolve_download_dir,
     write_checksum_file,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
@@ -84,7 +87,7 @@ def save_dataset_to_disk(
 
     # Case 1: Skip download if complete dataset archive already exists
     if download_plan.target_filepath.exists() and not overwrite_existing:
-        print(
+        logger.info(
             f"File already exists. "
             f"Skipping download: `{str(download_plan.target_filepath)}`"
         )
@@ -112,7 +115,7 @@ def save_dataset_to_disk(
     if download_plan.checksum_filepath.exists():
         download_plan.checksum_filepath.unlink()
 
-    print(f"Saved dataset to `{str(download_plan.target_filepath)}`")
+    logger.info(f"Saved dataset to `{str(download_plan.target_filepath)}`")
     return Path(download_plan.target_filepath)
 
 
@@ -198,13 +201,13 @@ def _extract_archive(
     target = dest_dir / extract_root.name
     if target.exists():
         if not overwrite_extracted:
-            print(
+            logger.info(
                 f"Extracted directory already exists. "
                 f"Skipping extraction: `{str(target)}`"
             )
             return target
 
-        print(f"Overwriting existing extracted directory: `{str(target)}`")
+        logger.info(f"Overwriting existing extracted directory: `{str(target)}`")
         shutil.rmtree(target)
 
     target.mkdir(parents=True, exist_ok=True)
