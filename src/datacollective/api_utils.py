@@ -135,3 +135,13 @@ def _prepare_download_headers(
 
     tmp_path.unlink()  # remove existing file if no resume checksum supplied
     return {}, 0
+
+def _format_bytes(bytes_val: int) -> str:
+    """Format bytes into a human-readable string."""
+    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    value = float(bytes_val)
+    for unit in units:
+        if value < 1024.0 or unit == units[-1]:
+            return f"{value:.1f} {unit}"
+        value /= 1024.0
+    return ""
