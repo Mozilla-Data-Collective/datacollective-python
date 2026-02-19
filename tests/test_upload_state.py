@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from datacollective.models import UploadPart
-from datacollective.uploads import UploadState, load_upload_state, save_upload_state
+from datacollective.upload import UploadState, load_upload_state, save_upload_state
 
 
 def test_upload_state_round_trip(tmp_path: Path) -> None:
