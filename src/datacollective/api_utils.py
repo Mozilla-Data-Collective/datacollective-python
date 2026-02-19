@@ -4,6 +4,7 @@ import logging
 import os
 import platform
 from pathlib import Path
+from typing import Any
 
 import requests
 from dotenv import find_dotenv, load_dotenv
@@ -28,6 +29,8 @@ def send_api_request(
     extra_headers: dict[str, str] | None = None,
     timeout: tuple[int, int] | None = HTTP_TIMEOUT,
     include_auth_headers: bool = True,
+    json_body: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
 ) -> requests.Response:
     """
     Send an HTTP request to the MDC API with appropriate headers and error handling.
@@ -39,6 +42,8 @@ def send_api_request(
         extra_headers: Additional headers to include in the request (default: None). E.g. for resuming
         timeout: A tuple specifying (connect timeout, read timeout) in seconds (default: None).
         include_auth_headers: Whether to include authentication (API KEY) headers (default: True).
+        json_body: Optional JSON body to send with the request.
+        params: Optional query parameters to include in the request.
 
     Returns:
         The HTTP response object.
@@ -64,6 +69,8 @@ def send_api_request(
         stream=stream,
         headers=headers,
         timeout=timeout,
+        json=json_body,
+        params=params,
     )
 
     if resp.status_code == 404:

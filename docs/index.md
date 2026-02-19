@@ -90,6 +90,57 @@ dataset = save_dataset_to_disk("your-dataset-id")
 
 The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets`).
 
+## Programmatic submissions and uploads
+
+The SDK supports creating dataset submissions and uploading files with resumable
+multipart uploads. Upload state is stored in a JSON file alongside the archive,
+so interrupted uploads can resume automatically.
+
+```python
+from datacollective import create_submission_with_upload
+
+submit_fields = {
+    "shortDescription": "Short description",
+    "longDescription": "Full description",
+    "locale": "en-US",
+    "task": "classification",
+    "format": "tar.gz",
+    "licenseAbbreviation": "CC-BY",
+    "license": "Creative Commons Attribution",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "other": "Additional info",
+    "restrictions": "Restrictions",
+    "forbiddenUsage": "Forbidden usage",
+    "additionalConditions": "Additional conditions",
+    "pointOfContactFullName": "Jane Doe",
+    "pointOfContactEmail": "jane@example.com",
+    "fundedByFullName": "Funder Name",
+    "fundedByEmail": "funder@example.com",
+    "legalContactFullName": "Legal Name",
+    "legalContactEmail": "legal@example.com",
+    "createdByFullName": "Creator Name",
+    "createdByEmail": "creator@example.com",
+    "intendedUsage": "Intended usage",
+    "ethicalReviewProcess": "Ethical review",
+    "exclusivityOptOut": True,
+    "agreeToSubmit": True,
+}
+
+response = create_submission_with_upload(
+    file_path="/path/to/dataset.tar.gz",
+    name="My Dataset",
+    long_description="Full description",
+    submission_fields=submit_fields,
+    mime_type="application/gzip",
+)
+
+print(response)
+```
+
+> [!TIP]
+> If an upload is interrupted, rerun the same call. The SDK will reuse the
+> saved upload state and only upload missing parts.
+
 ## Loading and Querying Datasets
 
 > **Note:** in-memory dataset loading is currently supported only for certain datasets.
