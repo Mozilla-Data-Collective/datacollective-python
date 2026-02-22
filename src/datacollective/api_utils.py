@@ -11,6 +11,19 @@ from dotenv import find_dotenv, load_dotenv
 
 logger = logging.getLogger(__name__)
 
+_PKG_LOGGER = logging.getLogger("datacollective")
+
+
+def _enable_verbose(verbose: bool) -> None:
+    if not verbose or _PKG_LOGGER.handlers:
+        return
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    )
+    _PKG_LOGGER.addHandler(handler)
+    _PKG_LOGGER.setLevel(logging.DEBUG)
+
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
 ENV_API_KEY = "MDC_API_KEY"
 ENV_API_URL = "MDC_API_URL"

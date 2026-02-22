@@ -1,13 +1,16 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
-from datacollective.api_utils import _get_api_url, send_api_request
+from datacollective.api_utils import _get_api_url, send_api_request, _enable_verbose
 from datacollective.models import (
     DatasetSubmissionDraftInput,
     DatasetSubmissionSubmitInput,
 )
 from datacollective.upload import upload_dataset_file
+
+logger = logging.getLogger(__name__)
 
 
 def create_submission_draft(name: str, long_description: str) -> dict[str, Any]:
@@ -70,19 +73,19 @@ def create_submission_with_upload(
         filename: Optional filename override.
         state_path: Optional path to persist upload state.
         resume: Whether to resume a previous upload session.
-        verbose: Whether to print status messages during the process.
+        verbose: Whether to enable detailed logging during the process.
         show_progress: Whether to show a progress bar during upload.
     """
-    if verbose:
-        print(f"Creating submission draft for '{name}'...")
+    _enable_verbose(verbose)
+
+    logger.info(f"Creating submission draft for '{name}'...")
 
     draft = create_submission_draft(name=name, long_description=long_description)
     submission_id = draft.get("submissionId")
     if not submission_id:
         raise RuntimeError("Draft creation did not return a submissionId")
 
-    if verbose:
-        print(f"Draft created. Submission ID: {submission_id}")
+    logger.info(f"Draft created. Submission ID: {submission_id}")
 
     upload_state = upload_dataset_file(
         file_path=file_path,
@@ -91,7 +94,6 @@ def create_submission_with_upload(
         filename=filename,
         state_path=state_path,
         resume=resume,
-        verbose=verbose,
         show_progress=show_progress,
     )
 
@@ -107,15 +109,13 @@ def create_submission_with_upload(
         raise ValueError("`fileUploadId` does not match the completed upload")
     payload["fileUploadId"] = upload_state.fileUploadId
 
-    if verbose:
-        print("Submitting dataset for review...")
+    logger.info("Submitting dataset for review...")
 
     response = submit_submission(
         submission_id, DatasetSubmissionSubmitInput.model_validate(payload)
     )
     response.setdefault("fileUploadId", upload_state.fileUploadId)
 
-    if verbose:
-        print("Submission complete!")
+    logger.info("Submission complete!")
 
     return response

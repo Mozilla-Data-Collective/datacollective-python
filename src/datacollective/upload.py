@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import math
 import time
 from dataclasses import dataclass
@@ -11,8 +12,10 @@ from typing import Any
 import requests
 from fox_progress_bar import ProgressBar
 
-from datacollective.api_utils import _get_api_url, send_api_request, _format_bytes
+from datacollective.api_utils import _get_api_url, send_api_request, _format_bytes, _enable_verbose
 from datacollective.models import UploadPart
+
+logger = logging.getLogger(__name__)
 
 # Longer read timeout for uploading potentially large chunks
 UPLOAD_TIMEOUT = (10, 300)
@@ -186,9 +189,11 @@ def upload_dataset_file(
         state_path: Optional path to persist upload state. Defaults to
             `<filename>.mdc-upload.json` alongside the archive.
         resume: Whether to reuse an existing upload state file.
-        verbose: Whether to print status messages during the upload.
+        verbose: Whether to enable detailed logging during the upload.
         show_progress: Whether to show a progress bar during upload.
     """
+    _enable_verbose(verbose)
+
     _require_non_empty(file_path, "file_path")
     _require_non_empty(submission_id, "submission_id")
     _require_non_empty(mime_type, "mime_type")
@@ -211,22 +216,19 @@ def upload_dataset_file(
             or state.filename != final_filename
             or state.submissionId != submission_id
         ):
-            if verbose:
-                print(
-                    "Upload state does not match file or submission. "
-                    "Restarting upload."
-                )
+            logger.warning(
+                "Upload state does not match file or submission. "
+                "Restarting upload."
+            )
             state = None
         else:
-            if verbose:
-                print(f"Resuming upload from `{str(state_file)}`")
+            logger.info(f"Resuming upload from `{str(state_file)}`")
 
     if not state:
-        if verbose:
-            print(
-                f"Initiating upload for '{final_filename}' "
-                f"({_format_bytes(file_size)})..."
-            )
+        logger.info(
+            f"Initiating upload for '{final_filename}' "
+            f"({_format_bytes(file_size)})..."
+        )
         session = initiate_upload(submission_id, final_filename, file_size, mime_type)
         if not session.fileUploadId or not session.uploadId or session.partSize <= 0:
             raise RuntimeError("Upload initiation did not return expected fields")
@@ -250,13 +252,12 @@ def upload_dataset_file(
     parts_by_number = _normalize_parts(state)
     already_uploaded = len(parts_by_number)
 
-    if verbose and already_uploaded > 0:
-        print(
+    if already_uploaded > 0:
+        logger.info(
             f"Resuming: {already_uploaded}/{expected_parts} parts already uploaded."
         )
 
-    if verbose:
-        print(f"Uploading file: {final_filename}")
+    logger.info(f"Uploading file: {final_filename}")
 
     # Set up progress bar
     progress_bar: ProgressBar | None = None
@@ -315,13 +316,11 @@ def upload_dataset_file(
     ]
     save_upload_state(state_file, state)
 
-    if verbose:
-        print("Completing multipart upload...")
+    logger.info("Completing multipart upload...")
 
     complete_upload(state.fileUploadId, state.uploadId, state.parts, state.checksum)
 
-    if verbose:
-        print(f"Upload complete. File upload ID: {state.fileUploadId}")
+    logger.info(f"Upload complete. File upload ID: {state.fileUploadId}")
 
     return state
 
@@ -388,6 +387,7 @@ def _upload_part_with_retry(
             last_exc = exc
             if attempt < max_retries:
                 wait = RETRY_BACKOFF_SECONDS * attempt
+                logger.debug(f"Upload part attempt {attempt} failed, retrying in {wait}s...")
                 time.sleep(wait)
     raise RuntimeError(
         f"Failed to upload part after {max_retries} attempts"
