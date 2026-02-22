@@ -87,10 +87,16 @@ def send_api_request(
     )
 
     if resp.status_code == 404:
-        raise FileNotFoundError("Dataset not found")
+        detail = _extract_error_detail(resp)
+        raise FileNotFoundError(
+            f"Resource not found: {method.upper()} {url}"
+            + (f" — {detail}" if detail else "")
+        )
     if resp.status_code == 403:
+        detail = _extract_error_detail(resp)
         raise PermissionError(
             "Access denied. Private dataset requires organization membership"
+            + (f" — {detail}" if detail else "")
         )
     if resp.status_code == 429:
         raise RuntimeError(RATE_LIMIT_ERROR)
@@ -101,6 +107,15 @@ def send_api_request(
 
 def _get_api_url() -> str:
     return os.getenv(ENV_API_URL, DEFAULT_API_URL).rstrip("/")
+
+
+def _extract_error_detail(resp: requests.Response) -> str:
+    """Pull a human-readable message from a JSON error response."""
+    try:
+        body = resp.json()
+        return str(body.get("message") or body.get("error") or "")
+    except Exception:
+        return ""
 
 
 def _get_api_key() -> str:
