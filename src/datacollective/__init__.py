@@ -14,4 +14,3 @@ __version__ = "0.3.0"
 # Configure a package-level logger with a NullHandler so that library users
 # can opt-in to logging without seeing unexpected output by default.
 logging.getLogger(__name__).addHandler(logging.NullHandler())
-
