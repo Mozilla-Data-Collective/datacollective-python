@@ -4,6 +4,7 @@ repo_name: datacollective-python
 
 nav:
   - Home: index.md
+  - Schema-Based Loading: schema_parse.md
   - API Reference: api.md
   - Release Workflow: release.md
 
