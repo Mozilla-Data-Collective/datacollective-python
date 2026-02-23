@@ -7,6 +7,7 @@ from pathlib import Path
 
 import requests
 from dotenv import find_dotenv, load_dotenv
+from datacollective.schema import DatasetSchema, parse_schema
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +78,31 @@ def send_api_request(
     resp.raise_for_status()
 
     return resp
+
+
+def get_dataset_schema(dataset_id: str) -> DatasetSchema:
+    """
+    Fetch and parse the ``schema.yaml`` for a dataset from the MDC API.
+
+    Args:
+        dataset_id: The dataset ID (as shown in MDC platform).
+
+    Returns:
+        A :class:`DatasetSchema` instance describing the dataset structure.
+
+    Raises:
+        ValueError: If dataset_id is empty or the schema cannot be parsed.
+        FileNotFoundError: If the dataset / schema does not exist (404).
+        PermissionError: If access is denied (403).
+        RuntimeError: If rate limit is exceeded (429).
+        requests.HTTPError: For other non-2xx responses.
+    """
+    if not dataset_id or not dataset_id.strip():
+        raise ValueError("`dataset_id` must be a non-empty string")
+
+    url = f"{_get_api_url()}/datasets/{dataset_id}/schema"
+    resp = send_api_request(method="GET", url=url)
+    return parse_schema(resp.text)
 
 
 def _get_api_url() -> str:
