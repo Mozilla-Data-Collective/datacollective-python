@@ -3,8 +3,7 @@ from pathlib import Path
 from typing import Any
 import yaml
 
-from datacollective.api_utils import get_dataset_schema
-from datacollective.schema import DatasetSchema, parse_schema
+from datacollective.schema import DatasetSchema, parse_schema, get_dataset_schema
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +74,6 @@ def _save_schema_to_disk(schema: DatasetSchema, schema_path: Path) -> None:
     Persist the schema to *schema_path* so that subsequent loads can skip
     the API call when the checksum hasn't changed.
     """
-
     data: dict[str, Any] = {
         "dataset_id": schema.dataset_id,
         "task": schema.task,

@@ -4,11 +4,8 @@ import logging
 import os
 import platform
 from pathlib import Path
-import urllib.error
-import urllib.request
 import requests
 from dotenv import find_dotenv, load_dotenv
-from datacollective.schema import DatasetSchema
 
 logger = logging.getLogger(__name__)
 
@@ -82,37 +79,6 @@ def send_api_request(
     resp.raise_for_status()
 
     return resp
-
-
-def get_dataset_schema(dataset_id: str) -> DatasetSchema:
-    """
-    Download and return the schema.yaml content for *dataset_id*.
-
-    Args:
-        dataset_id: The registry dataset ID (the folder name under /registry/).
-
-    Returns:
-        The raw content of the schema.yaml as a UTF-8 string.
-    Raises:
-        ValueError
-            If the dataset is not found (HTTP 404).
-        RuntimeError
-            For any other network / HTTP error.
-    """
-
-    url = f"{SCHEMA_REGISTRY_RAW_BASE_URL}/main/registry/{dataset_id}/schema.yaml"
-
-    try:
-        with urllib.request.urlopen(url) as response:
-            return response.read().decode("utf-8")
-    except urllib.error.HTTPError as exc:
-        if exc.code == 404:
-            raise ValueError(
-                f"Dataset '{dataset_id}' not found in the registry.\nURL tried: {url}"
-            ) from exc
-        raise RuntimeError(f"HTTP {exc.code} while fetching {url}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Network error while fetching {url}: {exc.reason}") from exc
 
 
 def _get_api_url() -> str:
