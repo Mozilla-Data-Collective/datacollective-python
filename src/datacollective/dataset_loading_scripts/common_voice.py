@@ -15,7 +15,7 @@ SCRIPTED_SPEECH_SPLITS = [
 
 def _load_scripted(root_dir: Path) -> pd.DataFrame:
     """
-    Load Common Voice spontaneous speech datasets from the given root directory.
+    Load Common Voice scripted speech datasets from the given root directory.
     The function searches for TSV files corresponding to predefined scripted speech splits,
     reads them into DataFrames, adds a 'split' column, and concatenates them into a single DataFrame.
     """
