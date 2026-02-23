@@ -8,14 +8,13 @@ import urllib.error
 import urllib.request
 import requests
 from dotenv import find_dotenv, load_dotenv
-from datacollective.schema import DatasetSchema, parse_schema
+from datacollective.schema import DatasetSchema
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
 SCHEMA_REGISTRY_RAW_BASE_URL = (
-    "https://raw.githubusercontent.com/"
-    "Mozilla-Data-Collective/dataset-schema-registry"
+    "https://raw.githubusercontent.com/Mozilla-Data-Collective/dataset-schema-registry"
 )
 ENV_API_KEY = "MDC_API_KEY"
 ENV_API_URL = "MDC_API_URL"
@@ -109,14 +108,11 @@ def get_dataset_schema(dataset_id: str) -> DatasetSchema:
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             raise ValueError(
-                f"Dataset '{dataset_id}' not found in the registry.\n"
-                f"URL tried: {url}"
+                f"Dataset '{dataset_id}' not found in the registry.\nURL tried: {url}"
             ) from exc
         raise RuntimeError(f"HTTP {exc.code} while fetching {url}") from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Network error while fetching {url}: {exc.reason}") from exc
-
-
 
 
 def _get_api_url() -> str:

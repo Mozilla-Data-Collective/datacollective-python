@@ -10,7 +10,6 @@ import yaml
 logger = logging.getLogger(__name__)
 
 
-
 @dataclass
 class ColumnMapping:
     """
@@ -19,7 +18,9 @@ class ColumnMapping:
     index file map to logical fields and their data types.
     """
 
-    source_column: str | int  # column name (str) or positional index (int) for headerless files
+    source_column: (
+        str | int
+    )  # column name (str) or positional index (int) for headerless files
     dtype: str
     optional: bool = False
 
@@ -37,7 +38,6 @@ class ContentMapping:
 
     text: str | None = None  # e.g. "file_content"
     meta_source: str | None = None  # e.g. "file_name"
-
 
 
 @dataclass
@@ -77,7 +77,6 @@ class DatasetSchema:
 
     # --- Catch-all for future / unknown keys ---
     extra: dict[str, Any] = field(default_factory=dict)
-
 
 
 def parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
@@ -165,8 +164,3 @@ def parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         checksum=data.get("checksum"),
         extra=extra,
     )
-
-
-
-
-

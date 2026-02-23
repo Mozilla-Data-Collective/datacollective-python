@@ -103,9 +103,7 @@ class BaseSchemaLoader(abc.ABC):
 
             if source not in raw_df.columns:
                 if col_map.optional:
-                    logger.debug(
-                        f"Optional column '{source}' not found — skipping."
-                    )
+                    logger.debug(f"Optional column '{source}' not found — skipping.")
                     continue
                 raise KeyError(
                     f"Required column '{source}' not found in index file. "
@@ -132,4 +130,3 @@ class BaseSchemaLoader(abc.ABC):
             result_cols[logical_name] = series
 
         return pd.DataFrame(result_cols)
-

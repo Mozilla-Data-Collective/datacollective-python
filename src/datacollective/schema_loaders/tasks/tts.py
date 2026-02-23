@@ -25,7 +25,6 @@ class TTSLoader(BaseSchemaLoader):
             return self._load_paired_glob()
         return self._load_based_on_index()
 
-
     def _load_based_on_index(self) -> pd.DataFrame:
         """
         Load a TTS dataset using the "index" strategy, where an index file (e.g. CSV) maps audio paths to transcriptions.
@@ -45,7 +44,6 @@ class TTSLoader(BaseSchemaLoader):
 
         return self._apply_column_mappings(raw_df)
 
-
     def _load_paired_glob(self) -> pd.DataFrame:
         """
         Load a TTS dataset using the "paired_glob" strategy, where each audio file has a
@@ -58,9 +56,7 @@ class TTSLoader(BaseSchemaLoader):
         if not self.schema.file_pattern:
             raise ValueError("TTS paired_glob schema must specify 'file_pattern'")
         if not self.schema.audio_extension:
-            raise ValueError(
-                "TTS paired_glob schema must specify 'audio_extension'"
-            )
+            raise ValueError("TTS paired_glob schema must specify 'audio_extension'")
 
         text_files = sorted(self.extract_dir.rglob(self.schema.file_pattern))
         if not text_files:
@@ -70,8 +66,7 @@ class TTSLoader(BaseSchemaLoader):
             )
 
         logger.debug(
-            f"Found {len(text_files)} text files matching "
-            f"'{self.schema.file_pattern}'"
+            f"Found {len(text_files)} text files matching '{self.schema.file_pattern}'"
         )
 
         audio_ext = self.schema.audio_extension
@@ -85,9 +80,7 @@ class TTSLoader(BaseSchemaLoader):
                 )
                 continue
 
-            transcription = txt_path.read_text(
-                encoding=self.schema.encoding
-            ).strip()
+            transcription = txt_path.read_text(encoding=self.schema.encoding).strip()
             row: dict[str, str] = {
                 "audio_path": str(audio_path),
                 "transcription": transcription,
@@ -102,10 +95,7 @@ class TTSLoader(BaseSchemaLoader):
 
         if not rows:
             raise FileNotFoundError(
-                f"No paired (text + {audio_ext}) files found "
-                f"under '{self.extract_dir}'"
+                f"No paired (text + {audio_ext}) files found under '{self.extract_dir}'"
             )
 
         return pd.DataFrame(rows)
-
-
