@@ -4,7 +4,8 @@ import logging
 import os
 import platform
 from pathlib import Path
-
+import urllib.error
+import urllib.request
 import requests
 from dotenv import find_dotenv, load_dotenv
 from datacollective.schema import DatasetSchema, parse_schema
@@ -12,6 +13,10 @@ from datacollective.schema import DatasetSchema, parse_schema
 logger = logging.getLogger(__name__)
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
+SCHEMA_REGISTRY_RAW_BASE_URL = (
+    "https://raw.githubusercontent.com/"
+    "Mozilla-Data-Collective/dataset-schema-registry"
+)
 ENV_API_KEY = "MDC_API_KEY"
 ENV_API_URL = "MDC_API_URL"
 ENV_DOWNLOAD_PATH = "MDC_DOWNLOAD_PATH"
@@ -82,27 +87,36 @@ def send_api_request(
 
 def get_dataset_schema(dataset_id: str) -> DatasetSchema:
     """
-    Fetch and parse the ``schema.yaml`` for a dataset from the MDC API.
+    Download and return the schema.yaml content for *dataset_id*.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The registry dataset ID (the folder name under /registry/).
 
     Returns:
-        A :class:`DatasetSchema` instance describing the dataset structure.
-
+        The raw content of the schema.yaml as a UTF-8 string.
     Raises:
-        ValueError: If dataset_id is empty or the schema cannot be parsed.
-        FileNotFoundError: If the dataset / schema does not exist (404).
-        PermissionError: If access is denied (403).
-        RuntimeError: If rate limit is exceeded (429).
-        requests.HTTPError: For other non-2xx responses.
+        ValueError
+            If the dataset is not found (HTTP 404).
+        RuntimeError
+            For any other network / HTTP error.
     """
-    if not dataset_id or not dataset_id.strip():
-        raise ValueError("`dataset_id` must be a non-empty string")
 
-    url = f"{_get_api_url()}/datasets/{dataset_id}/schema"
-    resp = send_api_request(method="GET", url=url)
-    return parse_schema(resp.text)
+    url = f"{SCHEMA_REGISTRY_RAW_BASE_URL}/main/registry/{dataset_id}/schema.yaml"
+
+    try:
+        with urllib.request.urlopen(url) as response:
+            return response.read().decode("utf-8")
+    except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            raise ValueError(
+                f"Dataset '{dataset_id}' not found in the registry.\n"
+                f"URL tried: {url}"
+            ) from exc
+        raise RuntimeError(f"HTTP {exc.code} while fetching {url}") from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"Network error while fetching {url}: {exc.reason}") from exc
+
+
 
 
 def _get_api_url() -> str:
