@@ -11,7 +11,7 @@ import pandas as pd
 
 from datacollective.api_utils import (
     _get_api_url,
-    send_api_request, get_dataset_schema,
+    send_api_request,
 )
 from datacollective.download import (
     cleanup_partial_download,
@@ -21,6 +21,7 @@ from datacollective.download import (
     resolve_download_dir,
     write_checksum_file,
 )
+from datacollective.schema_loaders.cache_schema import _resolve_schema
 from datacollective.schema_loaders.registry import load_dataset_from_schema
 
 logger = logging.getLogger(__name__)
@@ -170,7 +171,7 @@ def load_dataset(
         overwrite_extracted=overwrite_extracted,
     )
 
-    schema = get_dataset_schema(dataset_id)
+    schema = _resolve_schema(dataset_id, extract_dir)
     return load_dataset_from_schema(schema, extract_dir)
 
 
