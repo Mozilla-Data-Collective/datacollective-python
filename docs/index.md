@@ -94,23 +94,23 @@ The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets
 
 > **Note:** in-memory dataset loading is currently supported only for certain datasets.
 
-You can load supported datasets into memory and convert them to a `pandas`
-`DataFrame` for analysis:
+You can load supported datasets into memory as a `pandas` `DataFrame` for
+analysis:
 
 ```python
 from datacollective import load_dataset
 
-dataset = load_dataset("your-dataset-id")
+df = load_dataset("your-dataset-id")
 
-# Convert to pandas
-df = dataset.to_pandas()
-
-# Inspect available splits (e.g., train, dev, test)
-print(dataset.splits)
+# Inspect the loaded DataFrame
+print(df.head())
 ```
 
 Once loaded into a `DataFrame`, you can use standard `pandas` operations
 to filter, aggregate, and analyze the data.
+
+> For details on how `schema.yaml` files drive the loading process, see
+> [Schema-Based Dataset Loading](schema_parse.md).
 
 ## Get dataset details
 
