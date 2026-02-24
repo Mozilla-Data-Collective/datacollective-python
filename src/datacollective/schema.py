@@ -71,10 +71,18 @@ class DatasetSchema:
     encoding: str = "utf-8"  # file encoding (e.g. "utf-8-sig" for BOM)
 
     # --- Glob-based strategy (LM, paired-file TTS) ---
-    root_strategy: str | None = None  # "glob" when scanning for files
+    root_strategy: str | None = None  # "glob" | "paired_glob" | "multi_split"
     file_pattern: str | None = None  # e.g. "**/*.txt"
     audio_extension: str | None = None  # for paired-file TTS: e.g. ".webm"
     content_mapping: ContentMapping | None = None
+
+    # --- Multi-split strategy (e.g. Common Voice) ---
+    splits: list[str] | None = (
+        None  # split names to load, e.g. ["train", "dev", "test"]
+    )
+    splits_file_pattern: str | None = (
+        None  # glob pattern for split files, e.g. "**/*.tsv"
+    )
 
     # --- Schema versioning ---
     checksum: str | None = None  # schema checksum for cache validation
@@ -179,6 +187,8 @@ def parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         "file_pattern",
         "audio_extension",
         "content_mapping",
+        "splits",
+        "splits_file_pattern",
         "checksum",
     }
     extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -197,6 +207,8 @@ def parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         file_pattern=data.get("file_pattern"),
         audio_extension=data.get("audio_extension"),
         content_mapping=content_mapping,
+        splits=data.get("splits"),
+        splits_file_pattern=data.get("splits_file_pattern"),
         checksum=data.get("checksum"),
         extra=extra,
     )

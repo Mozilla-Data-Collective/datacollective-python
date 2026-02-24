@@ -14,12 +14,14 @@ import pandas as pd
 
 from datacollective.schema import DatasetSchema
 from datacollective.schema_loaders.base import BaseSchemaLoader
+from datacollective.schema_loaders.tasks.asr import ASRLoader
 from datacollective.schema_loaders.tasks.tts import TTSLoader
 
 logger = logging.getLogger(__name__)
 
 
 _TASK_REGISTRY: dict[str, Type[BaseSchemaLoader]] = {
+    "ASR": ASRLoader,
     "TTS": TTSLoader,
 }
 
