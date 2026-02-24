@@ -1,3 +1,4 @@
+import logging
 import os
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,6 +14,8 @@ from datacollective.api_utils import (
     send_api_request,
 )
 from datacollective.errors import DownloadError
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -78,7 +81,7 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
 
     checksum_filepath = _get_checksum_filepath(target_filepath)
 
-    return DownloadPlan(
+    download_plan = DownloadPlan(
         download_url=download_url,
         filename=filename,
         target_filepath=target_filepath,
@@ -87,6 +90,10 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
         checksum=checksum,
         checksum_filepath=checksum_filepath,
     )
+    logger.debug(
+        f"Download plan: filename={filename}, size={int(size_bytes)} bytes, target={target_filepath}",
+    )
+    return download_plan
 
 
 def determine_resume_state(download_plan: DownloadPlan) -> str | None:
@@ -121,11 +128,11 @@ def determine_resume_state(download_plan: DownloadPlan) -> str | None:
     if part_exists and checksum_file_exists and stored_checksum:
         if stored_checksum == download_plan.checksum:
             # Checksum matches -> resume download
-            print("Resuming previously interrupted download...")
+            logger.info("Resuming previously interrupted download...")
             return stored_checksum
         else:
             # Case 2: Checksum does not match, i.e. dataset was updated -> start fresh
-            print(
+            logger.info(
                 "Dataset has been updated since the previous download attempt. "
                 "Starting fresh download..."
             )
@@ -134,7 +141,7 @@ def determine_resume_state(download_plan: DownloadPlan) -> str | None:
 
     # Case 3: .part exists but no .checksum: cannot safely resume -> start fresh
     if part_exists and not checksum_file_exists:
-        print(
+        logger.warning(
             "Partial download found without checksum file. Starting fresh download..."
         )
         cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
@@ -173,7 +180,7 @@ def execute_download_plan(
     progress_bar = None
     session_downloaded_bytes = 0
     total_downloaded_bytes = downloaded_bytes_so_far
-    print(f"Downloading dataset: {download_plan.filename}")
+    logger.info(f"Downloading dataset: {download_plan.filename}")
     if show_progress:
         progress_bar = ProgressBar(download_plan.size_bytes)
         progress_bar.update(downloaded_bytes_so_far)
@@ -229,6 +236,7 @@ def resolve_download_dir(download_directory: str | None) -> Path:
     p.mkdir(parents=True, exist_ok=True)
     if not os.access(p, os.W_OK):
         raise PermissionError(f"Directory `{str(p)}` is not writable")
+    logger.debug(f"Resolved download directory: {p}")
     return p
 
 

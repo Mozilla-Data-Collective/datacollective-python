@@ -1,3 +1,4 @@
+import logging
 import os
 from pathlib import Path
 
@@ -80,7 +81,7 @@ def test_load_dataset_live_api(
 def test_resume_download(
     tmp_path: Path,
     monkeypatch: MonkeyPatch,
-    capsys: pytest.CaptureFixture[str],
+    caplog: pytest.LogCaptureFixture,
     dataset_id: str = "cmiq2s3q5000fo207k9g6g7ou",
 ) -> None:
     """
@@ -141,15 +142,15 @@ def test_resume_download(
         )
 
         # Now resume the download using save_dataset_to_disk
-        result_path = save_dataset_to_disk(
-            dataset_id,
-            download_directory=str(tmp_path),
-            show_progress=False,
-        )
+        with caplog.at_level(logging.INFO, logger="datacollective.download"):
+            result_path = save_dataset_to_disk(
+                dataset_id,
+                download_directory=str(tmp_path),
+                show_progress=False,
+            )
 
-        # Verify resume message was printed
-        captured = capsys.readouterr()
-        assert "Resuming previously interrupted download" in captured.out
+        # Verify resume message was logged
+        assert "Resuming previously interrupted download" in caplog.text
 
     except Exception as exc:
         _skip_if_rate_limited(exc)
