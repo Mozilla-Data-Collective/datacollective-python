@@ -26,6 +26,10 @@ FORMAT_SEP: dict[str, str] = {
     "pipe": "|",
 }
 
+STRATEGY_MULTI_SPLIT = "multi_split"
+STRATEGY_PAIRED_GLOB = "paired_glob"
+STRATEGY_GLOB = "glob"
+
 
 class BaseSchemaLoader(abc.ABC):
     """

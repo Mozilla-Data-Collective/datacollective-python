@@ -1,6 +1,5 @@
 import logging
 from pathlib import Path
-from typing import Any
 import yaml
 
 from datacollective.schema import DatasetSchema, parse_schema, get_dataset_schema
@@ -92,48 +91,7 @@ def _save_schema_to_disk(schema: DatasetSchema, schema_path: Path) -> None:
     Persist the schema to *schema_path* so that subsequent loads can skip
     the API call when the checksum hasn't changed.
     """
-    data: dict[str, Any] = {
-        "dataset_id": schema.dataset_id,
-        "task": schema.task,
-    }
-    if schema.checksum is not None:
-        data["checksum"] = schema.checksum
-    if schema.format is not None:
-        data["format"] = schema.format
-    if schema.index_file is not None:
-        data["index_file"] = schema.index_file
-    if schema.base_audio_path is not None:
-        data["base_audio_path"] = schema.base_audio_path
-    if schema.separator is not None:
-        data["separator"] = schema.separator
-    if not schema.has_header:
-        data["has_header"] = schema.has_header
-    if schema.encoding != "utf-8":
-        data["encoding"] = schema.encoding
-    if schema.root_strategy is not None:
-        data["root_strategy"] = schema.root_strategy
-    if schema.file_pattern is not None:
-        data["file_pattern"] = schema.file_pattern
-    if schema.audio_extension is not None:
-        data["audio_extension"] = schema.audio_extension
-    if schema.columns:
-        data["columns"] = {
-            name: {
-                "source_column": col.source_column,
-                "dtype": col.dtype,
-                **({"optional": col.optional} if col.optional else {}),
-            }
-            for name, col in schema.columns.items()
-        }
-    if schema.content_mapping is not None:
-        cm: dict[str, Any] = {}
-        if schema.content_mapping.text is not None:
-            cm["text"] = schema.content_mapping.text
-        if schema.content_mapping.meta_source is not None:
-            cm["meta_source"] = schema.content_mapping.meta_source
-        data["content_mapping"] = cm
-    if schema.extra:
-        data.update(schema.extra)
+    data = schema.to_yaml_dict()
 
     try:
         schema_path.parent.mkdir(parents=True, exist_ok=True)

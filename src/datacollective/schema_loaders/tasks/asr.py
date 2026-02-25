@@ -6,7 +6,11 @@ from pathlib import Path
 import pandas as pd
 
 from datacollective.schema import DatasetSchema
-from datacollective.schema_loaders.base import BaseSchemaLoader, FORMAT_SEP
+from datacollective.schema_loaders.base import (
+    BaseSchemaLoader,
+    FORMAT_SEP,
+    STRATEGY_MULTI_SPLIT,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,7 +20,7 @@ class ASRLoader(BaseSchemaLoader):
 
     def __init__(self, schema: DatasetSchema, extract_dir: Path) -> None:
         super().__init__(schema, extract_dir)
-        if schema.root_strategy == "multi_split":
+        if schema.root_strategy == STRATEGY_MULTI_SPLIT:
             if not schema.splits:
                 raise ValueError(
                     "ASR multi_split schema must specify 'splits' (list of split names)"
@@ -30,7 +34,7 @@ class ASRLoader(BaseSchemaLoader):
                 raise ValueError("ASR schema must specify at least one column mapping")
 
     def load(self) -> pd.DataFrame:
-        if self.schema.root_strategy == "multi_split":
+        if self.schema.root_strategy == STRATEGY_MULTI_SPLIT:
             return self._load_multi_split()
         raw_df = self._load_index_file()
         return self._apply_column_mappings(raw_df)
