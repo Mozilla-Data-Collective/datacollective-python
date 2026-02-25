@@ -91,7 +91,7 @@ class DatasetSchema:
     extra: dict[str, Any] = field(default_factory=dict)
 
 
-def get_dataset_schema(dataset_id: str) -> DatasetSchema:
+def get_dataset_schema(dataset_id: str) -> DatasetSchema | None:
     """
     Download and return the schema.yaml content for *dataset_id*.
 
@@ -99,10 +99,9 @@ def get_dataset_schema(dataset_id: str) -> DatasetSchema:
         dataset_id: The registry dataset ID (the folder name under /registry/).
 
     Returns:
-        A fully-populated `DatasetSchema` for the given dataset.
+        A fully-populated `DatasetSchema` for the given dataset, or ``None`` if
+        the dataset is not found in the registry (HTTP 404).
     Raises:
-        ValueError
-            If the dataset is not found (HTTP 404).
         RuntimeError
             For any other network / HTTP error.
     """
@@ -115,9 +114,7 @@ def get_dataset_schema(dataset_id: str) -> DatasetSchema:
         return parse_schema(raw)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
-            raise ValueError(
-                f"Dataset '{dataset_id}' not found in the registry.\nURL tried: {url}"
-            ) from exc
+            return None
         raise RuntimeError(f"HTTP {exc.code} while fetching {url}") from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Network error while fetching {url}: {exc.reason}") from exc

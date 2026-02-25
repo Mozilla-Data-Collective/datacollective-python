@@ -23,6 +23,7 @@ from datacollective.download import (
 )
 from datacollective.schema_loaders.cache_schema import _resolve_schema
 from datacollective.schema_loaders.registry import load_dataset_from_schema
+from datacollective.schema import get_dataset_schema
 
 logger = logging.getLogger(__name__)
 
@@ -158,6 +159,15 @@ def load_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
+    schema = get_dataset_schema(dataset_id)
+    if schema is None:
+        raise RuntimeError(
+            f"Dataset '{dataset_id}' is not supported by load_dataset at the moment, or is not a valid ID. "
+            f"You can download the raw archive with: save_dataset_to_disk('{dataset_id}'). "
+            f"If you are the data owner of the dataset consider following the instructions "
+            f"below on adding support: https://mozilla-data-collective.github.io/dataset-schema-registry/",
+        )
+
     archive_path = save_dataset_to_disk(
         dataset_id=dataset_id,
         download_directory=download_directory,

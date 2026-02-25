@@ -35,6 +35,10 @@ def _resolve_schema(dataset_id: str, extract_dir: Path) -> DatasetSchema:
     if cached_schema is not None and cached_schema.checksum is not None:
         # Fetch the remote schema and compare checksums
         remote_schema = get_dataset_schema(dataset_id)
+        if remote_schema is None:
+            # Dataset not in registry; use cached copy as-is
+            logger.info("Dataset not found in registry – using cached schema.")
+            return cached_schema
         if (
             remote_schema.checksum is not None
             and remote_schema.checksum == cached_schema.checksum
@@ -49,6 +53,12 @@ def _resolve_schema(dataset_id: str, extract_dir: Path) -> DatasetSchema:
 
     # No usable cache → fetch from API and persist locally
     remote_schema = get_dataset_schema(dataset_id)
+    if remote_schema is None:
+        if cached_schema is not None:
+            return cached_schema
+        raise ValueError(
+            f"Dataset '{dataset_id}' not found in the schema registry and no local schema cache exists."
+        )
     _save_schema_to_disk(remote_schema, schema_path)
     return remote_schema
 
