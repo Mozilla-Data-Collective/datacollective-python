@@ -35,9 +35,8 @@ Thus, the `df = load_dataset("your-dataset-id")` function will call:
 | `datacollective.schema_loaders.base` | Abstract base class `BaseSchemaLoader` that every task-specific loader must subclass. Also provides shared helpers (`_resolve_index_file`, `_apply_column_mappings`) and the `FORMAT_SEP` separator lookup. |
 | `datacollective.schema_loaders.registry` | `_TASK_REGISTRY` dict mapping task names → loader classes, plus the `load_dataset_from_schema()` entry-point. |
 | `datacollective.schema_loaders.cache_schema` | Schema caching layer — `_resolve_schema()` loads a cached `schema.yaml` or fetches from the API, comparing the archive checksum. |
-| `datacollective.schema_loaders.asr` | Loader for **ASR** (Automatic Speech Recognition) datasets. |
-| `datacollective.schema_loaders.tts` | Loader for **TTS** (Text-to-Speech) datasets — supports both index-based and paired-glob variants. |
-| `datacollective.schema_loaders.lm` | Loader for **LM** (Language Model / text) datasets. |
+| `datacollective.schema_loaders.tasks.asr` | Loader for **ASR** (Automatic Speech Recognition) datasets. |
+| `datacollective.schema_loaders.tasks.tts` | Loader for **TTS** (Text-to-Speech) datasets — supports both index-based and paired-glob variants. |
 | `datacollective.datasets` | High-level `load_dataset()` function (download → extract → schema fetch → load). |
 
 
