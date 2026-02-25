@@ -9,7 +9,7 @@ To add a new task type:
 
 from __future__ import annotations
 
-import abc
+import abc, sys
 import logging
 from pathlib import Path
 
@@ -87,6 +87,43 @@ class BaseSchemaLoader(abc.ABC):
         # Prefer the shallowest match
         candidates.sort(key=lambda p: len(p.parts))
         return candidates[0]
+  
+    def _load_multi_sections(self) -> pd.DataFrame:
+        """
+        """
+        sections = self._resolve_sections()
+        sep = self.schema.separator or FORMAT_SEP.get(self.schema.format or "", ",")
+        header = "infer" if self.schema.has_header else None
+
+        df = pd.DataFrame()
+        for section_path in sections:
+            logger.debug(f"Reading section: {section_path} (sep={sep!r})")
+            section_df = pd.read_csv(section_path, sep=sep, header=header, encoding=self.schema.encoding)
+            section_df['section'] = section_path.parents[0].name
+            df = pd.concat([df, section_df])
+
+        return df
+
+    def _resolve_sections(self) -> list:
+        """
+        Get a list of valid sections
+        """
+
+        assert self.schema.sections is not None 
+        assert self.schema.index_file is not None
+        assert self.schema.section_root is not None
+        sections = self.schema.sections
+        section_paths = []
+        for section in sections: 
+            section_path = self.extract_dir / Path(self.schema.section_root) / Path(section) / self.schema.index_file
+            if not section_path.exists():
+                raise FileNotFoundError(
+                 f"Index file '{section_path}' not found "
+             )
+            section_paths.append(section_path)
+ 
+        return section_paths
+       
 
     def _apply_column_mappings(self, raw_df: pd.DataFrame) -> pd.DataFrame:
         """Select and rename columns according to the schema, applying dtype conversions.

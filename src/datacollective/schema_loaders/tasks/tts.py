@@ -23,6 +23,8 @@ class TTSLoader(BaseSchemaLoader):
     def load(self) -> pd.DataFrame:
         if self.schema.root_strategy == "paired_glob":
             return self._load_paired_glob()
+        elif self.schema.root_strategy == "multi_sections":
+            return self._load_multi_sections()
         return self._load_based_on_index()
 
     def _load_based_on_index(self) -> pd.DataFrame:
@@ -97,5 +99,6 @@ class TTSLoader(BaseSchemaLoader):
             raise FileNotFoundError(
                 f"No paired (text + {audio_ext}) files found under '{self.extract_dir}'"
             )
+
 
         return pd.DataFrame(rows)
