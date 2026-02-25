@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -9,28 +8,31 @@ import urllib.error
 import urllib.request
 import yaml
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from datacollective.api_utils import SCHEMA_REGISTRY_RAW_BASE_URL
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class ColumnMapping:
+class ColumnMapping(BaseModel):
     """
     A single column mapping entry inside a schema.
+
     Used by index-based tasks to describe how columns in the
     index file map to logical fields and their data types.
     """
 
+    model_config = ConfigDict(frozen=True)
+
     source_column: (
         str | int
     )  # column name (str) or positional index (int) for headerless files
-    dtype: str
+    dtype: str = "string"
     optional: bool = False
 
 
-@dataclass
-class ContentMapping:
+class ContentMapping(BaseModel):
     """
     Describes how file contents / metadata map to DataFrame columns.
 
@@ -40,12 +42,13 @@ class ContentMapping:
     the file name or parent directory.
     """
 
+    model_config = ConfigDict(frozen=True)
+
     text: str | None = None  # e.g. "file_content"
     meta_source: str | None = None  # e.g. "file_name"
 
 
-@dataclass
-class DatasetSchema:
+class DatasetSchema(BaseModel):
     """
     Task-agnostic representation of a dataset schema, as defined by a ``schema.yaml`` file.
 
@@ -58,6 +61,8 @@ class DatasetSchema:
     required at load time.
     """
 
+    model_config = ConfigDict(frozen=False)
+
     dataset_id: str
     task: str  # e.g. "ASR", "TTS", "MT", etc
 
@@ -65,7 +70,7 @@ class DatasetSchema:
     format: str | None = None  # e.g. "csv", "tsv", "pipe"
     index_file: str | None = None  # e.g. "train.csv"
     base_audio_path: str | None = None  # e.g. "clips/"
-    columns: dict[str, ColumnMapping] = field(default_factory=dict)
+    columns: dict[str, ColumnMapping] = Field(default_factory=dict)
     separator: str | None = None  # explicit separator override (e.g. "|")
     has_header: bool = True  # whether the index file has a header row
     encoding: str = "utf-8"  # file encoding (e.g. "utf-8-sig" for BOM)
@@ -88,7 +93,21 @@ class DatasetSchema:
     checksum: str | None = None  # archive checksum for cache validation
 
     # --- Catch-all for future / unknown keys ---
-    extra: dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = Field(default_factory=dict)
+
+    def to_yaml_dict(self) -> dict[str, Any]:
+        """
+        Serialise the schema to a plain dict suitable for YAML output.
+
+        Excludes fields that are at their default values so that the
+        generated ``schema.yaml`` stays compact and readable.  The
+        ``extra`` dict is merged into the top level.
+        """
+        data = self.model_dump(exclude_defaults=True, exclude={"extra"})
+        # Merge extra keys into the top level
+        if self.extra:
+            data.update(self.extra)
+        return data
 
 
 def get_dataset_schema(dataset_id: str) -> DatasetSchema | None:
