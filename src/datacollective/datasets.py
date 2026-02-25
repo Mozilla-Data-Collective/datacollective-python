@@ -168,6 +168,9 @@ def load_dataset(
             f"below on adding support: https://mozilla-data-collective.github.io/dataset-schema-registry/",
         )
 
+    download_plan = get_download_plan(dataset_id, download_directory)
+    archive_checksum = download_plan.checksum
+
     archive_path = save_dataset_to_disk(
         dataset_id=dataset_id,
         download_directory=download_directory,
@@ -181,7 +184,7 @@ def load_dataset(
         overwrite_extracted=overwrite_extracted,
     )
 
-    schema = _resolve_schema(dataset_id, extract_dir)
+    schema = _resolve_schema(dataset_id, extract_dir, archive_checksum)
     return load_dataset_from_schema(schema, extract_dir)
 
 

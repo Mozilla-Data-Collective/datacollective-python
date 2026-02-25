@@ -34,7 +34,7 @@ Thus, the `df = load_dataset("your-dataset-id")` function will call:
 | `datacollective.schema` | Dataclass hierarchy (`DatasetSchema`, `ColumnMapping`, `ContentMapping`) and `parse_schema()` helper. |
 | `datacollective.schema_loaders.base` | Abstract base class `BaseSchemaLoader` that every task-specific loader must subclass. Also provides shared helpers (`_resolve_index_file`, `_apply_column_mappings`) and the `FORMAT_SEP` separator lookup. |
 | `datacollective.schema_loaders.registry` | `_TASK_REGISTRY` dict mapping task names → loader classes, plus the `load_dataset_from_schema()` entry-point. |
-| `datacollective.schema_loaders.cache_schema` | Schema caching layer — `_resolve_schema()` loads a cached `schema.yaml` or fetches from the API, comparing checksums. |
+| `datacollective.schema_loaders.cache_schema` | Schema caching layer — `_resolve_schema()` loads a cached `schema.yaml` or fetches from the API, comparing the archive checksum. |
 | `datacollective.schema_loaders.asr` | Loader for **ASR** (Automatic Speech Recognition) datasets. |
 | `datacollective.schema_loaders.tts` | Loader for **TTS** (Text-to-Speech) datasets — supports both index-based and paired-glob variants. |
 | `datacollective.schema_loaders.lm` | Loader for **LM** (Language Model / text) datasets. |
@@ -210,12 +210,16 @@ The SDK caches the `schema.yaml` inside the extracted dataset directory to
 minimise redundant API calls.  The caching logic
 (`datacollective.schema_loaders.cache_schema`) works as follows:
 
-1. If a `schema.yaml` exists locally **with a checksum**, the remote schema is
-   fetched and its checksum is compared.  When they match the local copy is
-   returned without re-parsing.
-2. If the checksums differ, the freshly fetched remote schema replaces the
-   cached copy.
-3. If no local cache exists, or the cached schema has no checksum, the remote
-   schema is fetched and saved to disk for next time.
+1. When `load_dataset()` runs, it obtains a download plan from the API which
+   includes the **archive checksum** of the dataset.
+2. If a `schema.yaml` exists locally **with a checksum**, the stored checksum
+   is compared against the archive checksum.  When they match the local copy is
+   returned without fetching the remote schema.
+3. If the checksums differ (e.g. the dataset archive was updated), or no local
+   cache exists, the remote schema is fetched from the registry.  The archive
+   checksum is then written into the cached `schema.yaml` so that subsequent
+   loads can skip the remote fetch.
+4. If the remote registry does not have a schema for the dataset, a local
+   cached copy is used as a fallback when available.
 
 

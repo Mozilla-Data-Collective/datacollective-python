@@ -8,21 +8,30 @@ from datacollective.schema import DatasetSchema, parse_schema, get_dataset_schem
 logger = logging.getLogger(__name__)
 
 
-def _resolve_schema(dataset_id: str, extract_dir: Path) -> DatasetSchema:
+def _resolve_schema(
+    dataset_id: str,
+    extract_dir: Path,
+    archive_checksum: str | None = None,
+) -> DatasetSchema:
     """
     Return the dataset schema, using a locally cached ``schema.yaml`` when the
-    checksum in the cached file matches the remote checksum, avoiding an
-    unnecessary API call to re-download the schema.
+    archive checksum stored in the cached file matches the checksum of the
+    current dataset archive, avoiding an unnecessary API call to re-download
+    the schema.
 
     The function first checks whether a ``schema.yaml`` already exists in
-    *extract_dir*.  If that file contains a ``checksum`` field, the remote
-    schema is fetched and its checksum is compared.  When the two match the
-    local copy is returned directly.  Otherwise, the freshly downloaded schema
-    is saved to disk for next time.
+    *extract_dir*.  If that file contains a ``checksum`` field **and** the
+    caller supplies *archive_checksum*, the two are compared.  When they match,
+    the local copy is returned directly.  Otherwise, the schema is fetched from
+    the remote registry, stamped with the current *archive_checksum*, and saved
+    to disk for next time.
 
     Args:
         dataset_id: The dataset ID.
         extract_dir: Path to the extracted dataset directory.
+        archive_checksum: Checksum of the downloaded dataset archive. When
+            provided, it is compared against the ``checksum`` stored in the
+            cached ``schema.yaml`` to decide whether the cache is still valid.
 
     Returns:
         A :class:`DatasetSchema` instance.
@@ -32,33 +41,32 @@ def _resolve_schema(dataset_id: str, extract_dir: Path) -> DatasetSchema:
     # Try to load a cached schema first
     cached_schema = _load_cached_schema(schema_path)
 
-    if cached_schema is not None and cached_schema.checksum is not None:
-        # Fetch the remote schema and compare checksums
-        remote_schema = get_dataset_schema(dataset_id)
-        if remote_schema is None:
-            # Dataset not in registry; use cached copy as-is
-            logger.info("Dataset not found in registry – using cached schema.")
-            return cached_schema
-        if (
-            remote_schema.checksum is not None
-            and remote_schema.checksum == cached_schema.checksum
-        ):
-            logger.info(
-                "Schema checksum matches cached copy – skipping schema download."
-            )
-            return cached_schema
-        # Checksum mismatch → use the freshly fetched remote schema and update cache
-        _save_schema_to_disk(remote_schema, schema_path)
-        return remote_schema
+    if (
+        cached_schema is not None
+        and archive_checksum is not None
+        and cached_schema.checksum is not None
+        and cached_schema.checksum == archive_checksum
+    ):
+        logger.info(
+            "Archive checksum matches cached schema – skipping schema download."
+        )
+        return cached_schema
 
-    # No usable cache → fetch from API and persist locally
+    # Cache miss or no archive checksum available → fetch from the registry
     remote_schema = get_dataset_schema(dataset_id)
     if remote_schema is None:
         if cached_schema is not None:
+            logger.info("Dataset not found in registry – using cached schema.")
             return cached_schema
         raise ValueError(
             f"Dataset '{dataset_id}' not found in the schema registry and no local schema cache exists."
         )
+
+    # Stamp the remote schema with the archive checksum so that subsequent
+    # loads can skip the remote fetch when the archive hasn't changed.
+    if archive_checksum is not None:
+        remote_schema.checksum = archive_checksum
+
     _save_schema_to_disk(remote_schema, schema_path)
     return remote_schema
 

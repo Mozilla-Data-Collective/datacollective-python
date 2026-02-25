@@ -85,7 +85,7 @@ class DatasetSchema:
     )
 
     # --- Schema versioning ---
-    checksum: str | None = None  # schema checksum for cache validation
+    checksum: str | None = None  # archive checksum for cache validation
 
     # --- Catch-all for future / unknown keys ---
     extra: dict[str, Any] = field(default_factory=dict)
