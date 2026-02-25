@@ -8,6 +8,7 @@ nav:
   - Loaders:
     - ASR: loaders/asr.md
     - TTS: loaders/tts.md
+  - Extending Schema Loaders: extend_the_schemas.md
   - API Reference: api.md
   - Release Workflow: release.md
 
