@@ -24,6 +24,7 @@ def _enable_verbose(verbose: bool) -> None:
     _PKG_LOGGER.addHandler(handler)
     _PKG_LOGGER.setLevel(logging.DEBUG)
 
+
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
 ENV_API_KEY = "MDC_API_KEY"
 ENV_API_URL = "MDC_API_URL"
@@ -168,6 +169,7 @@ def _prepare_download_headers(
 
     tmp_path.unlink()  # remove existing file if no resume checksum supplied
     return {}, 0
+
 
 def _format_bytes(bytes_val: int) -> str:
     """Format bytes into a human-readable string."""

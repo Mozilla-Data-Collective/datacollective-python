@@ -8,7 +8,8 @@ The SDK provides a complete workflow for uploading datasets:
 
 1. **Create a draft submission** - Initialize a new dataset submission
 2. **Upload the dataset file** - Upload your archive using resumable multipart uploads
-3. **Submit for review** - Finalize the submission with required metadata
+3. **Update submission metadata** - Add required metadata fields to the submission
+4. **Submit for review** - Finalize the submission for review
 
 The SDK supports **resumable uploads**, meaning if an upload is interrupted (network error, system shutdown, etc.), you can resume from where it left off.
 
@@ -41,7 +42,7 @@ The simplest way to upload a dataset is using `create_submission_with_upload`, w
 ```python
 from datacollective import create_submission_with_upload
 
-# Define all required submission fields
+# Define submission metadata fields
 submission_fields = {
     "shortDescription": "A brief description of your dataset",
     "longDescription": "A detailed description of your dataset",
@@ -66,7 +67,6 @@ submission_fields = {
     "intendedUsage": "Intended use of the dataset",
     "ethicalReviewProcess": "Description of ethical review",
     "exclusivityOptOut": True,
-    "agreeToSubmit": True,
 }
 
 # Upload and submit in one call
@@ -78,8 +78,9 @@ response = create_submission_with_upload(
     mime_type="application/gzip",
 )
 
-print(f"Submission ID: {response.get('id')}")
-print(f"File Upload ID: {response.get('fileUploadId')}")
+submission = response.get("submission", {})
+print(f"Submission ID: {submission.get('id')}")
+print(f"Status: {submission.get('status')}")
 ```
 
 ### Parameters
@@ -128,7 +129,6 @@ When submitting a dataset, you must provide the following fields:
 | `intendedUsage`        | `str` | Intended use of the dataset                                                     |
 | `ethicalReviewProcess` | `str` | Description of ethical review conducted                                         |
 | `exclusivityOptOut`    | `bool` | Whether to opt out of exclusivity                                               |
-| `agreeToSubmit`        | `bool` | Whether the uploader agrees to submit their dataset for review (must be `True`) |
 
 ### Contact Information
 
@@ -157,7 +157,7 @@ draft = create_submission_draft(
     long_description="Full description of my dataset"
 )
 
-submission_id = draft["submissionId"]
+submission_id = draft["submission"]["id"]
 print(f"Created draft submission: {submission_id}")
 ```
 
@@ -175,24 +175,39 @@ upload_state = upload_dataset_file(
 print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 ```
 
-### Step 3: Submit for Review
+### Step 3: Update Submission Metadata
+
+```python
+from datacollective import update_submission
+
+response = update_submission(
+    submission_id=submission_id,
+    update_fields={
+        "task": "ML",
+        "licenseAbbreviation": "CC-BY-4.0",
+        "locale": "en-US",
+        "format": "text",
+        "restrictions": "No restrictions.",
+        "forbiddenUsage": "Do not use for unlawful purposes.",
+        "pointOfContactFullName": "Jane Doe",
+        "pointOfContactEmail": "jane@example.com",
+        "fileUploadId": upload_state.fileUploadId,
+        # ... other metadata fields ...
+    },
+)
+
+print(f"Metadata updated: {response}")
+```
+
+### Step 4: Submit for Review
 
 ```python
 from datacollective import submit_submission
 
-submission_fields = {
-    "shortDescription": "A brief description",
-    "longDescription": "Full description",
-    # ... all other required fields ...
-    "fileUploadId": upload_state.fileUploadId,
-}
+response = submit_submission(submission_id=submission_id)
 
-response = submit_submission(
-    submission_id=submission_id,
-    submission_fields=submission_fields
-)
-
-print(f"Submission submitted for review: {response}")
+submission = response["submission"]
+print(f"Submission status: {submission['status']}")
 ```
 
 ## Resumable Uploads
@@ -336,7 +351,6 @@ submission_fields = {
     "intendedUsage": "Training and evaluating speech recognition models",
     "ethicalReviewProcess": "IRB approved under protocol #12345",
     "exclusivityOptOut": True,
-    "agreeToSubmit": True,
     
     # Contacts
     "pointOfContactFullName": "Jane Doe",
@@ -359,8 +373,9 @@ response = create_submission_with_upload(
 )
 
 print("Upload complete!")
-print(f"Submission ID: {response.get('id')}")
-print(f"Status: {response.get('status')}")
+submission = response.get("submission", {})
+print(f"Submission ID: {submission.get('id')}")
+print(f"Status: {submission.get('status')}")
 ```
 
 ## Using Pydantic Models
@@ -369,10 +384,10 @@ For type safety, you can use the provided Pydantic models:
 
 ```python
 from datacollective import create_submission_with_upload
-from datacollective.models import DatasetSubmissionSubmitInput
+from datacollective.models import DatasetSubmissionUpdateInput
 
 # Using the Pydantic model for validation
-submission_fields = DatasetSubmissionSubmitInput(
+submission_fields = DatasetSubmissionUpdateInput(
     shortDescription="Speech recognition dataset",
     longDescription="Full description...",
     locale="en-US",
@@ -396,7 +411,6 @@ submission_fields = DatasetSubmissionSubmitInput(
     intendedUsage="ASR model training",
     ethicalReviewProcess="IRB approved",
     exclusivityOptOut=True,
-    agreeToSubmit=True,
 )
 
 response = create_submission_with_upload(
@@ -416,6 +430,7 @@ For detailed API documentation, see the [API Reference](api.md) section.
 
 - [`create_submission_with_upload`](api.md) - One-step submission and upload
 - [`create_submission_draft`](api.md) - Create a draft submission
+- [`update_submission`](api.md) - Update submission metadata
 - [`upload_dataset_file`](api.md) - Upload a file to a submission
 - [`submit_submission`](api.md) - Submit a draft for review
 - [`initiate_upload`](api.md) - Start a multipart upload session
@@ -424,7 +439,8 @@ For detailed API documentation, see the [API Reference](api.md) section.
 
 ### Key Models
 
-- [`DatasetSubmissionSubmitInput`](api.md) - Pydantic model for submission fields
+- [`DatasetSubmissionUpdateInput`](api.md) - Pydantic model for submission metadata fields
+- [`DatasetSubmissionSubmitInput`](api.md) - Pydantic model for the submit action
 - [`DatasetSubmissionDraftInput`](api.md) - Pydantic model for draft creation
 - [`UploadPart`](api.md) - Model representing an uploaded part
 

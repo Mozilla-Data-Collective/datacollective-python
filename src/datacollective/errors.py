@@ -1,5 +1,6 @@
 from datacollective.api_utils import _format_bytes
 
+
 class DownloadError(Exception):
     """Exception raised when a download fails."""
 

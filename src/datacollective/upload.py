@@ -12,7 +12,12 @@ from typing import Any
 import requests
 from fox_progress_bar import ProgressBar
 
-from datacollective.api_utils import _get_api_url, send_api_request, _format_bytes, _enable_verbose
+from datacollective.api_utils import (
+    _get_api_url,
+    send_api_request,
+    _format_bytes,
+    _enable_verbose,
+)
 from datacollective.models import UploadPart
 
 logger = logging.getLogger(__name__)
@@ -22,6 +27,9 @@ UPLOAD_TIMEOUT = (10, 300)
 # Retry configuration for part uploads
 MAX_UPLOAD_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
+
+
+DEFAULT_PART_SIZE = 50 * 1024 * 1024  # 50 MB default part size
 
 
 @dataclass(frozen=True)
@@ -103,8 +111,9 @@ def initiate_upload(
     if file_size <= 0:
         raise ValueError("`file_size` must be a positive integer")
 
-    url = f"{_get_api_url()}/submissions/{submission_id}/uploads"
+    url = f"{_get_api_url()}/uploads"
     payload = {
+        "submissionId": submission_id,
         "filename": filename,
         "fileSize": file_size,
         "mimeType": mime_type,
@@ -114,7 +123,7 @@ def initiate_upload(
     return UploadSession(
         fileUploadId=str(data.get("fileUploadId", "")),
         uploadId=str(data.get("uploadId", "")),
-        partSize=int(data.get("partSize", 0)),
+        partSize=int(data.get("partSize", 0)) or DEFAULT_PART_SIZE,
     )
 
 
@@ -164,7 +173,7 @@ def complete_upload(
     }
     if upload_id:
         payload["uploadId"] = upload_id
-    resp = send_api_request("PUT", url, json_body=payload)
+    resp = send_api_request("POST", url, json_body=payload)
     return dict(resp.json())
 
 
@@ -217,8 +226,7 @@ def upload_dataset_file(
             or state.submissionId != submission_id
         ):
             logger.warning(
-                "Upload state does not match file or submission. "
-                "Restarting upload."
+                "Upload state does not match file or submission. Restarting upload."
             )
             state = None
         else:
@@ -226,8 +234,7 @@ def upload_dataset_file(
 
     if not state:
         logger.info(
-            f"Initiating upload for '{final_filename}' "
-            f"({_format_bytes(file_size)})..."
+            f"Initiating upload for '{final_filename}' ({_format_bytes(file_size)})..."
         )
         session = initiate_upload(submission_id, final_filename, file_size, mime_type)
         if not session.fileUploadId or not session.uploadId or session.partSize <= 0:
@@ -387,7 +394,9 @@ def _upload_part_with_retry(
             last_exc = exc
             if attempt < max_retries:
                 wait = RETRY_BACKOFF_SECONDS * attempt
-                logger.debug(f"Upload part attempt {attempt} failed, retrying in {wait}s...")
+                logger.debug(
+                    f"Upload part attempt {attempt} failed, retrying in {wait}s..."
+                )
                 time.sleep(wait)
     raise RuntimeError(
         f"Failed to upload part after {max_retries} attempts"

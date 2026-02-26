@@ -4,6 +4,7 @@ from pydantic import ValidationError
 from datacollective.models import (
     DatasetSubmissionDraftInput,
     DatasetSubmissionSubmitInput,
+    DatasetSubmissionUpdateInput,
 )
 
 
@@ -23,36 +24,42 @@ def test_draft_input_strips_whitespace() -> None:
     assert model.longDescription == "Full description"
 
 
-def test_submit_input_rejects_empty_strings() -> None:
-    base_payload = {
-        "shortDescription": "Short description",
-        "longDescription": "Full description",
-        "locale": "en-US",
-        "task": "classification",
-        "format": "tar.gz",
-        "licenseAbbreviation": "CC-BY",
-        "license": "Creative Commons Attribution",
-        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-        "other": "Additional info",
-        "restrictions": "Restrictions",
-        "forbiddenUsage": "Forbidden usage",
-        "additionalConditions": "Additional conditions",
-        "pointOfContactFullName": "Jane Doe",
-        "pointOfContactEmail": "jane@example.com",
-        "fundedByFullName": "Funder Name",
-        "fundedByEmail": "funder@example.com",
-        "legalContactFullName": "Legal Name",
-        "legalContactEmail": "legal@example.com",
-        "createdByFullName": "Creator Name",
-        "createdByEmail": "creator@example.com",
-        "intendedUsage": "Intended usage",
-        "ethicalReviewProcess": "Ethical review",
-        "exclusivityOptOut": True,
-        "agreeToSubmit": True,
-        "fileUploadId": "cuid",
-    }
+def test_submit_input_accepts_agree_to_submit() -> None:
+    model = DatasetSubmissionSubmitInput(agreeToSubmit=True)
+    assert model.agreeToSubmit is True
 
-    payload = dict(base_payload)
-    payload["shortDescription"] = " "
+
+def test_submit_input_accepts_false() -> None:
+    model = DatasetSubmissionSubmitInput(agreeToSubmit=False)
+    assert model.agreeToSubmit is False
+
+
+def test_update_input_rejects_empty_strings() -> None:
+    payload = {
+        "task": "ML",
+        "locale": " ",
+    }
     with pytest.raises(ValidationError):
-        DatasetSubmissionSubmitInput.model_validate(payload)
+        DatasetSubmissionUpdateInput.model_validate(payload)
+
+
+def test_update_input_accepts_partial_fields() -> None:
+    model = DatasetSubmissionUpdateInput(
+        task="ML",
+        licenseAbbreviation="CC-BY-4.0",
+        locale="en-US",
+    )
+    assert model.task == "ML"
+    assert model.licenseAbbreviation == "CC-BY-4.0"
+    assert model.locale == "en-US"
+    assert model.format is None
+    assert model.fileUploadId is None
+
+
+def test_update_input_strips_whitespace() -> None:
+    model = DatasetSubmissionUpdateInput(
+        task="  ML  ",
+        locale="  en-US  ",
+    )
+    assert model.task == "ML"
+    assert model.locale == "en-US"

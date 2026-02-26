@@ -9,11 +9,13 @@ from .models import (
     DatasetSubmission,
     DatasetSubmissionDraftInput,
     DatasetSubmissionSubmitInput,
+    DatasetSubmissionUpdateInput,
 )
 from .submissions import (
     create_submission_draft,
     create_submission_with_upload,
     submit_submission,
+    update_submission,
 )
 from .upload import (
     complete_upload,
@@ -27,6 +29,7 @@ __all__ = [
     "load_dataset",
     "get_dataset_details",
     "create_submission_draft",
+    "update_submission",
     "submit_submission",
     "create_submission_with_upload",
     "initiate_upload",
@@ -36,6 +39,7 @@ __all__ = [
     "DatasetSubmission",
     "DatasetSubmissionDraftInput",
     "DatasetSubmissionSubmitInput",
+    "DatasetSubmissionUpdateInput",
     "__version__",
 ]
 
@@ -45,4 +49,3 @@ __version__ = "0.3.0"
 # Configure a package-level logger with a NullHandler so that library users
 # can opt-in to logging without seeing unexpected output by default.
 logging.getLogger(__name__).addHandler(logging.NullHandler())
-
