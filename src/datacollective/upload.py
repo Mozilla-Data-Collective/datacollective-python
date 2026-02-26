@@ -5,12 +5,12 @@ import json
 import logging
 import math
 import time
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 import requests
 from fox_progress_bar import ProgressBar
+from pydantic import Field, ValidationError
 
 from datacollective.api_utils import (
     _get_api_url,
@@ -18,7 +18,7 @@ from datacollective.api_utils import (
     _format_bytes,
     _enable_verbose,
 )
-from datacollective.models import UploadPart
+from datacollective.models import NonEmptyStrModel, UploadPart
 
 logger = logging.getLogger(__name__)
 
@@ -28,64 +28,33 @@ UPLOAD_TIMEOUT = (10, 300)
 MAX_UPLOAD_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
 
-
 DEFAULT_PART_SIZE = 50 * 1024 * 1024  # 50 MB default part size
+DEFAULT_MIME_TYPE = "application/gzip"
+MAX_UPLOAD_BYTES = 80 * 1000 * 1000 * 1000  # 80 GB
 
 
-@dataclass(frozen=True)
-class UploadSession:
+class UploadSession(NonEmptyStrModel):
     fileUploadId: str
     uploadId: str
-    partSize: int
+    partSize: int = Field(..., gt=0)
 
 
-@dataclass
-class UploadState:
+class UploadState(NonEmptyStrModel):
     submissionId: str
     fileUploadId: str
     uploadId: str
-    fileSize: int
-    partSize: int
+    fileSize: int = Field(..., gt=0, le=MAX_UPLOAD_BYTES)
+    partSize: int = Field(..., gt=0)
     filename: str
     mimeType: str
-    parts: list[UploadPart]
+    parts: list[UploadPart] = Field(default_factory=list)
     checksum: str | None = None
 
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            "submissionId": self.submissionId,
-            "fileUploadId": self.fileUploadId,
-            "uploadId": self.uploadId,
-            "fileSize": self.fileSize,
-            "partSize": self.partSize,
-            "filename": self.filename,
-            "mimeType": self.mimeType,
-            "parts": [part.model_dump() for part in self.parts],
-            "checksum": self.checksum,
-        }
 
-    @classmethod
-    def from_dict(cls, payload: dict[str, Any]) -> "UploadState":
-        return cls(
-            submissionId=str(payload.get("submissionId", "")),
-            fileUploadId=str(payload.get("fileUploadId", "")),
-            uploadId=str(payload.get("uploadId", "")),
-            fileSize=int(payload.get("fileSize", 0)),
-            partSize=int(payload.get("partSize", 0)),
-            filename=str(payload.get("filename", "")),
-            mimeType=str(payload.get("mimeType", "")),
-            parts=[
-                UploadPart.model_validate(part) for part in payload.get("parts", [])
-            ],
-            checksum=payload.get("checksum"),
-        )
-
-
-@dataclass(frozen=True)
-class PresignedPartUrl:
-    partNumber: int
+class PresignedPartUrl(NonEmptyStrModel):
+    partNumber: int = Field(..., ge=1)
     url: str
-    expiresAt: str
+    expiresAt: str | None = None
 
     @property
     def presignedUrl(self) -> str:
@@ -93,7 +62,35 @@ class PresignedPartUrl:
         return self.url
 
 
-def initiate_upload(
+class _UploadFileArgs(NonEmptyStrModel):
+    filePath: str
+    submissionId: str
+
+
+class _FilenameOverride(NonEmptyStrModel):
+    filename: str
+
+
+class _UploadInitiatePayload(NonEmptyStrModel):
+    submissionId: str
+    filename: str
+    fileSize: int = Field(..., gt=0, le=MAX_UPLOAD_BYTES)
+    mimeType: str
+
+
+class _PresignedPartRequest(NonEmptyStrModel):
+    fileUploadId: str
+    partNumber: int = Field(..., ge=1)
+
+
+class _CompleteUploadPayload(NonEmptyStrModel):
+    fileUploadId: str
+    uploadId: str | None = None
+    parts: list[UploadPart] = Field(..., min_length=1)
+    checksum: str
+
+
+def _initiate_upload(
     submission_id: str, filename: str, file_size: int, mime_type: str
 ) -> UploadSession:
     """
@@ -105,29 +102,27 @@ def initiate_upload(
         file_size: Size of the file in bytes.
         mime_type: MIME type for the file.
     """
-    _require_non_empty(submission_id, "submission_id")
-    _require_non_empty(filename, "filename")
-    _require_non_empty(mime_type, "mime_type")
-    if file_size <= 0:
-        raise ValueError("`file_size` must be a positive integer")
-
-    url = f"{_get_api_url()}/uploads"
-    payload = {
-        "submissionId": submission_id,
-        "filename": filename,
-        "fileSize": file_size,
-        "mimeType": mime_type,
-    }
-    resp = send_api_request("POST", url, json_body=payload)
-    data = dict(resp.json())
-    return UploadSession(
-        fileUploadId=str(data.get("fileUploadId", "")),
-        uploadId=str(data.get("uploadId", "")),
-        partSize=int(data.get("partSize", 0)) or DEFAULT_PART_SIZE,
+    payload = _UploadInitiatePayload(
+        submissionId=submission_id,
+        filename=filename,
+        fileSize=file_size,
+        mimeType=mime_type,
     )
+    url = f"{_get_api_url()}/uploads"
+    resp = send_api_request("POST", url, json_body=payload.model_dump())
+    data = dict(resp.json())
+    session_payload = {
+        "fileUploadId": str(data.get("fileUploadId", "")),
+        "uploadId": str(data.get("uploadId", "")),
+        "partSize": int(data.get("partSize", 0)) or DEFAULT_PART_SIZE,
+    }
+    try:
+        return UploadSession.model_validate(session_payload)
+    except ValidationError as exc:
+        raise RuntimeError("Upload initiation did not return expected fields") from exc
 
 
-def get_presigned_part_url(file_upload_id: str, part_number: int) -> PresignedPartUrl:
+def _get_presigned_part_url(file_upload_id: str, part_number: int) -> PresignedPartUrl:
     """
     Request a presigned URL for a specific multipart part.
 
@@ -135,22 +130,20 @@ def get_presigned_part_url(file_upload_id: str, part_number: int) -> PresignedPa
         file_upload_id: File upload ID.
         part_number: 1-based multipart part number.
     """
-    _require_non_empty(file_upload_id, "file_upload_id")
-    if part_number < 1:
-        raise ValueError("`part_number` must be a positive integer")
-
-    url = f"{_get_api_url()}/uploads/{file_upload_id}/parts/{part_number}"
+    request = _PresignedPartRequest(fileUploadId=file_upload_id, partNumber=part_number)
+    url = f"{_get_api_url()}/uploads/{request.fileUploadId}/parts/{request.partNumber}"
     resp = send_api_request("GET", url)
     data = dict(resp.json())
-    presigned_url = data.get("url") or data.get("presignedUrl", "")
-    return PresignedPartUrl(
-        partNumber=int(data.get("partNumber", part_number)),
-        url=str(presigned_url),
-        expiresAt=str(data.get("expiresAt", "")),
-    )
+    presigned_url = data.get("url") or data.get("presignedUrl")
+    payload = {
+        "partNumber": int(data.get("partNumber", request.partNumber)),
+        "url": str(presigned_url or ""),
+        "expiresAt": data.get("expiresAt") or None,
+    }
+    return PresignedPartUrl.model_validate(payload)
 
 
-def complete_upload(
+def _complete_upload(
     file_upload_id: str,
     upload_id: str | None,
     parts: list[UploadPart],
@@ -159,20 +152,20 @@ def complete_upload(
     """
     Complete a multipart upload and persist the checksum.
     """
-    _require_non_empty(file_upload_id, "file_upload_id")
-    _require_non_empty(checksum, "checksum")
-    if upload_id is not None:
-        _require_non_empty(upload_id, "upload_id")
-    if not parts:
-        raise ValueError("`parts` must contain at least one uploaded part")
+    request = _CompleteUploadPayload(
+        fileUploadId=file_upload_id,
+        uploadId=upload_id,
+        parts=parts,
+        checksum=checksum,
+    )
 
-    url = f"{_get_api_url()}/uploads/{file_upload_id}"
+    url = f"{_get_api_url()}/uploads/{request.fileUploadId}"
     payload = {
-        "parts": [part.model_dump() for part in parts],
-        "checksum": checksum,
+        "parts": [part.model_dump() for part in request.parts],
+        "checksum": request.checksum,
     }
-    if upload_id:
-        payload["uploadId"] = upload_id
+    if request.uploadId:
+        payload["uploadId"] = request.uploadId
     resp = send_api_request("POST", url, json_body=payload)
     return dict(resp.json())
 
@@ -180,7 +173,6 @@ def complete_upload(
 def upload_dataset_file(
     file_path: str,
     submission_id: str,
-    mime_type: str,
     filename: str | None = None,
     state_path: str | None = None,
     resume: bool = True,
@@ -190,10 +182,11 @@ def upload_dataset_file(
     """
     Upload a dataset file using multipart uploads with resumable state.
 
+    Uploads are limited to 80GB and use the `application/gzip` MIME type.
+
     Args:
         file_path: Path to the dataset archive on disk.
         submission_id: Dataset submission ID.
-        mime_type: MIME type for the file.
         filename: Optional filename override for the upload.
         state_path: Optional path to persist upload state. Defaults to
             `<filename>.mdc-upload.json` alongside the archive.
@@ -203,103 +196,60 @@ def upload_dataset_file(
     """
     _enable_verbose(verbose)
 
-    _require_non_empty(file_path, "file_path")
-    _require_non_empty(submission_id, "submission_id")
-    _require_non_empty(mime_type, "mime_type")
+    args = _UploadFileArgs(filePath=file_path, submissionId=submission_id)
 
-    path = Path(file_path)
+    path = Path(args.filePath)
     if not path.exists():
         raise FileNotFoundError(f"File not found: `{file_path}`")
 
     file_size = path.stat().st_size
     if file_size <= 0:
         raise ValueError("`file_path` must point to a non-empty file")
+    if file_size > MAX_UPLOAD_BYTES:
+        raise ValueError("`file_path` exceeds the 80GB upload limit")
 
-    final_filename = filename or path.name
+    if filename is not None:
+        final_filename = _FilenameOverride(filename=filename).filename
+    else:
+        final_filename = path.name
+
     state_file = Path(state_path) if state_path else _default_state_path(path)
 
-    state = load_upload_state(state_file) if resume else None
-    if state:
-        if (
-            state.fileSize != file_size
-            or state.filename != final_filename
-            or state.submissionId != submission_id
-        ):
-            logger.warning(
-                "Upload state does not match file or submission. Restarting upload."
-            )
-            state = None
-        else:
-            logger.info(f"Resuming upload from `{str(state_file)}`")
-
-    if not state:
-        logger.info(
-            f"Initiating upload for '{final_filename}' ({_format_bytes(file_size)})..."
-        )
-        session = initiate_upload(submission_id, final_filename, file_size, mime_type)
-        if not session.fileUploadId or not session.uploadId or session.partSize <= 0:
-            raise RuntimeError("Upload initiation did not return expected fields")
-        state = UploadState(
-            submissionId=submission_id,
-            fileUploadId=session.fileUploadId,
-            uploadId=session.uploadId,
-            fileSize=file_size,
-            partSize=session.partSize,
-            filename=final_filename,
-            mimeType=mime_type,
-            parts=[],
-            checksum=None,
-        )
-        save_upload_state(state_file, state)
+    state = _load_or_create_state(
+        state_file=state_file,
+        submission_id=args.submissionId,
+        final_filename=final_filename,
+        file_size=file_size,
+        resume=resume,
+    )
 
     expected_parts = _expected_parts(state.fileSize, state.partSize)
     if expected_parts <= 0:
         raise RuntimeError("Invalid upload configuration (expected parts <= 0)")
 
     parts_by_number = _normalize_parts(state)
-    already_uploaded = len(parts_by_number)
-
-    if already_uploaded > 0:
+    if parts_by_number:
         logger.info(
-            f"Resuming: {already_uploaded}/{expected_parts} parts already uploaded."
+            f"Resuming: {len(parts_by_number)}/{expected_parts} parts already uploaded."
         )
 
     logger.info(f"Uploading file: {final_filename}")
 
-    # Set up progress bar
-    progress_bar: ProgressBar | None = None
-    if show_progress:
-        progress_bar = ProgressBar(file_size)
-        # Account for already-uploaded parts in the progress bar
-        if already_uploaded > 0:
-            progress_bar.update(already_uploaded * state.partSize)
-            progress_bar._display()
+    progress_bar = _init_progress_bar(
+        show_progress=show_progress,
+        file_size=state.fileSize,
+        part_size=state.partSize,
+        already_uploaded=len(parts_by_number),
+    )
 
-    hasher = hashlib.sha256()
-    bytes_read = 0
-    with open(path, "rb") as file_handle:
-        for part_index in range(expected_parts):
-            part_number = part_index + 1
-            chunk = file_handle.read(state.partSize)
-            if not chunk:
-                break
-            bytes_read += len(chunk)
-            hasher.update(chunk)
-
-            if part_number in parts_by_number:
-                continue
-
-            presigned = get_presigned_part_url(state.fileUploadId, part_number)
-            presigned_url = presigned.url
-
-            response = _upload_part_with_retry(presigned_url, chunk)
-            etag = _extract_etag(response)
-            parts_by_number[part_number] = etag
-            state.parts.append(UploadPart(partNumber=part_number, etag=etag))
-            save_upload_state(state_file, state)
-
-            if progress_bar:
-                progress_bar.update(len(chunk))
+    bytes_read, checksum = _upload_missing_parts(
+        path=path,
+        state=state,
+        parts_by_number=parts_by_number,
+        expected_parts=expected_parts,
+        progress_bar=progress_bar,
+        state_file=state_file,
+    )
 
     if progress_bar:
         progress_bar.finish()
@@ -316,7 +266,7 @@ def upload_dataset_file(
             f"{expected_parts} parts but have {len(parts_by_number)}."
         )
 
-    state.checksum = hasher.hexdigest()
+    state.checksum = checksum
     state.parts = [
         UploadPart(partNumber=number, etag=etag)
         for number, etag in sorted(parts_by_number.items())
@@ -325,9 +275,11 @@ def upload_dataset_file(
 
     logger.info("Completing multipart upload...")
 
-    complete_upload(state.fileUploadId, state.uploadId, state.parts, state.checksum)
+    _complete_upload(state.fileUploadId, state.uploadId, state.parts, state.checksum)
 
     logger.info(f"Upload complete. File upload ID: {state.fileUploadId}")
+
+    _cleanup_state_file(state_file)
 
     return state
 
@@ -338,7 +290,7 @@ def load_upload_state(path: Path) -> UploadState | None:
         return None
     payload = json.loads(path.read_text())
     try:
-        state = UploadState.from_dict(payload)
+        state = UploadState.model_validate(payload)
     except Exception:
         return None
     if not state.fileUploadId or not state.uploadId:
@@ -350,11 +302,112 @@ def load_upload_state(path: Path) -> UploadState | None:
 
 def save_upload_state(path: Path, state: UploadState) -> None:
     """Persist upload state to disk."""
-    path.write_text(json.dumps(state.to_dict(), indent=2))
+    path.write_text(json.dumps(state.model_dump(), indent=2))
 
 
 def _default_state_path(file_path: Path) -> Path:
     return file_path.with_name(file_path.name + ".mdc-upload.json")
+
+
+def _load_or_create_state(
+    state_file: Path,
+    submission_id: str,
+    final_filename: str,
+    file_size: int,
+    resume: bool,
+) -> UploadState:
+    state = load_upload_state(state_file) if resume else None
+    if state:
+        if not _state_matches(state, submission_id, final_filename, file_size):
+            logger.warning(
+                "Upload state does not match file or submission. Restarting upload."
+            )
+            state = None
+        else:
+            logger.info(f"Resuming upload from `{str(state_file)}`")
+
+    if not state:
+        logger.info(
+            f"Initiating upload for '{final_filename}' ({_format_bytes(file_size)})..."
+        )
+        session = _initiate_upload(
+            submission_id, final_filename, file_size, DEFAULT_MIME_TYPE
+        )
+        state = UploadState(
+            submissionId=submission_id,
+            fileUploadId=session.fileUploadId,
+            uploadId=session.uploadId,
+            fileSize=file_size,
+            partSize=session.partSize,
+            filename=final_filename,
+            mimeType=DEFAULT_MIME_TYPE,
+            parts=[],
+            checksum=None,
+        )
+        save_upload_state(state_file, state)
+
+    return state
+
+
+def _state_matches(
+    state: UploadState, submission_id: str, filename: str, file_size: int
+) -> bool:
+    return (
+        state.fileSize == file_size
+        and state.filename == filename
+        and state.submissionId == submission_id
+        and state.mimeType == DEFAULT_MIME_TYPE
+    )
+
+
+def _init_progress_bar(
+    show_progress: bool,
+    file_size: int,
+    part_size: int,
+    already_uploaded: int,
+) -> ProgressBar | None:
+    if not show_progress:
+        return None
+    progress_bar = ProgressBar(file_size)
+    if already_uploaded > 0:
+        progress_bar.update(already_uploaded * part_size)
+        progress_bar._display()
+    return progress_bar
+
+
+def _upload_missing_parts(
+    path: Path,
+    state: UploadState,
+    parts_by_number: dict[int, str],
+    expected_parts: int,
+    progress_bar: ProgressBar | None,
+    state_file: Path,
+) -> tuple[int, str]:
+    hasher = hashlib.sha256()
+    bytes_read = 0
+    with open(path, "rb") as file_handle:
+        for part_index in range(expected_parts):
+            part_number = part_index + 1
+            chunk = file_handle.read(state.partSize)
+            if not chunk:
+                break
+            bytes_read += len(chunk)
+            hasher.update(chunk)
+
+            if part_number in parts_by_number:
+                continue
+
+            presigned = _get_presigned_part_url(state.fileUploadId, part_number)
+            response = _upload_part_with_retry(presigned.url, chunk)
+            etag = _extract_etag(response)
+            parts_by_number[part_number] = etag
+            state.parts.append(UploadPart(partNumber=part_number, etag=etag))
+            save_upload_state(state_file, state)
+
+            if progress_bar:
+                progress_bar.update(len(chunk))
+
+    return bytes_read, hasher.hexdigest()
 
 
 def _expected_parts(file_size: int, part_size: int) -> int:
@@ -370,6 +423,14 @@ def _normalize_parts(state: UploadState) -> dict[int, str]:
             continue
         parts_by_number[part.partNumber] = part.etag
     return parts_by_number
+
+
+def _cleanup_state_file(state_file: Path) -> None:
+    try:
+        if state_file.exists():
+            state_file.unlink()
+    except Exception:
+        logger.debug(f"Failed to remove upload state file: {state_file}")
 
 
 def _upload_part(presigned_url: str, payload: bytes) -> requests.Response:
@@ -408,8 +469,3 @@ def _extract_etag(response: requests.Response) -> str:
     if not etag:
         raise RuntimeError("Missing ETag header in upload response")
     return etag.strip().strip('"')
-
-
-def _require_non_empty(value: str, field_name: str) -> None:
-    if not value or not str(value).strip():
-        raise ValueError(f"`{field_name}` must be a non-empty string")

@@ -18,8 +18,9 @@ The SDK supports **resumable uploads**, meaning if an upload is interrupted (net
 Before uploading, ensure you have:
 
 - An API key from the Mozilla Data Collective [dashboard](https://datacollective.mozillafoundation.org/api-reference)
-- Your dataset packaged as an archive file (`.tar.gz`)
+- Your dataset packaged as an archive file (`.tar.gz`, uploads use `application/gzip`)
 - All the required metadata for the dataset submission
+- Dataset archives must be **80GB or less**
 
 ### Configuration
 
@@ -40,47 +41,47 @@ MDC_API_KEY=your-api-key-here
 The simplest way to upload a dataset is using `create_submission_with_upload`, which handles the entire workflow in a single call:
 
 ```python
-from datacollective import create_submission_with_upload
+from datacollective import DatasetSubmission, create_submission_with_upload
+from pydantic import ValidationError
 
-# Define submission metadata fields
-submission_fields = {
-    "shortDescription": "A brief description of your dataset",
-    "longDescription": "A detailed description of your dataset",
-    "locale": "en-US",
-    "task": "classification",
-    "format": "tar.gz",
-    "licenseAbbreviation": "CC-BY",
-    "license": "Creative Commons Attribution",
-    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-    "other": "Additional information about the dataset",
-    "restrictions": "Any restrictions on use",
-    "forbiddenUsage": "Forbidden use cases",
-    "additionalConditions": "Additional conditions",
-    "pointOfContactFullName": "Jane Doe",
-    "pointOfContactEmail": "jane@example.com",
-    "fundedByFullName": "Funder Name",
-    "fundedByEmail": "funder@example.com",
-    "legalContactFullName": "Legal Contact Name",
-    "legalContactEmail": "legal@example.com",
-    "createdByFullName": "Creator Name",
-    "createdByEmail": "creator@example.com",
-    "intendedUsage": "Intended use of the dataset",
-    "ethicalReviewProcess": "Description of ethical review",
-    "exclusivityOptOut": True,
-}
+# Define submission metadata
+submission = DatasetSubmission(
+    name="My Dataset Name",
+    longDescription="Full description of my dataset",
+    shortDescription="A brief description of your dataset",
+    locale="en-US",
+    task="classification",
+    format="tar.gz",
+    licenseAbbreviation="CC-BY",
+    license="Creative Commons Attribution",
+    licenseUrl="https://creativecommons.org/licenses/by/4.0/",
+    other="Additional information about the dataset",
+    restrictions="Any restrictions on use",
+    forbiddenUsage="Forbidden use cases",
+    additionalConditions="Additional conditions",
+    pointOfContactFullName="Jane Doe",
+    pointOfContactEmail="jane@example.com",
+    fundedByFullName="Funder Name",
+    fundedByEmail="funder@example.com",
+    legalContactFullName="Legal Contact Name",
+    legalContactEmail="legal@example.com",
+    createdByFullName="Creator Name",
+    createdByEmail="creator@example.com",
+    intendedUsage="Intended use of the dataset",
+    ethicalReviewProcess="Description of ethical review",
+    exclusivityOptOut=True,
+    agreeToSubmit=True,
+)
 
 # Upload and submit in one call
 response = create_submission_with_upload(
     file_path="/path/to/your/dataset.tar.gz",
-    name="My Dataset Name",
-    long_description="Full description of my dataset",
-    submission_fields=submission_fields,
-    mime_type="application/gzip",
+    submission=submission,
 )
 
-submission = response.get("submission", {})
-print(f"Submission ID: {submission.get('id')}")
-print(f"Status: {submission.get('status')}")
+submission_response = response.get("submission", {})
+print(f"Submission ID: {submission_response.get('id')}")
+print(f"Status: {submission_response.get('status')}")
 ```
 
 ### Parameters
@@ -88,13 +89,13 @@ print(f"Status: {submission.get('status')}")
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
 | `file_path` | `str` | Yes | Path to the dataset archive on disk |
-| `name` | `str` | Yes | Name of the dataset |
-| `long_description` | `str` | Yes | Full description of the dataset |
-| `submission_fields` | `dict` | Yes | Datasheet fields required for submission (see below) |
-| `mime_type` | `str` | Yes | MIME type of the file (e.g., `application/gzip`, `application/zip`) |
+| `submission` | `DatasetSubmission` | Yes | Submission metadata model |
+| `submission_id` | `str` | No | Existing submission ID to resume instead of creating a new draft |
 | `filename` | `str` | No | Optional filename override for the upload |
 | `state_path` | `str` | No | Optional path to persist upload state (defaults to `<filename>.mdc-upload.json`) |
 | `resume` | `bool` | No | Whether to resume a previous upload session (default: `True`) |
+
+> `agreeToSubmit` must be `True` in the `DatasetSubmission` model when submitting a dataset.
 
 ## Required Submission Fields
 
@@ -150,12 +151,14 @@ For more control over the upload process, you can use the individual functions:
 ### Step 1: Create a Draft Submission
 
 ```python
-from datacollective import create_submission_draft
+from datacollective import DatasetSubmission, create_submission_draft
 
-draft = create_submission_draft(
+submission = DatasetSubmission(
     name="My Dataset Name",
-    long_description="Full description of my dataset"
+    longDescription="Full description of my dataset",
 )
+
+draft = create_submission_draft(submission)
 
 submission_id = draft["submission"]["id"]
 print(f"Created draft submission: {submission_id}")
@@ -169,7 +172,6 @@ from datacollective import upload_dataset_file
 upload_state = upload_dataset_file(
     file_path="/path/to/your/dataset.tar.gz",
     submission_id=submission_id,
-    mime_type="application/gzip",
 )
 
 print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
@@ -178,22 +180,24 @@ print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 ### Step 3: Update Submission Metadata
 
 ```python
-from datacollective import update_submission
+from datacollective import DatasetSubmission, update_submission
+
+update_fields = DatasetSubmission(
+    task="ML",
+    licenseAbbreviation="CC-BY-4.0",
+    locale="en-US",
+    format="text",
+    restrictions="No restrictions.",
+    forbiddenUsage="Do not use for unlawful purposes.",
+    pointOfContactFullName="Jane Doe",
+    pointOfContactEmail="jane@example.com",
+    fileUploadId=upload_state.fileUploadId,
+    # ... other metadata fields ...
+)
 
 response = update_submission(
     submission_id=submission_id,
-    update_fields={
-        "task": "ML",
-        "licenseAbbreviation": "CC-BY-4.0",
-        "locale": "en-US",
-        "format": "text",
-        "restrictions": "No restrictions.",
-        "forbiddenUsage": "Do not use for unlawful purposes.",
-        "pointOfContactFullName": "Jane Doe",
-        "pointOfContactEmail": "jane@example.com",
-        "fileUploadId": upload_state.fileUploadId,
-        # ... other metadata fields ...
-    },
+    submission=update_fields,
 )
 
 print(f"Metadata updated: {response}")
@@ -202,9 +206,12 @@ print(f"Metadata updated: {response}")
 ### Step 4: Submit for Review
 
 ```python
-from datacollective import submit_submission
+from datacollective import DatasetSubmission, submit_submission
 
-response = submit_submission(submission_id=submission_id)
+response = submit_submission(
+    submission_id=submission_id,
+    submission=DatasetSubmission(agreeToSubmit=True),
+)
 
 submission = response["submission"]
 print(f"Submission status: {submission['status']}")
@@ -219,29 +226,42 @@ The SDK automatically handles interrupted uploads using a state file.
 1. When an upload starts, the SDK creates a state file (`.mdc-upload.json`) alongside your archive
 2. The state file tracks which parts have been successfully uploaded
 3. If the upload is interrupted, rerunning the same upload call will resume from where it left off
-4. Once the upload completes, the state file is preserved for reference
+4. Once the upload completes successfully, the state file is removed automatically
 
 ### Automatic Resume
 
 Simply rerun the same upload call after an interruption:
 
 ```python
+submission = DatasetSubmission(
+    name="My Dataset",
+    longDescription="Description",
+    agreeToSubmit=True,
+)
+
 # First attempt (interrupted)
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
-    name="My Dataset",
-    long_description="Description",
-    submission_fields=submission_fields,
-    mime_type="application/gzip",
+    submission=submission,
 )
 
 # Second attempt (resumes automatically)
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
-    name="My Dataset",
-    long_description="Description",
-    submission_fields=submission_fields,
-    mime_type="application/gzip",
+    submission=submission,
+)
+```
+
+### Resume an Existing Submission
+
+If you already created a draft submission (or a previous run created one before failing),
+pass its ID to resume the workflow without creating a new draft:
+
+```python
+response = create_submission_with_upload(
+    file_path="/path/to/dataset.tar.gz",
+    submission=submission,
+    submission_id="existing-submission-id",
 )
 ```
 
@@ -252,10 +272,7 @@ You can specify a custom location for the state file:
 ```python
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
-    name="My Dataset",
-    long_description="Description",
-    submission_fields=submission_fields,
-    mime_type="application/gzip",
+    submission=submission,
     state_path="/custom/path/upload-state.json",
 )
 ```
@@ -267,32 +284,31 @@ To force a fresh upload (ignoring any existing state):
 ```python
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
-    name="My Dataset",
-    long_description="Description",
-    submission_fields=submission_fields,
-    mime_type="application/gzip",
+    submission=submission,
     resume=False,
 )
 ```
-
 
 ## Error Handling
 
 The SDK raises specific exceptions for common error cases:
 
 ```python
-from datacollective import create_submission_with_upload
+from datacollective import DatasetSubmission, create_submission_with_upload
 
 try:
     response = create_submission_with_upload(
         file_path="/path/to/dataset.tar.gz",
-        name="My Dataset",
-        long_description="Description",
-        submission_fields=submission_fields,
-        mime_type="application/gzip",
+        submission=DatasetSubmission(
+            name="My Dataset",
+            longDescription="Description",
+            agreeToSubmit=True,
+        ),
     )
 except FileNotFoundError as e:
     print(f"File not found: {e}")
+except ValidationError as e:
+    print(f"Validation error: {e}")
 except ValueError as e:
     print(f"Invalid input: {e}")
 except PermissionError as e:
@@ -306,6 +322,7 @@ except RuntimeError as e:
 | Exception | Cause |
 |-----------|-------|
 | `FileNotFoundError` | The specified file path does not exist |
+| `ValidationError` | Invalid `DatasetSubmission` or required string inputs |
 | `ValueError` | Missing or invalid required parameter |
 | `PermissionError` | API key is invalid or lacks permissions |
 | `RuntimeError` | Rate limit exceeded or upload failed |
@@ -316,7 +333,7 @@ Here's a complete example that uploads a dataset with all required fields:
 
 ```python
 import os
-from datacollective import create_submission_with_upload
+from datacollective import DatasetSubmission, create_submission_with_upload
 
 # Ensure API key is set
 if not os.getenv("MDC_API_KEY"):
@@ -326,101 +343,63 @@ if not os.getenv("MDC_API_KEY"):
 file_path = "/path/to/your/dataset.tar.gz"
 
 # Submission metadata
-submission_fields = {
+submission = DatasetSubmission(
     # Dataset info
-    "shortDescription": "Speech recognition dataset for English",
-    "longDescription": """
+    name="English Speech Corpus v1.0",
+    shortDescription="Speech recognition dataset for English",
+    longDescription="""
     This dataset contains 10,000 hours of transcribed English speech
     collected from volunteer contributors. The data includes diverse
     accents and speaking styles.
     """,
-    "locale": "en-US",
-    "task": "asr",
-    "format": "tar.gz",
-    
+    locale="en-US",
+    task="asr",
+    format="tar.gz",
+
     # Licensing
-    "licenseAbbreviation": "CC0",
-    "license": "Creative Commons Zero",
-    "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
-    
+    licenseAbbreviation="CC0",
+    license="Creative Commons Zero",
+    licenseUrl="https://creativecommons.org/publicdomain/zero/1.0/",
+
     # Usage
-    "other": "Includes metadata CSV with speaker demographics",
-    "restrictions": "None",
-    "forbiddenUsage": "Surveillance applications",
-    "additionalConditions": "Attribution appreciated but not required",
-    "intendedUsage": "Training and evaluating speech recognition models",
-    "ethicalReviewProcess": "IRB approved under protocol #12345",
-    "exclusivityOptOut": True,
-    
+    other="Includes metadata CSV with speaker demographics",
+    restrictions="None",
+    forbiddenUsage="Surveillance applications",
+    additionalConditions="Attribution appreciated but not required",
+    intendedUsage="Training and evaluating speech recognition models",
+    ethicalReviewProcess="IRB approved under protocol #12345",
+    exclusivityOptOut=True,
+
     # Contacts
-    "pointOfContactFullName": "Jane Doe",
-    "pointOfContactEmail": "jane.doe@example.org",
-    "fundedByFullName": "Mozilla Foundation",
-    "fundedByEmail": "grants@mozilla.org",
-    "legalContactFullName": "John Smith",
-    "legalContactEmail": "legal@example.org",
-    "createdByFullName": "Jane Doe",
-    "createdByEmail": "jane.doe@example.org",
-}
+    pointOfContactFullName="Jane Doe",
+    pointOfContactEmail="jane.doe@example.org",
+    fundedByFullName="Mozilla Foundation",
+    fundedByEmail="grants@mozilla.org",
+    legalContactFullName="John Smith",
+    legalContactEmail="legal@example.org",
+    createdByFullName="Jane Doe",
+    createdByEmail="jane.doe@example.org",
+
+    # Submission
+    agreeToSubmit=True,
+)
 
 # Upload the dataset
 response = create_submission_with_upload(
     file_path=file_path,
-    name="English Speech Corpus v1.0",
-    long_description=submission_fields["longDescription"],
-    submission_fields=submission_fields,
-    mime_type="application/gzip",
+    submission=submission,
 )
 
 print("Upload complete!")
-submission = response.get("submission", {})
-print(f"Submission ID: {submission.get('id')}")
-print(f"Status: {submission.get('status')}")
+submission_response = response.get("submission", {})
+print(f"Submission ID: {submission_response.get('id')}")
+print(f"Status: {submission_response.get('status')}")
 ```
 
-## Using Pydantic Models
+## Using the DatasetSubmission Model
 
-For type safety, you can use the provided Pydantic models:
-
-```python
-from datacollective import create_submission_with_upload
-from datacollective.models import DatasetSubmissionUpdateInput
-
-# Using the Pydantic model for validation
-submission_fields = DatasetSubmissionUpdateInput(
-    shortDescription="Speech recognition dataset",
-    longDescription="Full description...",
-    locale="en-US",
-    task="asr",
-    format="tar.gz",
-    licenseAbbreviation="CC0",
-    license="Creative Commons Zero",
-    licenseUrl="https://creativecommons.org/publicdomain/zero/1.0/",
-    other="Additional info",
-    restrictions="None",
-    forbiddenUsage="None",
-    additionalConditions="None",
-    pointOfContactFullName="Jane Doe",
-    pointOfContactEmail="jane@example.com",
-    fundedByFullName="Mozilla Foundation",
-    fundedByEmail="mozilla@example.com",
-    legalContactFullName="Legal Team",
-    legalContactEmail="legal@example.com",
-    createdByFullName="Jane Doe",
-    createdByEmail="jane@example.com",
-    intendedUsage="ASR model training",
-    ethicalReviewProcess="IRB approved",
-    exclusivityOptOut=True,
-)
-
-response = create_submission_with_upload(
-    file_path="/path/to/dataset.tar.gz",
-    name="My Dataset",
-    long_description="Description",
-    submission_fields=submission_fields,
-    mime_type="application/gzip",
-)
-```
+All submission inputs use the `DatasetSubmission` Pydantic model, so validation happens
+as soon as you construct the model (before any network calls are made).
 
 ## API Reference
 
@@ -433,14 +412,8 @@ For detailed API documentation, see the [API Reference](api.md) section.
 - [`update_submission`](api.md) - Update submission metadata
 - [`upload_dataset_file`](api.md) - Upload a file to a submission
 - [`submit_submission`](api.md) - Submit a draft for review
-- [`initiate_upload`](api.md) - Start a multipart upload session
-- [`get_presigned_part_url`](api.md) - Get a presigned URL for uploading a part
-- [`complete_upload`](api.md) - Finalize a multipart upload
 
 ### Key Models
 
-- [`DatasetSubmissionUpdateInput`](api.md) - Pydantic model for submission metadata fields
-- [`DatasetSubmissionSubmitInput`](api.md) - Pydantic model for the submit action
-- [`DatasetSubmissionDraftInput`](api.md) - Pydantic model for draft creation
+- [`DatasetSubmission`](api.md) - Pydantic model for submission metadata
 - [`UploadPart`](api.md) - Model representing an uploaded part
-
