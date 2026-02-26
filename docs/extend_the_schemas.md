@@ -1,10 +1,66 @@
-# Extending the Schema Loaders
+# Adding support for your dataset & extending the schema loaders
 
-This guide is for **SDK contributors** and **dataset owners** who want to add
-support for new task types, extend existing loading strategies, or write a
-`schema.yaml` for a new dataset.
+## 1. How to create a `schema.yaml` for a dataset
 
-## 1. How to add a new task type
+If you are a **dataset owner** and want your dataset to be loadable via
+`load_dataset()`, you need to write a `schema.yaml` and submit it to the
+[dataset schema registry](https://github.com/Mozilla-Data-Collective/dataset-schema-registry). If your dataset does not follow one of the 
+existing loading strategies or task definitions, you can also implement 
+a new loader class and add it to the registry (see next sections).
+
+### Step-by-step
+
+1. **Inspect your archive.** Extract it and understand the file layout:
+   - Is there a CSV / TSV index file? → Use the **index-based** strategy.
+   - Are there separate files per split? → Use **multi-split**.
+   - Are there paired text + audio files? → Use **paired-glob**.
+
+2. **Identify your task type.** Pick the task that matches your data (ASR,
+   TTS, etc.).  Run `datacollective.schema_loaders.registry.get_task_loader("ASR")`
+   to check if the task is already supported.
+
+3. **Write the schema.**  Start from a minimal template:
+
+```yaml
+dataset_id: "your-dataset-id"   # must match the MDC dataset ID
+task: "ASR"                       # or "TTS", etc.
+format: "tsv"
+index_file: "metadata.tsv"
+columns:
+  audio_path:
+    source_column: "audio"
+    dtype: "file_path"
+  transcription:
+    source_column: "text"
+    dtype: "string"
+```
+
+4. **Test locally.** Place the `schema.yaml` in your extracted dataset
+   directory and try loading:
+
+```python
+from pathlib import Path
+from datacollective.schema import parse_schema
+from datacollective.schema_loaders.registry import load_dataset_from_schema
+
+schema = parse_schema(Path("path/to/schema.yaml"))
+df = load_dataset_from_schema(schema, extract_dir=Path("path/to/extracted/"))
+print(df.head())
+```
+
+5. **Submit to the registry.** Open a pull request to the
+   [dataset-schema-registry](https://github.com/Mozilla-Data-Collective/dataset-schema-registry)
+   repository adding your `schema.yaml` under `registry/<your-dataset-id>/schema.yaml`.
+
+### Schema field reference
+
+See the [Schema-Based Loading](schema_parse.md) page for the full field
+reference, column mapping syntax, and complete examples.
+
+---
+
+
+## 2. How to add a new task type
 
 Adding support for a new task (e.g. **MT** — Machine Translation) takes three
 steps.
@@ -78,7 +134,7 @@ synthetic data. Follow the existing test patterns in `tests/`.
 
 ---
 
-## 2. How to extend or update existing tasks / strategies
+## 3. How to extend or update existing tasks / strategies
 
 ### Adding a new strategy to an existing task
 
@@ -143,62 +199,6 @@ The `to_yaml_dict()` method uses `model_dump(exclude_defaults=True)`, so new
 fields with default values will only appear in the serialised YAML when
 explicitly set.
 
----
-
-## 3. How to create a `schema.yaml` for a dataset
-
-If you are a **dataset owner** and want your dataset to be loadable via
-`load_dataset()`, you need to write a `schema.yaml` and submit it to the
-[dataset schema registry](https://github.com/Mozilla-Data-Collective/dataset-schema-registry).
-
-### Step-by-step
-
-1. **Inspect your archive.** Extract it and understand the file layout:
-   - Is there a CSV / TSV index file? → Use the **index-based** strategy.
-   - Are there separate files per split? → Use **multi-split**.
-   - Are there paired text + audio files? → Use **paired-glob**.
-
-2. **Identify your task type.** Pick the task that matches your data (ASR,
-   TTS, etc.).  Run `datacollective.schema_loaders.registry.get_task_loader("ASR")`
-   to check if the task is already supported.
-
-3. **Write the schema.**  Start from a minimal template:
-
-```yaml
-dataset_id: "your-dataset-id"   # must match the MDC dataset ID
-task: "ASR"                       # or "TTS", etc.
-format: "tsv"
-index_file: "metadata.tsv"
-columns:
-  audio_path:
-    source_column: "audio"
-    dtype: "file_path"
-  transcription:
-    source_column: "text"
-    dtype: "string"
-```
-
-4. **Test locally.** Place the `schema.yaml` in your extracted dataset
-   directory and try loading:
-
-```python
-from pathlib import Path
-from datacollective.schema import parse_schema
-from datacollective.schema_loaders.registry import load_dataset_from_schema
-
-schema = parse_schema(Path("path/to/schema.yaml"))
-df = load_dataset_from_schema(schema, extract_dir=Path("path/to/extracted/"))
-print(df.head())
-```
-
-5. **Submit to the registry.** Open a pull request to the
-   [dataset-schema-registry](https://github.com/Mozilla-Data-Collective/dataset-schema-registry)
-   repository adding your `schema.yaml` under `registry/<your-dataset-id>/schema.yaml`.
-
-### Schema field reference
-
-See the [Schema-Based Loading](schema_parse.md) page for the full field
-reference, column mapping syntax, and complete examples.
 
 ---
 
