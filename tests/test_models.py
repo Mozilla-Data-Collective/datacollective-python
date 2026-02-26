@@ -1,50 +1,36 @@
 import pytest
 from pydantic import ValidationError
 
-from datacollective.models import (
-    DatasetSubmissionDraftInput,
-    DatasetSubmissionSubmitInput,
-    DatasetSubmissionUpdateInput,
-)
+from datacollective.models import DatasetSubmission
 
 
-def test_draft_input_rejects_empty_strings() -> None:
+def test_submission_rejects_empty_strings() -> None:
     with pytest.raises(ValidationError):
-        DatasetSubmissionDraftInput(name=" ", longDescription="Valid description")
+        DatasetSubmission(name=" ", longDescription="Valid description")
     with pytest.raises(ValidationError):
-        DatasetSubmissionDraftInput(name="Dataset", longDescription=" ")
+        DatasetSubmission(name="Dataset", longDescription=" ")
+    with pytest.raises(ValidationError):
+        DatasetSubmission(locale=" ")
 
 
-def test_draft_input_strips_whitespace() -> None:
-    model = DatasetSubmissionDraftInput(
+def test_submission_strips_whitespace() -> None:
+    model = DatasetSubmission(
         name="  My Dataset  ",
         longDescription="  Full description  ",
+        task="  ML  ",
     )
     assert model.name == "My Dataset"
     assert model.longDescription == "Full description"
+    assert model.task == "ML"
 
 
-def test_submit_input_accepts_agree_to_submit() -> None:
-    model = DatasetSubmissionSubmitInput(agreeToSubmit=True)
+def test_submission_accepts_agree_to_submit() -> None:
+    model = DatasetSubmission(agreeToSubmit=True)
     assert model.agreeToSubmit is True
 
 
-def test_submit_input_accepts_false() -> None:
-    model = DatasetSubmissionSubmitInput(agreeToSubmit=False)
-    assert model.agreeToSubmit is False
-
-
-def test_update_input_rejects_empty_strings() -> None:
-    payload = {
-        "task": "ML",
-        "locale": " ",
-    }
-    with pytest.raises(ValidationError):
-        DatasetSubmissionUpdateInput.model_validate(payload)
-
-
-def test_update_input_accepts_partial_fields() -> None:
-    model = DatasetSubmissionUpdateInput(
+def test_submission_accepts_partial_fields() -> None:
+    model = DatasetSubmission(
         task="ML",
         licenseAbbreviation="CC-BY-4.0",
         locale="en-US",
@@ -54,12 +40,3 @@ def test_update_input_accepts_partial_fields() -> None:
     assert model.locale == "en-US"
     assert model.format is None
     assert model.fileUploadId is None
-
-
-def test_update_input_strips_whitespace() -> None:
-    model = DatasetSubmissionUpdateInput(
-        task="  ML  ",
-        locale="  en-US  ",
-    )
-    assert model.task == "ML"
-    assert model.locale == "en-US"
