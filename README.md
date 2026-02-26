@@ -17,9 +17,9 @@
 
 </div>
 
-# Mozilla Data Collective Python API Library
+# Mozilla Data Collective Python Client Library
 
-Python library for interfacing with the [Mozilla Data Collective](https://datacollective.mozillafoundation.org/) REST API.
+The official Python SDK for accessing and contributing to the [Mozilla Data Collective](https://datacollective.mozillafoundation.org/) platform.
 
 ## Installation
 
@@ -84,41 +84,39 @@ dataset = load_dataset("your-dataset-id")
 You can create dataset submissions and upload files with resumable multipart uploads:
 
 ```python
-from datacollective import create_submission_with_upload
+from datacollective import DatasetSubmission, create_submission_with_upload
 
-submit_fields = {
-    "shortDescription": "Short description",
-    "longDescription": "Full description",
-    "locale": "en-US",
-    "task": "classification",
-    "format": "tar.gz",
-    "licenseAbbreviation": "CC-BY",
-    "license": "Creative Commons Attribution",
-    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-    "other": "Additional info",
-    "restrictions": "Restrictions",
-    "forbiddenUsage": "Forbidden usage",
-    "additionalConditions": "Additional conditions",
-    "pointOfContactFullName": "Jane Doe",
-    "pointOfContactEmail": "jane@example.com",
-    "fundedByFullName": "Funder Name",
-    "fundedByEmail": "funder@example.com",
-    "legalContactFullName": "Legal Name",
-    "legalContactEmail": "legal@example.com",
-    "createdByFullName": "Creator Name",
-    "createdByEmail": "creator@example.com",
-    "intendedUsage": "Intended usage",
-    "ethicalReviewProcess": "Ethical review",
-    "exclusivityOptOut": True,
-    "agreeToSubmit": True,
-}
+submission = DatasetSubmission(
+    name="My Dataset",
+    longDescription="Full description",
+    shortDescription="Short description",
+    locale="en-US",
+    task="classification",
+    format="tar.gz",
+    licenseAbbreviation="CC-BY",
+    license="Creative Commons Attribution",
+    licenseUrl="https://creativecommons.org/licenses/by/4.0/",
+    other="Additional info",
+    restrictions="Restrictions",
+    forbiddenUsage="Forbidden usage",
+    additionalConditions="Additional conditions",
+    pointOfContactFullName="Jane Doe",
+    pointOfContactEmail="jane@example.com",
+    fundedByFullName="Funder Name",
+    fundedByEmail="funder@example.com",
+    legalContactFullName="Legal Name",
+    legalContactEmail="legal@example.com",
+    createdByFullName="Creator Name",
+    createdByEmail="creator@example.com",
+    intendedUsage="Intended usage",
+    ethicalReviewProcess="Ethical review",
+    exclusivityOptOut=True,
+    agreeToSubmit=True,
+)
 
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
-    name="My Dataset",
-    long_description="Full description",
-    submission_fields=submit_fields,
-    mime_type="application/gzip",
+    submission=submission,
 )
 
 print(response)
