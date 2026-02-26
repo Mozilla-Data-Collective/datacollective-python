@@ -8,7 +8,7 @@
 
 ::: datacollective.submissions
 
-::: datacollective.uploads
+::: datacollective.upload
 
 ::: datacollective.models
 
