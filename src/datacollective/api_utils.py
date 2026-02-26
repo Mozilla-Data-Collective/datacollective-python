@@ -70,7 +70,8 @@ def send_api_request(
         raise FileNotFoundError("Dataset not found")
     if resp.status_code == 403:
         raise PermissionError(
-            "Access denied. Private dataset requires organization membership"
+            "Access denied. If the dataset is public, make sure you have read thoroughly and agreed"
+            " to the dataset's Terms & Conditions in its respective page on the MDC platform before downloading. "
         )
     if resp.status_code == 429:
         raise RuntimeError(RATE_LIMIT_ERROR)
