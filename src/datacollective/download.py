@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from fox_progress_bar import ProgressBar
-from pydantic import Field, ValidationError
+from pydantic import Field
 
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
@@ -17,6 +17,7 @@ from datacollective.errors import DownloadError
 from datacollective.models import NonEmptyStrModel
 
 logger = logging.getLogger(__name__)
+
 
 class DownloadPlan(NonEmptyStrModel):
     download_url: str

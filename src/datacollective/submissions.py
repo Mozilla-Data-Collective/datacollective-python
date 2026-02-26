@@ -3,10 +3,9 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from pydantic import ValidationError
 
 from datacollective.api_utils import _get_api_url, send_api_request, _enable_verbose
-from datacollective.models import DatasetSubmission, NonEmptyStrModel
+from datacollective.models import DatasetSubmission
 from datacollective.upload import upload_dataset_file
 
 logger = logging.getLogger(__name__)
@@ -22,6 +21,7 @@ def _normalize_submission_id(submission_id: str) -> str:
     if not submission_id:
         raise ValueError("`submission_id` must be a non-empty string")
     return submission_id
+
 
 DRAFT_FIELDS = {"name", "longDescription"}
 UPDATE_FIELDS = {
