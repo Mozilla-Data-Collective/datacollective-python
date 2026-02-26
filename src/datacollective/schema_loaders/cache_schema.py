@@ -33,7 +33,7 @@ def _resolve_schema(
             cached ``schema.yaml`` to decide whether the cache is still valid.
 
     Returns:
-        A :class:`DatasetSchema` instance.
+        A `DatasetSchema` instance.
     """
     schema_path = extract_dir / "schema.yaml"
 
@@ -51,7 +51,7 @@ def _resolve_schema(
         )
         return cached_schema
 
-    # Cache miss or no archive checksum available → fetch from the registry
+    # Cache miss or no archive checksum available -> fetch from the registry
     remote_schema = get_dataset_schema(dataset_id)
     if remote_schema is None:
         if cached_schema is not None:
@@ -75,7 +75,7 @@ def _load_cached_schema(schema_path: Path) -> DatasetSchema | None:
     Attempt to load and parse a ``schema.yaml`` from *schema_path*.
 
     Returns:
-        A :class:`DatasetSchema` if the file exists and is valid, otherwise ``None``.
+        A `DatasetSchema` if the file exists and is valid, otherwise ``None``.
     """
     if not schema_path.is_file():
         return None

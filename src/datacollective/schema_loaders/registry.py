@@ -1,9 +1,3 @@
-"""
-Registry that maps task names to their `BaseSchemaLoader` subclasses.
-
-To register a new task type, add an entry to `_TASK_REGISTRY`.
-"""
-
 from __future__ import annotations
 
 import logging

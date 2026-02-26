@@ -39,7 +39,7 @@ class TTSLoader(BaseSchemaLoader):
         raw_df = self._load_index_file()
 
         if not self.schema.columns:
-            # No column mapping → return the raw dataframe as-is
+            # No column mapping -> return the raw dataframe as-is
             return raw_df
 
         return self._apply_column_mappings(raw_df)

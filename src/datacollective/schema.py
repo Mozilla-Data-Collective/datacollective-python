@@ -25,9 +25,9 @@ class ColumnMapping(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    source_column: (
-        str | int
-    )  # column name (str) or positional index (int) for headerless files
+    source_column: str | int = Field(
+        description="column name (str) or positional index (int) for headerless files"
+    )
     dtype: str = "string"
     optional: bool = False
 
@@ -44,8 +44,8 @@ class ContentMapping(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    text: str | None = None  # e.g. "file_content"
-    meta_source: str | None = None  # e.g. "file_name"
+    text: str | None = Field(default=None, description='e.g. "file_content"')
+    meta_source: str | None = Field(default=None, description='e.g. "file_name"')
 
 
 class DatasetSchema(BaseModel):
@@ -63,37 +63,59 @@ class DatasetSchema(BaseModel):
 
     model_config = ConfigDict(frozen=False)
 
-    dataset_id: str
-    task: str  # e.g. "ASR", "TTS", "MT", etc
+    dataset_id: str = Field(
+        description="Unique identifier for the dataset in the registry"
+    )
+    task: str = Field(
+        description="A task as defined in the MDC Platform e.g. ASR, TTS etc"
+    )
 
     # --- Index-based strategy (ASR / TTS) ---
-    format: str | None = None  # e.g. "csv", "tsv", "pipe"
-    index_file: str | None = None  # e.g. "train.csv"
-    base_audio_path: str | None = None  # e.g. "clips/"
-    columns: dict[str, ColumnMapping] = Field(default_factory=dict)
-    separator: str | None = None  # explicit separator override (e.g. "|")
-    has_header: bool = True  # whether the index file has a header row
-    encoding: str = "utf-8"  # file encoding (e.g. "utf-8-sig" for BOM)
+    format: str | None = Field(default=None, description='e.g. "csv", "tsv", "pipe"')
+    index_file: str | None = Field(default=None, description='e.g. "train.csv"')
+    base_audio_path: str | None = Field(default=None, description='e.g. "clips/"')
+    columns: dict[str, ColumnMapping] = Field(
+        default_factory=dict, description="Mapping of index columns to logical fields"
+    )
+    separator: str | None = Field(
+        default=None, description='explicit separator override (e.g. "|")'
+    )
+    has_header: bool = Field(
+        default=True, description="whether the index file has a header row"
+    )
+    encoding: str = Field(
+        default="utf-8", description='file encoding (e.g. "utf-8-sig" for BOM)'
+    )
 
     # --- Glob-based strategy (LM, paired-file TTS) ---
-    root_strategy: str | None = None  # "glob" | "paired_glob" | "multi_split"
-    file_pattern: str | None = None  # e.g. "**/*.txt"
-    audio_extension: str | None = None  # for paired-file TTS: e.g. ".webm"
-    content_mapping: ContentMapping | None = None
+    root_strategy: str | None = Field(
+        default=None, description='"glob" | "paired_glob" | "multi_split"'
+    )
+    file_pattern: str | None = Field(default=None, description='e.g. "**/*.txt"')
+    audio_extension: str | None = Field(
+        default=None, description='for paired-file TTS: e.g. ".webm"'
+    )
+    content_mapping: ContentMapping | None = Field(
+        default=None, description="Mapping for glob-based content extraction"
+    )
 
     # --- Multi-split strategy (e.g. Common Voice) ---
-    splits: list[str] | None = (
-        None  # split names to load, e.g. ["train", "dev", "test"]
+    splits: list[str] | None = Field(
+        default=None, description='split names to load, e.g. ["train", "dev", "test"]'
     )
-    splits_file_pattern: str | None = (
-        None  # glob pattern for split files, e.g. "**/*.tsv"
+    splits_file_pattern: str | None = Field(
+        default=None, description='glob pattern for split files, e.g. "**/*.tsv"'
     )
 
     # --- Schema versioning ---
-    checksum: str | None = None  # archive checksum for cache validation
+    checksum: str | None = Field(
+        default=None, description="archive checksum for cache validation"
+    )
 
     # --- Catch-all for future / unknown keys ---
-    extra: dict[str, Any] = Field(default_factory=dict)
+    extra: dict[str, Any] = Field(
+        default_factory=dict, description="Catch-all for future / unknown keys"
+    )
 
     def to_yaml_dict(self) -> dict[str, Any]:
         """
