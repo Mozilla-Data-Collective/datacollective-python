@@ -1,16 +1,8 @@
-"""
-Abstract base class for all task-specific schema loaders.
-
-To add a new task type:
-1. Subclass `BaseSchemaLoader`.
-2. Implement `load`.
-3. Register the subclass in ``registry.py``.
-"""
-
 from __future__ import annotations
 
 import abc
 import logging
+from enum import StrEnum
 from pathlib import Path
 
 import pandas as pd
@@ -25,6 +17,14 @@ FORMAT_SEP: dict[str, str] = {
     "tsv": "\t",
     "pipe": "|",
 }
+
+
+class Strategy(StrEnum):
+    """Loading strategies recognised by schema loaders."""
+
+    MULTI_SPLIT = "multi_split"
+    PAIRED_GLOB = "paired_glob"
+    GLOB = "glob"
 
 
 class BaseSchemaLoader(abc.ABC):
@@ -46,14 +46,14 @@ class BaseSchemaLoader(abc.ABC):
         ...
 
     def _load_index_file(self) -> pd.DataFrame:
-        """Locate the index file and read it into a raw :class:`~pandas.DataFrame`.
+        """Locate the index file and read it into a raw `~pandas.DataFrame`.
 
         Resolves the separator from ``schema.separator`` (explicit override) or
-        ``schema.format`` via :data:`FORMAT_SEP`, then delegates the file
-        lookup to :meth:`_resolve_index_file`.
+        ``schema.format`` via `FORMAT_SEP`, then delegates the file
+        lookup to `_resolve_index_file`.
 
-        Used by all index-based loaders (ASR, TTS, MT, …) so that each loader
-        only needs to call :meth:`_apply_column_mappings` on the result.
+        Used by all index-based loaders (ASR, TTS, ...) so that each loader
+        only needs to call `_apply_column_mappings` on the result.
 
         Returns:
             A raw (unmapped) DataFrame exactly as read from the index file.

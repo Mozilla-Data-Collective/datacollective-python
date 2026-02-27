@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -9,28 +8,31 @@ import urllib.error
 import urllib.request
 import yaml
 
+from pydantic import BaseModel, ConfigDict, Field
+
 from datacollective.api_utils import SCHEMA_REGISTRY_RAW_BASE_URL
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class ColumnMapping:
+class ColumnMapping(BaseModel):
     """
     A single column mapping entry inside a schema.
+
     Used by index-based tasks to describe how columns in the
     index file map to logical fields and their data types.
     """
 
-    source_column: (
-        str | int
-    )  # column name (str) or positional index (int) for headerless files
-    dtype: str
+    model_config = ConfigDict(frozen=True)
+
+    source_column: str | int = Field(
+        description="column name (str) or positional index (int) for headerless files"
+    )
+    dtype: str = "string"
     optional: bool = False
 
 
-@dataclass
-class ContentMapping:
+class ContentMapping(BaseModel):
     """
     Describes how file contents / metadata map to DataFrame columns.
 
@@ -40,12 +42,13 @@ class ContentMapping:
     the file name or parent directory.
     """
 
-    text: str | None = None  # e.g. "file_content"
-    meta_source: str | None = None  # e.g. "file_name"
+    model_config = ConfigDict(frozen=True)
+
+    text: str | None = Field(default=None, description='e.g. "file_content"')
+    meta_source: str | None = Field(default=None, description='e.g. "file_name"')
 
 
-@dataclass
-class DatasetSchema:
+class DatasetSchema(BaseModel):
     """
     Task-agnostic representation of a dataset schema, as defined by a ``schema.yaml`` file.
 
@@ -58,40 +61,78 @@ class DatasetSchema:
     required at load time.
     """
 
-    dataset_id: str
-    task: str  # e.g. "ASR", "TTS", "MT", etc
+    model_config = ConfigDict(frozen=False)
+
+    dataset_id: str = Field(
+        description="Unique identifier for the dataset in the registry"
+    )
+    task: str = Field(
+        description="A task as defined in the MDC Platform e.g. ASR, TTS etc"
+    )
 
     # --- Index-based strategy (ASR / TTS) ---
-    format: str | None = None  # e.g. "csv", "tsv", "pipe"
-    index_file: str | None = None  # e.g. "train.csv"
-    base_audio_path: str | None = None  # e.g. "clips/"
-    columns: dict[str, ColumnMapping] = field(default_factory=dict)
-    separator: str | None = None  # explicit separator override (e.g. "|")
-    has_header: bool = True  # whether the index file has a header row
-    encoding: str = "utf-8"  # file encoding (e.g. "utf-8-sig" for BOM)
+    format: str | None = Field(default=None, description='e.g. "csv", "tsv", "pipe"')
+    index_file: str | None = Field(default=None, description='e.g. "train.csv"')
+    base_audio_path: str | None = Field(default=None, description='e.g. "clips/"')
+    columns: dict[str, ColumnMapping] = Field(
+        default_factory=dict, description="Mapping of index columns to logical fields"
+    )
+    separator: str | None = Field(
+        default=None, description='explicit separator override (e.g. "|")'
+    )
+    has_header: bool = Field(
+        default=True, description="whether the index file has a header row"
+    )
+    encoding: str = Field(
+        default="utf-8", description='file encoding (e.g. "utf-8-sig" for BOM)'
+    )
 
     # --- Glob-based strategy (LM, paired-file TTS) ---
-    root_strategy: str | None = None  # "glob" | "paired_glob" | "multi_split"
-    file_pattern: str | None = None  # e.g. "**/*.txt"
-    audio_extension: str | None = None  # for paired-file TTS: e.g. ".webm"
-    content_mapping: ContentMapping | None = None
+    root_strategy: str | None = Field(
+        default=None, description='"glob" | "paired_glob" | "multi_split"'
+    )
+    file_pattern: str | None = Field(default=None, description='e.g. "**/*.txt"')
+    audio_extension: str | None = Field(
+        default=None, description='for paired-file TTS: e.g. ".webm"'
+    )
+    content_mapping: ContentMapping | None = Field(
+        default=None, description="Mapping for glob-based content extraction"
+    )
 
     # --- Multi-split strategy (e.g. Common Voice) ---
-    splits: list[str] | None = (
-        None  # split names to load, e.g. ["train", "dev", "test"]
+    splits: list[str] | None = Field(
+        default=None, description='split names to load, e.g. ["train", "dev", "test"]'
     )
-    splits_file_pattern: str | None = (
-        None  # glob pattern for split files, e.g. "**/*.tsv"
+    splits_file_pattern: str | None = Field(
+        default=None, description='glob pattern for split files, e.g. "**/*.tsv"'
     )
 
     # --- Schema versioning ---
-    checksum: str | None = None  # schema checksum for cache validation
+    checksum: str | None = Field(
+        default=None, description="archive checksum for cache validation"
+    )
 
     # --- Catch-all for future / unknown keys ---
-    extra: dict[str, Any] = field(default_factory=dict)
+    extra: dict[str, Any] = Field(
+        default_factory=dict, description="Catch-all for future / unknown keys"
+    )
+
+    def to_yaml_dict(self) -> dict[str, Any]:
+        """
+        Serialise the schema to a plain dict suitable for YAML output.
+
+        Excludes fields that are at their default values so that the
+        generated ``schema.yaml`` stays compact and readable.  The
+        ``extra`` dict is merged into the top level.
+        """
+        data = self.model_dump(exclude_defaults=True, exclude={"extra"})
+        # Merge extra keys into the top level
+        if self.extra:
+            data.update(self.extra)
+        return data
 
 
-def get_dataset_schema(dataset_id: str) -> DatasetSchema:
+def get_dataset_schema(dataset_id: str) -> DatasetSchema | None:
     """
     Download and return the schema.yaml content for *dataset_id*.
 
@@ -99,10 +140,9 @@ def get_dataset_schema(dataset_id: str) -> DatasetSchema:
         dataset_id: The registry dataset ID (the folder name under /registry/).
 
     Returns:
-        A fully-populated `DatasetSchema` for the given dataset.
+        A fully-populated `DatasetSchema` for the given dataset, or ``None`` if
+        the dataset is not found in the registry (HTTP 404).
     Raises:
-        ValueError
-            If the dataset is not found (HTTP 404).
         RuntimeError
             For any other network / HTTP error.
     """
@@ -115,9 +155,7 @@ def get_dataset_schema(dataset_id: str) -> DatasetSchema:
         return parse_schema(raw)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
-            raise ValueError(
-                f"Dataset '{dataset_id}' not found in the registry.\nURL tried: {url}"
-            ) from exc
+            return None
         raise RuntimeError(f"HTTP {exc.code} while fetching {url}") from exc
     except urllib.error.URLError as exc:
         raise RuntimeError(f"Network error while fetching {url}: {exc.reason}") from exc
