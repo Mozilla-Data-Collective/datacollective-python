@@ -50,7 +50,7 @@ submission = DatasetSubmission(
     longDescription="Full description of my dataset",
     shortDescription="A brief description of your dataset",
     locale="en-US",
-    task="classification",
+    task="ASR",
     format="tar.gz",
     licenseAbbreviation="CC-BY",
     license="Creative Commons Attribution",
@@ -76,7 +76,7 @@ submission = DatasetSubmission(
 # Upload and submit in one call
 response = create_submission_with_upload(
     file_path="/path/to/your/dataset.tar.gz",
-    submission=submission,
+    submission=submission
 )
 
 submission_response = response.get("submission", {})
@@ -242,13 +242,13 @@ submission = DatasetSubmission(
 # First attempt (interrupted)
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
-    submission=submission,
+    submission=submission
 )
 
 # Second attempt (resumes automatically)
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
-    submission=submission,
+    submission=submission
 )
 ```
 
@@ -387,7 +387,7 @@ submission = DatasetSubmission(
 # Upload the dataset
 response = create_submission_with_upload(
     file_path=file_path,
-    submission=submission,
+    submission=submission
 )
 
 print("Upload complete!")

@@ -91,7 +91,7 @@ submission = DatasetSubmission(
     longDescription="Full description",
     shortDescription="Short description",
     locale="en-US",
-    task="classification",
+    task="ASR",
     format="tar.gz",
     licenseAbbreviation="CC-BY",
     license="Creative Commons Attribution",
@@ -116,7 +116,7 @@ submission = DatasetSubmission(
 
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
-    submission=submission,
+    submission=submission
 )
 
 print(response)
