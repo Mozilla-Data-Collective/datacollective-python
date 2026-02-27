@@ -4,6 +4,14 @@ repo_name: datacollective-python
 
 nav:
   - Home: index.md
+  - Schema-Based Loading: schema_parse.md
+  - Loaders:
+    - ASR: loaders/asr.md
+    - TTS: loaders/tts.md
+  - For Data Owners:
+    - Adding a New Schema: add_new_schema.md
+  - For Developers:
+    - Extending Loading Logic: extend_schema_loading_logic.md
   - API Reference: api.md
   - Release Workflow: release.md
 

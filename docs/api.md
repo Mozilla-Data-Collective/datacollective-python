@@ -6,6 +6,15 @@
 
 ::: datacollective.api_utils
 
-::: datacollective.dataset_loading_scripts.registry
+::: datacollective.schema
 
-::: datacollective.dataset_loading_scripts.common_voice
+::: datacollective.schema_loaders.base
+
+::: datacollective.schema_loaders.registry
+
+::: datacollective.schema_loaders.cache_schema
+
+::: datacollective.schema_loaders.tasks.asr
+
+::: datacollective.schema_loaders.tasks.tts
+

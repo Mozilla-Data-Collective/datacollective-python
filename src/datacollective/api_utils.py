@@ -4,13 +4,15 @@ import logging
 import os
 import platform
 from pathlib import Path
-
 import requests
 from dotenv import find_dotenv, load_dotenv
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
+SCHEMA_REGISTRY_RAW_BASE_URL = (
+    "https://raw.githubusercontent.com/Mozilla-Data-Collective/dataset-schema-registry"
+)
 ENV_API_KEY = "MDC_API_KEY"
 ENV_API_URL = "MDC_API_URL"
 ENV_DOWNLOAD_PATH = "MDC_DOWNLOAD_PATH"

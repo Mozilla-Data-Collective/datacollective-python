@@ -71,7 +71,7 @@ from datacollective import get_dataset_details
 details = get_dataset_details("your-dataset-id")
 ```
 
-6. **Load the dataset into a pandas DataFrame _(Only Common Voice datasets are supported right now)_**:
+6. **Load the dataset into a pandas DataFrame _(**Alpha version:** Only certain MDC datasets are supported right now)_**:
 
 ```
 from datacollective import load_dataset
