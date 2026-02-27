@@ -9,8 +9,10 @@
       
       
       
-        <link rel="prev" href="../api/">
+        <link rel="prev" href="../add_new_schema/">
       
+      
+        <link rel="next" href="../api/">
       
       
         
@@ -21,7 +23,7 @@
     
     
       
-        <title>Release Workflow - Mozilla Data Collective Python SDK</title>
+        <title>Extending Loading Logic - Mozilla Data Collective Python SDK</title>
       
     
     
@@ -74,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-workflow" class="md-skip">
+        <a href="#extending-schema-loading-logic" class="md-skip">
           Skip to content
         </a>
       
@@ -109,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Release Workflow
+              Extending Loading Logic
             
           </span>
         </div>
@@ -497,18 +499,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -529,7 +533,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             
@@ -544,10 +548,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../extend_schema_loading_logic/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extending Loading Logic
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -563,6 +594,154 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1-how-to-add-a-new-task-type" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. How to add a new task type
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. How to add a new task type">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-create-the-loader-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Create the loader class
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-shared-helpers-in-baseschemaloader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Shared helpers in BaseSchemaLoader
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-register-the-loader" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Register the loader
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-how-to-extend-or-update-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. How to extend or update strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. How to extend or update strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#loading-strategies-strategy-enum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading Strategies (Strategy enum)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-new-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Adding a new strategy
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-architecture-overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. Architecture Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Architecture Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#module-map" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module Map
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -606,35 +785,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Release Workflow
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
         
   
   
@@ -650,134 +804,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#release-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Release Workflow
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prerequisites
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#1-prepare-the-code-for-release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Prepare the code for release
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-choose-the-version-bump" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Choose the version bump
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-bump-the-version-using-bump-my-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Bump the version using bump-my-version
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-push-the-changes-and-tag" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Push the changes and tag
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-create-a-github-release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Create a GitHub Release
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-automatic-publish-to-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Automatic publish to PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-verify-the-release-on-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Verify the release on PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes-and-best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes and Best Practices
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -799,6 +825,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -807,112 +835,130 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#release-workflow" class="md-nav__link">
+  <a href="#1-how-to-add-a-new-task-type" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Release Workflow
+        1. How to add a new task type
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. How to add a new task type">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-create-the-loader-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Create the loader class
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#step-2-shared-helpers-in-baseschemaloader" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        Step 2: Shared helpers in BaseSchemaLoader
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#1-prepare-the-code-for-release" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#step-3-register-the-loader" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Prepare the code for release
+        Step 3: Register the loader
       
     </span>
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#2-choose-the-version-bump" class="md-nav__link">
+  <a href="#2-how-to-extend-or-update-strategies" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Choose the version bump
+        2. How to extend or update strategies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. How to extend or update strategies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#loading-strategies-strategy-enum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading Strategies (Strategy enum)
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#3-bump-the-version-using-bump-my-version" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#adding-a-new-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Bump the version using bump-my-version
+        Adding a new strategy
       
     </span>
   </a>
   
 </li>
+        
+      </ul>
+    </nav>
+  
+</li>
       
         <li class="md-nav__item">
-  <a href="#4-push-the-changes-and-tag" class="md-nav__link">
+  <a href="#3-architecture-overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Push the changes and tag
+        3. Architecture Overview
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. Architecture Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data Flow
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#5-create-a-github-release" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#module-map" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Create a GitHub Release
+        Module Map
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#6-automatic-publish-to-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Automatic publish to PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-verify-the-release-on-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Verify the release on PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes-and-best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes and Best Practices
-      
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -936,125 +982,151 @@
   
 
 
-  <h1>Release Workflow</h1>
-
-<h2 id="release-workflow">Release Workflow</h2>
-<p>This project uses:</p>
-<ul>
-<li><code>bump-my-version</code> as the single source of truth for the version and updating it.</li>
-<li>GitHub Releases to trigger automatic publishing to PyPI via GitHub Actions.</li>
-</ul>
-<p>Publishing to PyPI happens <strong>only</strong> when a GitHub Release is created for a version tag (for example, <code>v0.1.0</code>).</p>
-<hr />
-<h2 id="prerequisites">Prerequisites</h2>
-<p>Before doing a release, make sure you have:</p>
-<ul>
-<li>Push access to the repository.</li>
-<li>A local Python environment with <code>bump-my-version</code> installed:</li>
-</ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>bump-my-version
+<h1 id="extending-schema-loading-logic">Extending Schema Loading Logic</h1>
+<p>This document is for <strong>developers</strong> who want to add support for new tasks or implement new loading strategies within the MDC Python SDK.</p>
+<h2 id="1-how-to-add-a-new-task-type">1. How to add a new task type</h2>
+<p>Supporting a new task (e.g., <strong>MT</strong> — Machine Translation) involves creating a new loader class and registering it.</p>
+<h3 id="step-1-create-the-loader-class">Step 1: Create the loader class</h3>
+<p>Create a new file under <code>src/datacollective/schema_loaders/tasks/</code>, for example <code>mt.py</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetSchema</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSchemaLoader</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">MTLoader</span><span class="p">(</span><span class="n">BaseSchemaLoader</span><span class="p">):</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Load a machine-translation dataset.&quot;&quot;&quot;</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="n">DatasetSchema</span><span class="p">,</span> <span class="n">extract_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">extract_dir</span><span class="p">)</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="c1"># Validate required schema fields</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">schema</span><span class="o">.</span><span class="n">index_file</span><span class="p">:</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;MT schema must specify &#39;index_file&#39;&quot;</span><span class="p">)</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="c1"># BaseSchemaLoader provides shared helpers:</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>        <span class="c1"># 1. Locate and read the index file</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="n">raw_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_index_file</span><span class="p">()</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>        <span class="c1"># 2. Apply column mappings and dtypes</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_apply_column_mappings</span><span class="p">(</span><span class="n">raw_df</span><span class="p">)</span>
 </span></code></pre></div>
-<ul>
-<li>An up-to-date local clone with all changes merged into <code>main</code>:</li>
-</ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>main
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git<span class="w"> </span>pull<span class="w"> </span>origin<span class="w"> </span>main
+<h3 id="step-2-shared-helpers-in-baseschemaloader">Step 2: Shared helpers in <code>BaseSchemaLoader</code></h3>
+<p>When implementing <code>load()</code>, you can leverage these methods from the base class:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_load_index_file()</code></td>
+<td>Reads the index file (CSV/TSV/pipe) based on schema settings.</td>
+</tr>
+<tr>
+<td><code>_resolve_index_file()</code></td>
+<td>Recursively finds the index file in the extraction directory.</td>
+</tr>
+<tr>
+<td><code>_apply_column_mappings()</code></td>
+<td>Renames columns and applies dtypes (e.g., <code>file_path</code>, <code>category</code>).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="step-3-register-the-loader">Step 3: Register the loader</h3>
+<p>Register your new class in <code>src/datacollective/schema_loaders/registry.py</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.tasks.mt</span><span class="w"> </span><span class="kn">import</span> <span class="n">MTLoader</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">_TASK_REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseSchemaLoader</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="s2">&quot;ASR&quot;</span><span class="p">:</span> <span class="n">ASRLoader</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="s2">&quot;TTS&quot;</span><span class="p">:</span> <span class="n">TTSLoader</span><span class="p">,</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="s2">&quot;MT&quot;</span><span class="p">:</span>  <span class="n">MTLoader</span><span class="p">,</span>  <span class="c1"># Add your new task here</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
 </span></code></pre></div>
-<hr />
-<h2 id="1-prepare-the-code-for-release">1. Prepare the code for release</h2>
+<h2 id="2-how-to-extend-or-update-strategies">2. How to extend or update strategies</h2>
+<p>Strategies define the high-level approach to locating data (e.g., using an index file vs. globbing).</p>
+<h3 id="loading-strategies-strategy-enum">Loading Strategies (<code>Strategy</code> enum)</h3>
+<p>Strategies are defined in the <code>Strategy</code> enum in <code>src/datacollective/schema_loaders/base.py</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Enum Member</th>
+<th>YAML Value</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Strategy.MULTI_SPLIT</code></td>
+<td><code>"multi_split"</code></td>
+<td>Loads multiple files matching a pattern.</td>
+</tr>
+<tr>
+<td><code>Strategy.PAIRED_GLOB</code></td>
+<td><code>"paired_glob"</code></td>
+<td>Pairs audio files with <code>.txt</code> files.</td>
+</tr>
+<tr>
+<td><code>Strategy.GLOB</code></td>
+<td><code>"glob"</code></td>
+<td>Generic single-pattern globbing.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="adding-a-new-strategy">Adding a new strategy</h3>
 <ol>
-<li>Make sure all desired changes are merged into <code>main</code>.</li>
-<li>Run tests and checks locally (adjust commands to your setup):</li>
+<li><strong>Add to the Enum</strong>: Add your new strategy to the <code>Strategy</code> class in <code>base.py</code>.</li>
+<li><strong>Implement Logic</strong>: Add a branch in the relevant loader's <code>load()</code> method to handle the new strategy.</li>
+<li><strong>Update Schema</strong>: If the strategy requires new YAML fields, add them to <code>DatasetSchema</code> in <code>src/datacollective/schema.py</code>.</li>
 </ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pre-commit<span class="w"> </span>run<span class="w"> </span>--all-files
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pytest<span class="w"> </span>-q
-</span></code></pre></div>
-<hr />
-<h2 id="2-choose-the-version-bump">2. Choose the version bump</h2>
-<p>Decide what type of version bump you need according to <a href="https://semver.org/">Semantic Versioning</a>:</p>
-<ul>
-<li><code>patch</code>: bug fixes only (e.g. <code>0.0.34</code> → <code>0.0.35</code>)</li>
-<li><code>minor</code>: new features, backwards compatible (e.g. <code>0.0.34</code> → <code>0.1.0</code>)</li>
-<li><code>major</code>: breaking changes (e.g. <code>0.0.34</code> → <code>1.0.0</code>)</li>
+<h2 id="3-architecture-overview">3. Architecture Overview</h2>
+<h3 id="data-flow">Data Flow</h3>
+<p>When a user calls <code>load_dataset("id")</code>:</p>
+<ol>
+<li><strong><code>save_dataset_to_disk()</code></strong>: Downloads the archive. (Skipped if already downloaded)</li>
+<li><strong><code>_extract_archive()</code></strong>: Extracts it to a local directory. (Skipped if already extracted)</li>
+<li><strong><code>_resolve_schema()</code></strong>: Locates or downloads <code>schema.yaml</code>.</li>
+<li><strong><code>parse_schema()</code></strong>: Validates YAML into a <code>DatasetSchema</code> object.</li>
+<li><strong><code>load_dataset_from_schema()</code></strong>: <ul>
+<li>Finds the correct loader in the <strong>Registry</strong>.</li>
+<li>Calls <code>loader.load()</code>.</li>
+<li>Returns the final <strong>pandas DataFrame</strong>.</li>
 </ul>
-<p>Check the potential versioning paths with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bump-my-version<span class="w"> </span>show-bump
-</span></code></pre></div>
-<p>And verify that the version you plan to release is the expected one:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>bump-my-version<span class="w"> </span>show<span class="w"> </span>--increment<span class="w"> </span>minor<span class="w"> </span>new_version
-</span></code></pre></div>
-<p>Finally, you can run a dry run to see what will happen:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w"> </span>--dry-run<span class="w"> </span>-vv
-</span></code></pre></div>
-<hr />
-<h2 id="3-bump-the-version-using-bump-my-version">3. Bump the version using bump-my-version</h2>
-<p>Run <strong>one</strong> of the following from the repository root:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># choose exactly one:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w"> </span>-vv
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># or</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w"> </span>-vv
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># or</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w"> </span>-vv
-</span></code></pre></div>
-<p>This will update the version in <code>pyproject.toml</code> and <code>__init__.py</code>.</p>
-<hr />
-<h2 id="4-push-the-changes-and-tag">4. Push the changes and tag</h2>
-<p>Commit the version bump and push to the <code>main</code> branch:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>git<span class="w"> </span>add<span class="w"> </span>pyproject.toml<span class="w"> </span>src/datacollective/__init__.py<span class="w"> </span>uv.lock
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Bump version to X.Y.Z&quot;</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main
-</span></code></pre></div>
-<p>Replace <code>vX.Y.Z</code> with the tag created in the previous step (for example, <code>v0.0.35</code>).</p>
-<hr />
-<h2 id="5-create-a-github-release">5. Create a GitHub Release</h2>
-<ol>
-<li>Go to the repository page on GitHub.</li>
-<li>Open the <code>Releases</code> section.</li>
-<li>Click <code>Draft a new release</code>.</li>
-<li>Select the tag you just pushed (for example, <code>v0.0.35</code>).</li>
-<li>Set the release title to the same value (e.g. <code>v0.0.35</code>).</li>
-<li>Add release notes (high-level changes).</li>
-<li>Click <code>Publish release</code>.</li>
-</ol>
-<p>This will trigger the <code>Publish to PyPI</code> GitHub Actions workflow.</p>
-<hr />
-<h2 id="6-automatic-publish-to-pypi">6. Automatic publish to PyPI</h2>
-<p>Once the GitHub Release is published:</p>
-<ul>
-<li>GitHub Actions automatically:</li>
-<li>Checks out the code.</li>
-<li>Builds the distribution.</li>
-<li>Uploads the package to PyPI using the <code>PYPI_API_TOKEN</code> secret.</li>
-</ul>
-<p>You can monitor the progress:</p>
-<ol>
-<li>Open the <code>Actions</code> tab in GitHub.</li>
-<li>Open the <code>Publish to PyPI</code> workflow run associated with your release.</li>
-<li>Wait for it to complete successfully.</li>
-</ol>
-<hr />
-<h2 id="7-verify-the-release-on-pypi">7. Verify the release on PyPI</h2>
-<p>After the workflow succeeds:</p>
-<ol>
-<li>Go to the project page on PyPI.</li>
-<li>Confirm that the new version <code>X.Y.Z</code> is listed.</li>
-<li>Optionally install the package in a clean environment to verify:</li>
-</ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span><span class="nv">datacollective</span><span class="o">==</span>X.Y.Z
-</span></code></pre></div>
-<hr />
-<h2 id="notes-and-best-practices">Notes and Best Practices</h2>
-<ul>
-<li>
-<p><strong>Single source of truth</strong>: The version is managed only by bump-my-version. Do <strong>not</strong> manually edit the version in any file.</p>
 </li>
-<li>
-<p><strong>Tag format</strong>: Always use <code>vX.Y.Z</code> tags (for example, <code>v0.0.35</code>). The <code>bump-my-version</code> configuration enforces this.</p>
-</li>
-<li>
-<p><strong>Manual workflow dispatch (advanced)</strong>: In rare cases, you can re-run the publish job from the <code>Actions</code> tab using <code>workflow_dispatch</code>, but normally you should always go through a GitHub Release.</p>
-</li>
-</ul>
+</ol>
+<h3 id="module-map">Module Map</h3>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Responsibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>datacollective.schema</code></td>
+<td>Pydantic models and YAML parsing.</td>
+</tr>
+<tr>
+<td><code>datacollective.schema_loaders.base</code></td>
+<td>Abstract base class and strategy definitions.</td>
+</tr>
+<tr>
+<td><code>datacollective.schema_loaders.registry</code></td>
+<td>Task-to-loader mapping.</td>
+</tr>
+<tr>
+<td><code>datacollective.schema_loaders.cache_schema</code></td>
+<td>Local schema caching and checksum validation.</td>
+</tr>
+<tr>
+<td><code>datacollective.schema_loaders.tasks.*</code></td>
+<td>Implementation of task-specific logic (ASR, TTS).</td>
+</tr>
+</tbody>
+</table>
 
 
 

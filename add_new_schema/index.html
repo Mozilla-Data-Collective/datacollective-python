@@ -9,8 +9,10 @@
       
       
       
-        <link rel="prev" href="../api/">
+        <link rel="prev" href="../loaders/tts/">
       
+      
+        <link rel="next" href="../extend_schema_loading_logic/">
       
       
         
@@ -21,7 +23,7 @@
     
     
       
-        <title>Release Workflow - Mozilla Data Collective Python SDK</title>
+        <title>Adding a New Schema - Mozilla Data Collective Python SDK</title>
       
     
     
@@ -74,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-workflow" class="md-skip">
+        <a href="#adding-support-for-your-dataset" class="md-skip">
           Skip to content
         </a>
       
@@ -109,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Release Workflow
+              Adding a New Schema
             
           </span>
         </div>
@@ -415,18 +417,20 @@
       
   
   
+    
   
   
+  
     
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -447,7 +451,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             
@@ -462,10 +466,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../add_new_schema/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding a New Schema
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -481,6 +512,137 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Overview
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-to-create-a-schemayaml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How to create a schema.yaml
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How to create a schema.yaml">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-inspect-your-archive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Inspect your archive
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-identify-the-task" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Identify the task
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-write-the-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Write the schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3: Write the schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-index-based-asr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: Index-based ASR
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-test-locally" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Test locally
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-submit-to-the-registry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Submit to the registry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next steps
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -606,35 +768,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Release Workflow
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
         
   
   
@@ -650,134 +787,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#release-workflow" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Release Workflow
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Prerequisites
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#1-prepare-the-code-for-release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        1. Prepare the code for release
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-choose-the-version-bump" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. Choose the version bump
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-bump-the-version-using-bump-my-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Bump the version using bump-my-version
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-push-the-changes-and-tag" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Push the changes and tag
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-create-a-github-release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Create a GitHub Release
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-automatic-publish-to-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Automatic publish to PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-verify-the-release-on-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Verify the release on PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes-and-best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes and Best Practices
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -799,6 +808,8 @@
   
   
   
+    
+  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -807,10 +818,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#release-workflow" class="md-nav__link">
+  <a href="#overview" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Release Workflow
+        Overview
       
     </span>
   </a>
@@ -818,98 +829,99 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#how-to-create-a-schemayaml" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        How to create a schema.yaml
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="How to create a schema.yaml">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-inspect-your-archive" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Inspect your archive
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#1-prepare-the-code-for-release" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#step-2-identify-the-task" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Prepare the code for release
+        Step 2: Identify the task
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#2-choose-the-version-bump" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#step-3-write-the-schema" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Choose the version bump
+        Step 3: Write the schema
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 3: Write the schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-index-based-asr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Example: Index-based ASR
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#3-bump-the-version-using-bump-my-version" class="md-nav__link">
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-test-locally" class="md-nav__link">
     <span class="md-ellipsis">
       
-        3. Bump the version using bump-my-version
+        Step 4: Test locally
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#4-push-the-changes-and-tag" class="md-nav__link">
+        
+          <li class="md-nav__item">
+  <a href="#step-5-submit-to-the-registry" class="md-nav__link">
     <span class="md-ellipsis">
       
-        4. Push the changes and tag
+        Step 5: Submit to the registry
       
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#5-create-a-github-release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Create a GitHub Release
-      
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#6-automatic-publish-to-pypi" class="md-nav__link">
+  <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       
-        6. Automatic publish to PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-verify-the-release-on-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Verify the release on PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes-and-best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes and Best Practices
+        Next steps
       
     </span>
   </a>
@@ -936,124 +948,63 @@
   
 
 
-  <h1>Release Workflow</h1>
-
-<h2 id="release-workflow">Release Workflow</h2>
-<p>This project uses:</p>
+<h1 id="adding-support-for-your-dataset">Adding Support for Your Dataset</h1>
+<p>If you are a <strong>dataset owner</strong> and want your dataset to be loadable via <code>load_dataset()</code>, you need to provide a <code>schema.yaml</code> file. This document describes how to create one, test it locally, and submit it to the registry.</p>
+<h2 id="overview">Overview</h2>
+<p>A <code>schema.yaml</code> file tells the MDC Python SDK how to interpret the files in your dataset archive. Instead of writing custom parsing code for every dataset, we use these declarative schemas to automatically map your files into a clean <strong>pandas DataFrame</strong>.</p>
+<h2 id="how-to-create-a-schemayaml">How to create a <code>schema.yaml</code></h2>
+<h3 id="step-1-inspect-your-archive">Step 1: Inspect your archive</h3>
+<p>Extract your dataset and understand its file layout. This determines which <strong>strategy</strong> you should use:</p>
 <ul>
-<li><code>bump-my-version</code> as the single source of truth for the version and updating it.</li>
-<li>GitHub Releases to trigger automatic publishing to PyPI via GitHub Actions.</li>
+<li><strong>Index-based</strong>: You have a central metadata file (CSV, TSV, or pipe-delimited) that lists paths to files and their transcriptions/metadata.</li>
+<li><strong>Multi-split</strong>: You have separate files for each split (e.g., <code>train.tsv</code>, <code>test.tsv</code>, <code>dev.tsv</code>).</li>
+<li><strong>Paired-glob</strong>: There is no index file; instead, each audio file has a matching <code>.txt</code> file with the same name.</li>
 </ul>
-<p>Publishing to PyPI happens <strong>only</strong> when a GitHub Release is created for a version tag (for example, <code>v0.1.0</code>).</p>
-<hr />
-<h2 id="prerequisites">Prerequisites</h2>
-<p>Before doing a release, make sure you have:</p>
+<h3 id="step-2-identify-the-task">Step 2: Identify the task</h3>
+<p>Determine which task your dataset belongs to. Most datasets on MDC are either <strong>ASR</strong> (Automatic Speech Recognition) or <strong>TTS</strong> (Text-to-Speech).</p>
+<h3 id="step-3-write-the-schema">Step 3: Write the schema</h3>
+<p>Create a file named <code>schema.yaml</code>. Start with the basic required fields:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-dataset-id&quot;</span><span class="w">   </span><span class="c1"># The unique ID of the dataset on MDC</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ASR&quot;</span><span class="w">                    </span><span class="c1"># ASR or TTS</span>
+</span></code></pre></div>
+<p>Then add the fields for your chosen strategy.</p>
+<h4 id="example-index-based-asr">Example: Index-based ASR</h4>
+<p>If your dataset has a <code>metadata.tsv</code> file:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-dataset-id&quot;</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ASR&quot;</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tsv&quot;</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;metadata.tsv&quot;</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">base_audio_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;clips/&quot;</span><span class="w">      </span><span class="c1"># Folder where audio files are located</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;path&quot;</span><span class="w">      </span><span class="c1"># Name of the column in metadata.tsv</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sentence&quot;</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+</span></code></pre></div>
+<h3 id="step-4-test-locally">Step 4: Test locally</h3>
+<p>You can test your schema before submitting it. Place your <code>schema.yaml</code> in the folder where you extracted the dataset and run:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_schema</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset_from_schema</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="c1"># Path to your local schema</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">parse_schema</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;path/to/extracted/schema.yaml&quot;</span><span class="p">))</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="c1"># Load using the schema</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">df</span> <span class="o">=</span> <span class="n">load_dataset_from_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">extract_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;path/to/extracted/&quot;</span><span class="p">))</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</span></code></pre></div>
+<p>If the DataFrame looks correct, your schema is ready!</p>
+<h3 id="step-5-submit-to-the-registry">Step 5: Submit to the registry</h3>
+<p>Once tested, submit your <code>schema.yaml</code> to the <a href="https://github.com/Mozilla-Data-Collective/dataset-schema-registry">dataset-schema-registry</a> repository. 
+Place it under <code>registry/&lt;your-dataset-id&gt;/schema.yaml</code>.</p>
+<h2 id="next-steps">Next steps</h2>
 <ul>
-<li>Push access to the repository.</li>
-<li>A local Python environment with <code>bump-my-version</code> installed:</li>
-</ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>bump-my-version
-</span></code></pre></div>
-<ul>
-<li>An up-to-date local clone with all changes merged into <code>main</code>:</li>
-</ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>main
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git<span class="w"> </span>pull<span class="w"> </span>origin<span class="w"> </span>main
-</span></code></pre></div>
-<hr />
-<h2 id="1-prepare-the-code-for-release">1. Prepare the code for release</h2>
-<ol>
-<li>Make sure all desired changes are merged into <code>main</code>.</li>
-<li>Run tests and checks locally (adjust commands to your setup):</li>
-</ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pre-commit<span class="w"> </span>run<span class="w"> </span>--all-files
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pytest<span class="w"> </span>-q
-</span></code></pre></div>
-<hr />
-<h2 id="2-choose-the-version-bump">2. Choose the version bump</h2>
-<p>Decide what type of version bump you need according to <a href="https://semver.org/">Semantic Versioning</a>:</p>
-<ul>
-<li><code>patch</code>: bug fixes only (e.g. <code>0.0.34</code> → <code>0.0.35</code>)</li>
-<li><code>minor</code>: new features, backwards compatible (e.g. <code>0.0.34</code> → <code>0.1.0</code>)</li>
-<li><code>major</code>: breaking changes (e.g. <code>0.0.34</code> → <code>1.0.0</code>)</li>
-</ul>
-<p>Check the potential versioning paths with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bump-my-version<span class="w"> </span>show-bump
-</span></code></pre></div>
-<p>And verify that the version you plan to release is the expected one:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>bump-my-version<span class="w"> </span>show<span class="w"> </span>--increment<span class="w"> </span>minor<span class="w"> </span>new_version
-</span></code></pre></div>
-<p>Finally, you can run a dry run to see what will happen:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w"> </span>--dry-run<span class="w"> </span>-vv
-</span></code></pre></div>
-<hr />
-<h2 id="3-bump-the-version-using-bump-my-version">3. Bump the version using bump-my-version</h2>
-<p>Run <strong>one</strong> of the following from the repository root:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># choose exactly one:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w"> </span>-vv
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># or</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w"> </span>-vv
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># or</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w"> </span>-vv
-</span></code></pre></div>
-<p>This will update the version in <code>pyproject.toml</code> and <code>__init__.py</code>.</p>
-<hr />
-<h2 id="4-push-the-changes-and-tag">4. Push the changes and tag</h2>
-<p>Commit the version bump and push to the <code>main</code> branch:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>git<span class="w"> </span>add<span class="w"> </span>pyproject.toml<span class="w"> </span>src/datacollective/__init__.py<span class="w"> </span>uv.lock
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Bump version to X.Y.Z&quot;</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main
-</span></code></pre></div>
-<p>Replace <code>vX.Y.Z</code> with the tag created in the previous step (for example, <code>v0.0.35</code>).</p>
-<hr />
-<h2 id="5-create-a-github-release">5. Create a GitHub Release</h2>
-<ol>
-<li>Go to the repository page on GitHub.</li>
-<li>Open the <code>Releases</code> section.</li>
-<li>Click <code>Draft a new release</code>.</li>
-<li>Select the tag you just pushed (for example, <code>v0.0.35</code>).</li>
-<li>Set the release title to the same value (e.g. <code>v0.0.35</code>).</li>
-<li>Add release notes (high-level changes).</li>
-<li>Click <code>Publish release</code>.</li>
-</ol>
-<p>This will trigger the <code>Publish to PyPI</code> GitHub Actions workflow.</p>
-<hr />
-<h2 id="6-automatic-publish-to-pypi">6. Automatic publish to PyPI</h2>
-<p>Once the GitHub Release is published:</p>
-<ul>
-<li>GitHub Actions automatically:</li>
-<li>Checks out the code.</li>
-<li>Builds the distribution.</li>
-<li>Uploads the package to PyPI using the <code>PYPI_API_TOKEN</code> secret.</li>
-</ul>
-<p>You can monitor the progress:</p>
-<ol>
-<li>Open the <code>Actions</code> tab in GitHub.</li>
-<li>Open the <code>Publish to PyPI</code> workflow run associated with your release.</li>
-<li>Wait for it to complete successfully.</li>
-</ol>
-<hr />
-<h2 id="7-verify-the-release-on-pypi">7. Verify the release on PyPI</h2>
-<p>After the workflow succeeds:</p>
-<ol>
-<li>Go to the project page on PyPI.</li>
-<li>Confirm that the new version <code>X.Y.Z</code> is listed.</li>
-<li>Optionally install the package in a clean environment to verify:</li>
-</ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span><span class="nv">datacollective</span><span class="o">==</span>X.Y.Z
-</span></code></pre></div>
-<hr />
-<h2 id="notes-and-best-practices">Notes and Best Practices</h2>
-<ul>
-<li>
-<p><strong>Single source of truth</strong>: The version is managed only by bump-my-version. Do <strong>not</strong> manually edit the version in any file.</p>
-</li>
-<li>
-<p><strong>Tag format</strong>: Always use <code>vX.Y.Z</code> tags (for example, <code>v0.0.35</code>). The <code>bump-my-version</code> configuration enforces this.</p>
-</li>
-<li>
-<p><strong>Manual workflow dispatch (advanced)</strong>: In rare cases, you can re-run the publish job from the <code>Actions</code> tab using <code>workflow_dispatch</code>, but normally you should always go through a GitHub Release.</p>
-</li>
+<li>For a full list of available fields and data types, see the <a href="../schema_parse/">Schema-Based Loading</a> reference.</li>
+<li>If your dataset requires a custom loading logic not covered by existing strategies, see <a href="../extend_schema_loading_logic/">Extending Schema Loading Logic</a>.</li>
 </ul>
 
 
