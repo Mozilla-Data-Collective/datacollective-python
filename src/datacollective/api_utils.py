@@ -96,8 +96,9 @@ def send_api_request(
     if resp.status_code == 403:
         detail = _extract_error_detail(resp)
         raise PermissionError(
-            "Access denied. Private dataset requires organization membership"
-            + (f" — {detail}" if detail else "")
+            f"Access denied. If the dataset is public, make sure you have read thoroughly and agreed"
+            " to the dataset's Terms & Conditions in its respective page on the MDC platform before downloading. \n"
+            f"{detail}"
         )
     if resp.status_code == 429:
         raise RuntimeError(RATE_LIMIT_ERROR)
