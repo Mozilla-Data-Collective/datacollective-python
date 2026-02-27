@@ -84,14 +84,14 @@ dataset = load_dataset("your-dataset-id")
 You can create dataset submissions and upload files with resumable multipart uploads:
 
 ```python
-from datacollective import DatasetSubmission, create_submission_with_upload
+from datacollective import DatasetSubmission, Task, create_submission_with_upload
 
 submission = DatasetSubmission(
     name="My Dataset",
     longDescription="Full description",
     shortDescription="Short description",
     locale="en-US",
-    task="ASR",
+    task=Task.ASR,
     format="tar.gz",
     licenseAbbreviation="CC-BY",
     license="Creative Commons Attribution",

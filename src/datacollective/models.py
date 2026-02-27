@@ -1,8 +1,29 @@
 from __future__ import annotations
 
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class Task(str, Enum):
+    """Valid ML task types for a dataset submission."""
+
+    NA = "N/A"
+    NLP = "NLP"
+    ASR = "ASR"
+    LI = "LI"
+    TTS = "TTS"
+    MT = "MT"
+    LM = "LM"
+    LLM = "LLM"
+    NLU = "NLU"
+    NLG = "NLG"
+    CALL = "CALL"
+    RAG = "RAG"
+    CV = "CV"
+    ML = "ML"
+    OTHER = "Other"
 
 
 class NonEmptyStrModel(BaseModel):
@@ -40,7 +61,7 @@ class DatasetSubmission(NonEmptyStrModel):
     shortDescription: str | None = None
     longDescription: str | None = None
     locale: str | None = None
-    task: str | None = None
+    task: Task | None = None
     format: str | None = None
     licenseAbbreviation: str | None = None
     license: str | None = None

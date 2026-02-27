@@ -41,7 +41,7 @@ MDC_API_KEY=your-api-key-here
 The simplest way to upload a dataset is using `create_submission_with_upload`, which handles the entire workflow in a single call:
 
 ```python
-from datacollective import DatasetSubmission, create_submission_with_upload
+from datacollective import DatasetSubmission, Task, create_submission_with_upload
 from pydantic import ValidationError
 
 # Define submission metadata
@@ -50,9 +50,8 @@ submission = DatasetSubmission(
     longDescription="Full description of my dataset",
     shortDescription="A brief description of your dataset",
     locale="en-US",
-    task="ASR",
+    task=Task.ASR,
     format="tar.gz",
-    licenseAbbreviation="CC-BY",
     license="Creative Commons Attribution",
     licenseUrl="https://creativecommons.org/licenses/by/4.0/",
     other="Additional information about the dataset",
@@ -108,7 +107,7 @@ When submitting a dataset, you must provide the following fields:
 | `shortDescription` | `str` | Brief description of the dataset |
 | `longDescription` | `str` | Detailed description of the dataset |
 | `locale` | `str` | Language/locale code (e.g., `en-US`, `de-DE`) |
-| `task` | `str` | ML task type (e.g., `classification`, `asr`, `tts`) |
+| `task` | `Task` | ML task type — must be one of the [`Task`](api.md) enum values: `N/A`, `NLP`, `ASR`, `LI`, `TTS`, `MT`, `LM`, `LLM`, `NLU`, `NLG`, `CALL`, `RAG`, `CV`, `ML`, `Other` |
 | `format` | `str` | File format (e.g., `tar.gz`, `zip`, `parquet`) |
 
 ### Licensing
@@ -180,10 +179,10 @@ print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 ### Step 3: Update Submission Metadata
 
 ```python
-from datacollective import DatasetSubmission, update_submission
+from datacollective import DatasetSubmission, Task, update_submission
 
 update_fields = DatasetSubmission(
-    task="ML",
+    task=Task.ML,
     licenseAbbreviation="CC-BY-4.0",
     locale="en-US",
     format="text",
@@ -333,7 +332,7 @@ Here's a complete example that uploads a dataset with all required fields:
 
 ```python
 import os
-from datacollective import DatasetSubmission, create_submission_with_upload
+from datacollective import DatasetSubmission, Task, create_submission_with_upload
 
 # Ensure API key is set
 if not os.getenv("MDC_API_KEY"):
@@ -353,7 +352,7 @@ submission = DatasetSubmission(
     accents and speaking styles.
     """,
     locale="en-US",
-    task="asr",
+    task=Task.ASR,
     format="tar.gz",
 
     # Licensing
