@@ -16,13 +16,10 @@ print(df.head())
 
 Under the hood, `load_dataset()` performs the following steps automatically:
 
-1. **Download** the archive (with resume support).
-2. **Extract** the `.tar.gz` / `.zip` to a local directory.
-3. **Resolve the schema**: loads a cached `schema.yaml` or fetches it from
-   the [schema registry](https://github.com/Mozilla-Data-Collective/dataset-schema-registry).
-4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model).
-5. **Dispatch** to the right task-specific loader (ASR, TTS, …) and return a
-   **DataFrame**.
+1. **Resolve the schema**: check local cache or the schema registry for `schema.yaml`. If the dataset is not registered this step raises a warning, so we never download an unsupported archive.
+2. **Download** the archive (with resume support). The schema we fetched in step 1 tells the loader how the files are structured.
+3. **Extract** the `.tar.gz` / `.zip` to a local directory.
+4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model) and dispatch to the task-specific loader (ASR, TTS, …), which returns the final **DataFrame**.
 
 The schema file describes:
 
@@ -56,10 +53,10 @@ column as audio file paths and the `sentence` column as transcriptions."*
 
 Every schema **must** have:
 
-| Field | Type | Description                                                         |
-|---|---|---------------------------------------------------------------------|
-| `dataset_id` | `str` | Unique dataset identifier on MDC.                                   |
-| `task` | `str` | Task type: determines which loader is used (e.g. `"ASR"`, `"TTS"`). |
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `dataset_id` | `str` | ✓ | Unique dataset identifier on MDC. |
+| `task` | `str` | ✓ | Task type: determines which loader is used (e.g. `"ASR"`, `"TTS"`). |
 
 ### Loading strategies
 
@@ -74,33 +71,33 @@ strategy is inferred from the fields present in the schema:
 
 ### Index-based fields
 
-| Field | Default | Description |
-|---|---|---|
-| `format` | — | File format: `"csv"`, `"tsv"`, or `"pipe"`. |
-| `index_file` | — | Path to the metadata file, relative to the dataset root. |
-| `columns` | — | Mapping of logical column names → source columns (see below). |
-| `base_audio_path` | `""` | Directory prefix prepended to `file_path` dtype columns. |
-| `separator` | Inferred from `format` | Explicit column separator override (e.g. `"\|"`). |
-| `has_header` | `true` | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
-| `encoding` | `"utf-8"` | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
+| Field | Default | Required | Description |
+|---|---|---|---|
+| `format` | — | ✓ | File format: `"csv"`, `"tsv"`, or `"pipe"`. |
+| `index_file` | — | ✓ | Path to the metadata file, relative to the dataset root. |
+| `columns` | — | ✓ | Mapping of logical column names → source columns (see below). |
+| `base_audio_path` | `""` | ✗ | Directory prefix prepended to `file_path` dtype columns. |
+| `separator` | Inferred from `format` | ✗ | Explicit column separator override (e.g. `"\|"`). |
+| `has_header` | `true` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
+| `encoding` | `"utf-8"` | ✗ | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
 
 ### Multi-split fields
 
-| Field | Default | Description |
-|---|---|---|
-| `root_strategy` | — | Must be `"multi_split"`. |
-| `splits` | — | List of split names to load (e.g. `["train", "dev", "test"]`). |
-| `splits_file_pattern` | `"**/*.tsv"` | Glob pattern to locate split files. |
-| `columns` | *(optional)* | Column mappings applied to every split frame. |
-| `base_audio_path` | `""` | Directory prefix prepended to `file_path` dtype columns. |
+| Field | Default | Required | Description |
+|---|---|---|---|
+| `root_strategy` | — | ✓ | Must be `"multi_split"`. |
+| `splits` | — | ✓ | List of split names to load (e.g. `["train", "dev", "test"]`). |
+| `splits_file_pattern` | `"**/*.tsv"` | ✗ | Glob pattern to locate split files. |
+| `columns` | *(optional)* | ✗ | Column mappings applied to every split frame. |
+| `base_audio_path` | `""` | ✗ | Directory prefix prepended to `file_path` dtype columns. |
 
 ### Paired-glob fields
 
-| Field | Default | Description |
-|---|---|---|
-| `root_strategy` | — | Must be `"paired_glob"`. |
-| `file_pattern` | — | Glob pattern to find text files (e.g. `"**/*.txt"`). |
-| `audio_extension` | — | Extension of the matching audio files (e.g. `".webm"`). |
+| Field | Default | Required | Description |
+|---|---|---|---|
+| `root_strategy` | — | ✓ | Must be `"paired_glob"`. |
+| `file_pattern` | — | ✓ | Glob pattern to find text files (e.g. `"**/*.txt"`). |
+| `audio_extension` | — | ✓ | Extension of the matching audio files (e.g. `".webm"`). |
 
 
 ## Column mapping
@@ -161,76 +158,7 @@ content_mapping:
 
 ## Complete examples
 
-### ASR — index-based
-
-```yaml
-dataset_id: "common-voice-gsw-24"
-task: "ASR"
-format: "tsv"
-index_file: "train.tsv"
-base_audio_path: "clips/"
-columns:
-  audio_path:
-    source_column: "path"
-    dtype: "file_path"
-  transcription:
-    source_column: "sentence"
-    dtype: "string"
-  speaker_id:
-    source_column: "client_id"
-    dtype: "category"
-    optional: true
-```
-
-### ASR — multi-split
-
-```yaml
-dataset_id: "common-voice-gsw-24"
-task: "ASR"
-root_strategy: "multi_split"
-splits:
-  - dev
-  - train
-  - test
-splits_file_pattern: "**/*.tsv"
-base_audio_path: "clips/"
-columns:
-  audio_path:
-    source_column: "path"
-    dtype: "file_path"
-  transcription:
-    source_column: "sentence"
-    dtype: "string"
-```
-
-### TTS — index-based (headerless, pipe-delimited)
-
-```yaml
-dataset_id: "aso-ckb-tts"
-task: "TTS"
-format: "pipe"
-separator: "|"
-has_header: false
-index_file: "metadata.csv"
-base_audio_path: "wavs/"
-columns:
-  audio_path:
-    source_column: 0
-    dtype: "file_path"
-  transcription:
-    source_column: 1
-    dtype: "string"
-```
-
-### TTS — paired-glob
-
-```yaml
-dataset_id: "pl-PL-darkman"
-task: "TTS"
-root_strategy: "paired_glob"
-file_pattern: "**/*.txt"
-audio_extension: ".webm"
-```
+For full examples for each task and strategy, visit the respective task documentation pages under [docs/loaders/](./loaders/).
 
 ## Schema caching
 
@@ -246,4 +174,3 @@ minimise API calls:
    current checksum.
 4. If the remote registry has no schema, a local cache is used as a fallback
    when available.
-

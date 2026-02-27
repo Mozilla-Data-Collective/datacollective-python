@@ -1,9 +1,7 @@
 from datacollective.schema_loaders.base import (
     BaseSchemaLoader,
     FORMAT_SEP,
-    STRATEGY_GLOB,
-    STRATEGY_MULTI_SPLIT,
-    STRATEGY_PAIRED_GLOB,
+    Strategy,
 )
 from datacollective.schema_loaders.registry import (
     get_task_loader,
@@ -13,9 +11,7 @@ from datacollective.schema_loaders.registry import (
 __all__ = [
     "BaseSchemaLoader",
     "FORMAT_SEP",
-    "STRATEGY_GLOB",
-    "STRATEGY_MULTI_SPLIT",
-    "STRATEGY_PAIRED_GLOB",
+    "Strategy",
     "get_task_loader",
     "load_dataset_from_schema",
 ]

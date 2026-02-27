@@ -161,11 +161,16 @@ def load_dataset(
     """
     schema = get_dataset_schema(dataset_id)
     if schema is None:
+        try:
+            get_dataset_details(dataset_id)
+        except FileNotFoundError:
+            raise RuntimeError(
+                f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped. "
+            )
         raise RuntimeError(
-            f"Dataset '{dataset_id}' is not supported by load_dataset at the moment, or is not a valid ID. "
+            f"Dataset '{dataset_id}' exists but is not supported by load_dataset yet. "
             f"You can download the raw archive with: save_dataset_to_disk('{dataset_id}'). "
-            f"If you are the data owner of the dataset consider following the instructions "
-            f"below on adding support: https://mozilla-data-collective.github.io/dataset-schema-registry/",
+            f"If you are the data owner consider submitting a schema for your dataset via the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
         )
 
     download_plan = get_download_plan(dataset_id, download_directory)

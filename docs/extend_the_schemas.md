@@ -4,8 +4,8 @@
 
 If you are a **dataset owner** and want your dataset to be loadable via
 `load_dataset()`, you need to write a `schema.yaml` and submit it to the
-[dataset schema registry](https://github.com/Mozilla-Data-Collective/dataset-schema-registry). If your dataset does not follow one of the 
-existing loading strategies or task definitions, you can also implement 
+[dataset schema registry](https://github.com/Mozilla-Data-Collective/dataset-schema-registry). If your dataset does not follow one of the
+existing loading strategies or task definitions, you can also implement
 a new loader class and add it to the registry (see next sections).
 
 ### Step-by-step

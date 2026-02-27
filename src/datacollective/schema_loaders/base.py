@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import logging
+from enum import StrEnum
 from pathlib import Path
 
 import pandas as pd
@@ -17,9 +18,13 @@ FORMAT_SEP: dict[str, str] = {
     "pipe": "|",
 }
 
-STRATEGY_MULTI_SPLIT = "multi_split"
-STRATEGY_PAIRED_GLOB = "paired_glob"
-STRATEGY_GLOB = "glob"
+
+class Strategy(StrEnum):
+    """Loading strategies recognised by schema loaders."""
+
+    MULTI_SPLIT = "multi_split"
+    PAIRED_GLOB = "paired_glob"
+    GLOB = "glob"
 
 
 class BaseSchemaLoader(abc.ABC):

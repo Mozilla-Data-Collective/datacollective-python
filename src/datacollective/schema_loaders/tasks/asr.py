@@ -9,7 +9,7 @@ from datacollective.schema import DatasetSchema
 from datacollective.schema_loaders.base import (
     BaseSchemaLoader,
     FORMAT_SEP,
-    STRATEGY_MULTI_SPLIT,
+    Strategy,
 )
 
 logger = logging.getLogger(__name__)
@@ -20,7 +20,7 @@ class ASRLoader(BaseSchemaLoader):
 
     def __init__(self, schema: DatasetSchema, extract_dir: Path) -> None:
         super().__init__(schema, extract_dir)
-        if schema.root_strategy == STRATEGY_MULTI_SPLIT:
+        if schema.root_strategy == Strategy.MULTI_SPLIT:
             if not schema.splits:
                 raise ValueError(
                     "ASR multi_split schema must specify 'splits' (list of split names)"
@@ -31,10 +31,12 @@ class ASRLoader(BaseSchemaLoader):
             if not schema.format:
                 raise ValueError("ASR schema must specify 'format' (csv or tsv)")
             if not schema.columns:
-                raise ValueError("ASR schema must specify at least one column mapping")
+                raise ValueError(
+                    "ASR schema must specify at least two column mappings for audio and transcription"
+                )
 
     def load(self) -> pd.DataFrame:
-        if self.schema.root_strategy == STRATEGY_MULTI_SPLIT:
+        if self.schema.root_strategy == Strategy.MULTI_SPLIT:
             return self._load_multi_split()
         raw_df = self._load_index_file()
         return self._apply_column_mappings(raw_df)
@@ -71,7 +73,7 @@ class ASRLoader(BaseSchemaLoader):
             logger.debug(f"Reading split '{split_name}' from {file_path}")
             raw_df = pd.read_csv(
                 file_path, sep=sep, header="infer", encoding=self.schema.encoding
-            )
+            )  # If the split files have headers, they will be inferred here and preserved in the raw_df columns. If not, raw_df will have default integer columns.
             raw_df["split"] = split_name
 
             if self.schema.columns:
