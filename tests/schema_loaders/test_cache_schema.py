@@ -10,12 +10,15 @@ from datacollective.schema import DatasetSchema
 from datacollective.schema_loaders.cache_schema import _resolve_schema
 
 
-
-def _make_schema(dataset_id: str = "ds1", task: str = "TTS", checksum: str | None = None) -> DatasetSchema:
+def _make_schema(
+    dataset_id: str = "ds1", task: str = "TTS", checksum: str | None = None
+) -> DatasetSchema:
     return DatasetSchema(dataset_id=dataset_id, task=task, checksum=checksum)
 
 
-def _write_schema_yaml(path: Path, dataset_id: str = "ds1", task: str = "TTS", checksum: str | None = None) -> None:
+def _write_schema_yaml(
+    path: Path, dataset_id: str = "ds1", task: str = "TTS", checksum: str | None = None
+) -> None:
     data: dict = {"dataset_id": dataset_id, "task": task}
     if checksum is not None:
         data["checksum"] = checksum
@@ -61,7 +64,9 @@ class TestCacheMiss:
     """When cache doesn't match (or doesn't exist), a remote fetch should happen."""
 
     @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
-    def test_no_cache_fetches_remote_and_stamps_checksum(self, mock_get, tmp_path: Path) -> None:
+    def test_no_cache_fetches_remote_and_stamps_checksum(
+        self, mock_get, tmp_path: Path
+    ) -> None:
         remote = _make_schema(checksum=None)
         mock_get.return_value = remote
 
@@ -85,7 +90,9 @@ class TestCacheMiss:
         assert result.checksum == "new_checksum"
 
     @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
-    def test_cached_without_checksum_fetches_remote(self, mock_get, tmp_path: Path) -> None:
+    def test_cached_without_checksum_fetches_remote(
+        self, mock_get, tmp_path: Path
+    ) -> None:
         _write_schema_yaml(tmp_path / "schema.yaml", checksum=None)
         remote = _make_schema(checksum=None)
         mock_get.return_value = remote
@@ -100,7 +107,9 @@ class TestFallbacks:
     """Edge cases: remote not found, no cache, etc."""
 
     @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
-    def test_remote_not_found_falls_back_to_cache(self, mock_get, tmp_path: Path) -> None:
+    def test_remote_not_found_falls_back_to_cache(
+        self, mock_get, tmp_path: Path
+    ) -> None:
         _write_schema_yaml(tmp_path / "schema.yaml", checksum="old")
         mock_get.return_value = None
 
@@ -117,7 +126,9 @@ class TestFallbacks:
             _resolve_schema("ds1", tmp_path, archive_checksum="some_checksum")
 
     @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
-    def test_no_cache_no_archive_checksum_fetches_remote(self, mock_get, tmp_path: Path) -> None:
+    def test_no_cache_no_archive_checksum_fetches_remote(
+        self, mock_get, tmp_path: Path
+    ) -> None:
         remote = _make_schema(checksum=None)
         mock_get.return_value = remote
 
@@ -137,4 +148,3 @@ class TestFallbacks:
 
         mock_get.assert_called_once_with("ds1")
         assert result.checksum is None
-

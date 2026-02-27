@@ -11,7 +11,10 @@ import yaml
 from datacollective.datasets import _extract_archive, load_dataset
 from datacollective.download import DownloadPlan
 from datacollective.schema import ColumnMapping, DatasetSchema, parse_schema
-from datacollective.schema_loaders.cache_schema import _save_schema_to_disk, _load_cached_schema
+from datacollective.schema_loaders.cache_schema import (
+    _save_schema_to_disk,
+    _load_cached_schema,
+)
 from datacollective.schema_loaders.registry import load_dataset_from_schema
 
 
@@ -63,12 +66,16 @@ class TestExtractArchive:
         _make_tar_gz(archive, src)
 
         # First extraction
-        result1 = _extract_archive(archive, dest_dir=tmp_path, overwrite_extracted=False)
+        result1 = _extract_archive(
+            archive, dest_dir=tmp_path, overwrite_extracted=False
+        )
         # Write a sentinel to prove re-extraction didn't happen
         sentinel = result1 / "sentinel.txt"
         sentinel.write_text("marker")
 
-        result2 = _extract_archive(archive, dest_dir=tmp_path, overwrite_extracted=False)
+        result2 = _extract_archive(
+            archive, dest_dir=tmp_path, overwrite_extracted=False
+        )
         assert result2 == result1
         assert sentinel.exists()  # was NOT deleted
 
@@ -78,7 +85,9 @@ class TestExtractArchive:
         archive = tmp_path / "archive.tar.gz"
         _make_tar_gz(archive, src)
 
-        result1 = _extract_archive(archive, dest_dir=tmp_path, overwrite_extracted=False)
+        result1 = _extract_archive(
+            archive, dest_dir=tmp_path, overwrite_extracted=False
+        )
         sentinel = result1 / "sentinel.txt"
         sentinel.write_text("marker")
 
@@ -99,7 +108,9 @@ class TestLoadDataset:
     def _setup_asr_dataset(self, tmp_path: Path) -> tuple[Path, DatasetSchema]:
         """Create a synthetic ASR dataset archive and return (archive_path, schema)."""
         src = tmp_path / "src"
-        _write(src / "train.tsv", "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n")
+        _write(
+            src / "train.tsv", "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n"
+        )
 
         archive = tmp_path / "downloads" / "ds-abc123.tar.gz"
         archive.parent.mkdir(parents=True)
@@ -112,7 +123,9 @@ class TestLoadDataset:
             index_file="train.tsv",
             columns={
                 "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
-                "transcription": ColumnMapping(source_column="sentence", dtype="string"),
+                "transcription": ColumnMapping(
+                    source_column="sentence", dtype="string"
+                ),
             },
         )
         return archive, schema
@@ -141,7 +154,9 @@ class TestLoadDataset:
         mock_save.return_value = archive
 
         # Pre-extract so _extract_archive finds the directory
-        _extract_archive(archive, dest_dir=tmp_path / "downloads", overwrite_extracted=False)
+        _extract_archive(
+            archive, dest_dir=tmp_path / "downloads", overwrite_extracted=False
+        )
 
         mock_resolve.return_value = schema
 
@@ -204,7 +219,9 @@ class TestLoadDataset:
         mock_get_plan.return_value = plan
         mock_save.return_value = archive
 
-        _extract_archive(archive, dest_dir=tmp_path / "downloads", overwrite_extracted=False)
+        _extract_archive(
+            archive, dest_dir=tmp_path / "downloads", overwrite_extracted=False
+        )
         mock_resolve.return_value = schema
 
         df = load_dataset(
@@ -229,7 +246,10 @@ class TestSchemaLoadingE2E:
 
     def test_asr_index_full_pipeline(self, tmp_path: Path) -> None:
         """ASR index-based: schema.yaml + TSV -> DataFrame."""
-        _write(tmp_path / "train.tsv", "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n")
+        _write(
+            tmp_path / "train.tsv",
+            "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n",
+        )
         schema_data = {
             "dataset_id": "test-asr",
             "task": "ASR",
@@ -242,7 +262,6 @@ class TestSchemaLoadingE2E:
             },
         }
         _write(tmp_path / "schema.yaml", yaml.dump(schema_data))
-
 
         schema = parse_schema(tmp_path / "schema.yaml")
         df = load_dataset_from_schema(schema, tmp_path)
@@ -269,7 +288,6 @@ class TestSchemaLoadingE2E:
         }
         _write(tmp_path / "schema.yaml", yaml.dump(schema_data))
 
-
         schema = parse_schema(tmp_path / "schema.yaml")
         df = load_dataset_from_schema(schema, tmp_path)
 
@@ -294,7 +312,6 @@ class TestSchemaLoadingE2E:
             },
         }
         _write(tmp_path / "schema.yaml", yaml.dump(schema_data))
-
 
         schema = parse_schema(tmp_path / "schema.yaml")
         df = load_dataset_from_schema(schema, tmp_path)
@@ -408,5 +425,3 @@ class TestSchemaLoadingE2E:
         assert restored.splits == ["train", "dev", "test"]
         assert restored.splits_file_pattern == "**/*.tsv"
         assert "audio" in restored.columns
-
-

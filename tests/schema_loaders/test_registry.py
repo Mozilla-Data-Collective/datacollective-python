@@ -5,15 +5,21 @@ from pathlib import Path
 import pytest
 
 from datacollective.schema import ColumnMapping, DatasetSchema
-from datacollective.schema_loaders.registry import get_task_loader, load_dataset_from_schema
-from datacollective.schema_loaders.tasks.asr import ASRLoader
-from datacollective.schema_loaders.tasks.tts import TTSLoader
+from datacollective.schema_loaders.registry import load_dataset_from_schema
+
+
+def _write(path: Path, content: str) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(content, encoding="utf-8")
 
 
 class TestLoadDatasetFromSchema:
     def test_dispatches_asr(self, tmp_path: Path) -> None:
         """An ASR index-based schema should be dispatched to ASRLoader and produce a DataFrame."""
-        _write(tmp_path / "train.tsv", "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n")
+        _write(
+            tmp_path / "train.tsv",
+            "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n",
+        )
 
         schema = DatasetSchema(
             dataset_id="test",
@@ -22,7 +28,9 @@ class TestLoadDatasetFromSchema:
             index_file="train.tsv",
             columns={
                 "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
-                "transcription": ColumnMapping(source_column="sentence", dtype="string"),
+                "transcription": ColumnMapping(
+                    source_column="sentence", dtype="string"
+                ),
             },
         )
         df = load_dataset_from_schema(schema, tmp_path)
@@ -70,4 +78,3 @@ class TestLoadDatasetFromSchema:
         schema = DatasetSchema(dataset_id="ds", task="UNKNOWN_TASK")
         with pytest.raises(ValueError, match="No schema loader registered"):
             load_dataset_from_schema(schema, tmp_path)
-

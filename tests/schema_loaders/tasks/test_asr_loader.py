@@ -8,7 +8,6 @@ from datacollective.schema import ColumnMapping, DatasetSchema
 from datacollective.schema_loaders.tasks.asr import ASRLoader
 
 
-
 def _write_tsv(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(content, encoding="utf-8")
@@ -17,20 +16,28 @@ def _write_tsv(path: Path, content: str) -> None:
 class TestASRLoaderValidation:
     def test_index_requires_index_file(self, tmp_path: Path) -> None:
         schema = DatasetSchema(
-            dataset_id="ds", task="ASR", format="tsv", columns={"a": ColumnMapping(source_column="x")}
+            dataset_id="ds",
+            task="ASR",
+            format="tsv",
+            columns={"a": ColumnMapping(source_column="x")},
         )
         with pytest.raises(ValueError, match="index_file"):
             ASRLoader(schema, tmp_path)
 
     def test_index_requires_format(self, tmp_path: Path) -> None:
         schema = DatasetSchema(
-            dataset_id="ds", task="ASR", index_file="f.tsv", columns={"a": ColumnMapping(source_column="x")}
+            dataset_id="ds",
+            task="ASR",
+            index_file="f.tsv",
+            columns={"a": ColumnMapping(source_column="x")},
         )
         with pytest.raises(ValueError, match="format"):
             ASRLoader(schema, tmp_path)
 
     def test_index_requires_columns(self, tmp_path: Path) -> None:
-        schema = DatasetSchema(dataset_id="ds", task="ASR", format="tsv", index_file="f.tsv")
+        schema = DatasetSchema(
+            dataset_id="ds", task="ASR", format="tsv", index_file="f.tsv"
+        )
         with pytest.raises(ValueError, match="column mapping"):
             ASRLoader(schema, tmp_path)
 
@@ -42,7 +49,10 @@ class TestASRLoaderValidation:
 
 class TestASRIndexBased:
     def test_load_tsv(self, tmp_path: Path) -> None:
-        _write_tsv(tmp_path / "train.tsv", "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n")
+        _write_tsv(
+            tmp_path / "train.tsv",
+            "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n",
+        )
 
         schema = DatasetSchema(
             dataset_id="ds",
@@ -51,7 +61,9 @@ class TestASRIndexBased:
             index_file="train.tsv",
             columns={
                 "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
-                "transcription": ColumnMapping(source_column="sentence", dtype="string"),
+                "transcription": ColumnMapping(
+                    source_column="sentence", dtype="string"
+                ),
             },
         )
         df = ASRLoader(schema, tmp_path).load()
@@ -92,7 +104,9 @@ class TestASRIndexBased:
         assert df["audio"].iloc[0] == expected
 
     def test_category_dtype(self, tmp_path: Path) -> None:
-        _write_tsv(tmp_path / "i.tsv", "path\tsentence\tspk\nc.mp3\thi\tA\nc2.mp3\tbye\tA\n")
+        _write_tsv(
+            tmp_path / "i.tsv", "path\tsentence\tspk\nc.mp3\thi\tA\nc2.mp3\tbye\tA\n"
+        )
 
         schema = DatasetSchema(
             dataset_id="ds",
@@ -109,7 +123,9 @@ class TestASRIndexBased:
         assert df["speaker"].dtype.name == "category"
 
     def test_int_and_float_dtypes(self, tmp_path: Path) -> None:
-        _write_tsv(tmp_path / "i.tsv", "path\tsentence\tdur\tscore\nc.mp3\thi\t100\t0.95\n")
+        _write_tsv(
+            tmp_path / "i.tsv", "path\tsentence\tdur\tscore\nc.mp3\thi\t100\t0.95\n"
+        )
 
         schema = DatasetSchema(
             dataset_id="ds",
@@ -138,7 +154,9 @@ class TestASRIndexBased:
             columns={
                 "audio": ColumnMapping(source_column="path", dtype="file_path"),
                 "text": ColumnMapping(source_column="sentence"),
-                "speaker": ColumnMapping(source_column="client_id", dtype="category", optional=True),
+                "speaker": ColumnMapping(
+                    source_column="client_id", dtype="category", optional=True
+                ),
             },
         )
         df = ASRLoader(schema, tmp_path).load()
@@ -281,4 +299,3 @@ class TestASRMultiSplit:
         )
         with pytest.raises(RuntimeError, match="No split files"):
             ASRLoader(schema, tmp_path).load()
-

@@ -107,9 +107,7 @@ class TestASRIndexE2E:
     def test_int_and_float_columns(self, tmp_path: Path) -> None:
         _write(
             tmp_path / "meta.tsv",
-            "path\tsentence\tage\tscore\n"
-            "c.mp3\thi\t30\t0.95\n"
-            "c2.mp3\tbye\tbad\t1.5\n",
+            "path\tsentence\tage\tscore\nc.mp3\thi\t30\t0.95\nc2.mp3\tbye\tbad\t1.5\n",
         )
         schema = _schema_from_dict(
             {
@@ -134,6 +132,7 @@ class TestASRIndexE2E:
 # ===========================================================================
 # ASR — multi-split
 # ===========================================================================
+
 
 class TestASRMultiSplitE2E:
     def test_three_splits(self, tmp_path: Path) -> None:
@@ -249,7 +248,9 @@ class TestTTSIndexE2E:
         assert list(df.columns) == ["a", "b", "c"]
 
     def test_custom_encoding(self, tmp_path: Path) -> None:
-        _write(tmp_path / "meta.tsv", "audio\ttext\nc.wav\tgrüezi\n", encoding="utf-8-sig")
+        _write(
+            tmp_path / "meta.tsv", "audio\ttext\nc.wav\tgrüezi\n", encoding="utf-8-sig"
+        )
 
         schema = _schema_from_dict(
             {
@@ -426,5 +427,3 @@ class TestErrorPaths:
         )
         with pytest.raises(RuntimeError, match="No split files"):
             load_dataset_from_schema(schema, tmp_path)
-
-

@@ -8,7 +8,6 @@ import yaml
 
 from datacollective.schema import (
     ColumnMapping,
-    ContentMapping,
     DatasetSchema,
     parse_schema,
 )
@@ -37,7 +36,9 @@ class TestDatasetSchema:
         assert d == {"dataset_id": "ds1", "task": "ASR"}
 
     def test_to_yaml_dict_excludes_defaults(self) -> None:
-        s = DatasetSchema(dataset_id="ds1", task="ASR", has_header=True, encoding="utf-8")
+        s = DatasetSchema(
+            dataset_id="ds1", task="ASR", has_header=True, encoding="utf-8"
+        )
         d = s.to_yaml_dict()
         # has_header and encoding are at their defaults -> excluded
         assert "has_header" not in d
@@ -72,7 +73,9 @@ class TestDatasetSchema:
             task="ASR",
             columns={
                 "audio": ColumnMapping(source_column="path", dtype="file_path"),
-                "text": ColumnMapping(source_column="sentence", dtype="string", optional=True),
+                "text": ColumnMapping(
+                    source_column="sentence", dtype="string", optional=True
+                ),
             },
         )
         d = s.to_yaml_dict()
@@ -234,5 +237,3 @@ class TestParseSchema:
         s = parse_schema(raw)
         assert "good" in s.columns
         assert "bad" not in s.columns
-
-

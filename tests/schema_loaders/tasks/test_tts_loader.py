@@ -95,7 +95,6 @@ class TestTTSIndexBased:
         assert df["text"].iloc[0] == "grüezi"
 
 
-
 class TestTTSPairedGlob:
     def _setup_paired(self, root: Path) -> None:
         """Create a paired-glob dataset structure under root."""
@@ -220,5 +219,3 @@ class TestTTSPairedGlob:
         )
         df = TTSLoader(schema, tmp_path).load()
         assert Path(df["audio_path"].iloc[0]).is_absolute()
-
-
