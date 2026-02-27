@@ -1,16 +1,8 @@
-"""
-Abstract base class for all task-specific schema loaders.
-
-To add a new task type:
-1. Subclass `BaseSchemaLoader`.
-2. Implement `load`.
-3. Register the subclass in ``registry.py``.
-"""
-
 from __future__ import annotations
 
-import abc, sys
+import abc
 import logging
+from enum import StrEnum
 from pathlib import Path
 
 import pandas as pd
@@ -25,6 +17,15 @@ FORMAT_SEP: dict[str, str] = {
     "tsv": "\t",
     "pipe": "|",
 }
+
+
+class Strategy(StrEnum):
+    """Loading strategies recognised by schema loaders."""
+
+    MULTI_SPLIT = "multi_split"
+    MULTI_SELECTION = "multi_selection"
+    PAIRED_GLOB = "paired_glob"
+    GLOB = "glob"
 
 
 class BaseSchemaLoader(abc.ABC):
@@ -46,14 +47,14 @@ class BaseSchemaLoader(abc.ABC):
         ...
 
     def _load_index_file(self) -> pd.DataFrame:
-        """Locate the index file and read it into a raw :class:`~pandas.DataFrame`.
+        """Locate the index file and read it into a raw `~pandas.DataFrame`.
 
         Resolves the separator from ``schema.separator`` (explicit override) or
-        ``schema.format`` via :data:`FORMAT_SEP`, then delegates the file
-        lookup to :meth:`_resolve_index_file`.
+        ``schema.format`` via `FORMAT_SEP`, then delegates the file
+        lookup to `_resolve_index_file`.
 
-        Used by all index-based loaders (ASR, TTS, MT, …) so that each loader
-        only needs to call :meth:`_apply_column_mappings` on the result.
+        Used by all index-based loaders (ASR, TTS, ...) so that each loader
+        only needs to call `_apply_column_mappings` on the result.
 
         Returns:
             A raw (unmapped) DataFrame exactly as read from the index file.
@@ -87,10 +88,9 @@ class BaseSchemaLoader(abc.ABC):
         # Prefer the shallowest match
         candidates.sort(key=lambda p: len(p.parts))
         return candidates[0]
-  
+
     def _load_multi_sections(self) -> pd.DataFrame:
-        """
-        """
+        """ """
         sections = self._resolve_sections()
         sep = self.schema.separator or FORMAT_SEP.get(self.schema.format or "", ",")
         header = "infer" if self.schema.has_header else None
@@ -98,8 +98,10 @@ class BaseSchemaLoader(abc.ABC):
         df = pd.DataFrame()
         for section_path in sections:
             logger.debug(f"Reading section: {section_path} (sep={sep!r})")
-            section_df = pd.read_csv(section_path, sep=sep, header=header, encoding=self.schema.encoding)
-            section_df['section'] = section_path.parents[0].name
+            section_df = pd.read_csv(
+                section_path, sep=sep, header=header, encoding=self.schema.encoding
+            )
+            section_df["section"] = section_path.parents[0].name
             df = pd.concat([df, section_df])
 
         return df
@@ -109,21 +111,23 @@ class BaseSchemaLoader(abc.ABC):
         Get a list of valid sections
         """
 
-        assert self.schema.sections is not None 
+        assert self.schema.sections is not None
         assert self.schema.index_file is not None
         assert self.schema.section_root is not None
         sections = self.schema.sections
         section_paths = []
-        for section in sections: 
-            section_path = self.extract_dir / Path(self.schema.section_root) / Path(section) / self.schema.index_file
+        for section in sections:
+            section_path = (
+                self.extract_dir
+                / Path(self.schema.section_root)
+                / Path(section)
+                / self.schema.index_file
+            )
             if not section_path.exists():
-                raise FileNotFoundError(
-                 f"Index file '{section_path}' not found "
-             )
+                raise FileNotFoundError(f"Index file '{section_path}' not found ")
             section_paths.append(section_path)
- 
+
         return section_paths
-       
 
     def _apply_column_mappings(self, raw_df: pd.DataFrame) -> pd.DataFrame:
         """Select and rename columns according to the schema, applying dtype conversions.

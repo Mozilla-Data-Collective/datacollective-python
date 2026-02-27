@@ -6,7 +6,7 @@ from pathlib import Path
 import pandas as pd
 
 from datacollective.schema import DatasetSchema
-from datacollective.schema_loaders.base import BaseSchemaLoader
+from datacollective.schema_loaders.base import BaseSchemaLoader, Strategy
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +21,8 @@ class TTSLoader(BaseSchemaLoader):
         super().__init__(schema, extract_dir)
 
     def load(self) -> pd.DataFrame:
-        if self.schema.root_strategy == "paired_glob":
+        if self.schema.root_strategy == Strategy.PAIRED_GLOB:
             return self._load_paired_glob()
-        elif self.schema.root_strategy == "multi_sections":
-            return self._load_multi_sections()
         return self._load_based_on_index()
 
     def _load_based_on_index(self) -> pd.DataFrame:
@@ -41,7 +39,7 @@ class TTSLoader(BaseSchemaLoader):
         raw_df = self._load_index_file()
 
         if not self.schema.columns:
-            # No column mapping → return the raw dataframe as-is
+            # No column mapping -> return the raw dataframe as-is
             return raw_df
 
         return self._apply_column_mappings(raw_df)
@@ -99,6 +97,5 @@ class TTSLoader(BaseSchemaLoader):
             raise FileNotFoundError(
                 f"No paired (text + {audio_ext}) files found under '{self.extract_dir}'"
             )
-
 
         return pd.DataFrame(rows)
