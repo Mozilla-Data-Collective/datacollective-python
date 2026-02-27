@@ -4,6 +4,7 @@ repo_name: datacollective-python
 
 nav:
   - Home: index.md
+  - Programmatic Uploads: upload.md
   - API Reference: api.md
   - Release Workflow: release.md
 
