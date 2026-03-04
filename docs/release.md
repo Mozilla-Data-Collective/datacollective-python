@@ -1,4 +1,4 @@
-## Release Workflow
+# Release Workflow
 
 This project uses:
 
