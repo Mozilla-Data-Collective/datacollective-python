@@ -33,7 +33,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     Return dataset details from the MDC API as a dictionary.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
 
     Returns:
         A dict with dataset details as returned by the API.
@@ -67,7 +67,7 @@ def save_dataset_to_disk(
     previous attempt.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
         download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
@@ -83,7 +83,15 @@ def save_dataset_to_disk(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    download_plan = get_download_plan(dataset_id, download_directory)
+    try:
+        dataset_details = get_dataset_details(dataset_id)
+    except FileNotFoundError:
+        raise RuntimeError(
+            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
+        )
+
+    _id = dataset_details.get("id", "")
+    download_plan = get_download_plan(_id, download_directory)
 
     # Case 1: Skip download if complete dataset archive already exists
     if download_plan.target_filepath.exists() and not overwrite_existing:
@@ -141,7 +149,7 @@ def load_dataset(
     previous attempt.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
         download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
@@ -159,25 +167,27 @@ def load_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    schema = get_dataset_schema(dataset_id)
-    if schema is None:
-        try:
-            get_dataset_details(dataset_id)
-        except FileNotFoundError:
-            raise RuntimeError(
-                f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped. "
-            )
+    try:
+        dataset_details = get_dataset_details(dataset_id)
+    except FileNotFoundError:
         raise RuntimeError(
-            f"Dataset '{dataset_id}' exists but is not supported by load_dataset yet. "
-            f"You can download the raw archive with: save_dataset_to_disk('{dataset_id}'). "
+            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
+        )
+
+    _id = dataset_details.get("id", "")
+    schema = get_dataset_schema(_id)
+    if schema is None:
+        raise RuntimeError(
+            f"Dataset '{_id}' exists but is not supported by load_dataset yet. "
+            f"You can download the raw archive with: save_dataset_to_disk('{_id}'). "
             f"If you are the data owner consider submitting a schema for your dataset via the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
         )
 
-    download_plan = get_download_plan(dataset_id, download_directory)
+    download_plan = get_download_plan(_id, download_directory)
     archive_checksum = download_plan.checksum
 
     archive_path = save_dataset_to_disk(
-        dataset_id=dataset_id,
+        dataset_id=_id,
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
@@ -189,7 +199,7 @@ def load_dataset(
         overwrite_extracted=overwrite_extracted,
     )
 
-    schema = _resolve_schema(dataset_id, extract_dir, archive_checksum)
+    schema = _resolve_schema(_id, extract_dir, archive_checksum)
     return load_dataset_from_schema(schema, extract_dir)
 
 
