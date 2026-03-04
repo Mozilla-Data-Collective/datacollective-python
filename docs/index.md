@@ -64,16 +64,16 @@ MDC_API_URL=https://datacollective.mozillafoundation.org/api
 MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 ```
 
-> **Security note:** do not commit `.env` files to version control, as they
-> contain secrets.
+!!! warning "Security note"
+    Do not commit `.env` files to version control, as they contain secrets.
 
 ## Basic Usage
 
 
 **IMPORTANT NOTE:** Before trying to access any dataset, make sure you have thoroughly **read and agreed** to the specific dataset's conditions & licensing terms.
 
-> [!TIP]
-> You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn` dataset id will be `cmflnuzw6lrt9e6ui4kwcshvn`.
+!!! tip
+    You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn` dataset id will be `cmflnuzw6lrt9e6ui4kwcshvn`.
 
 ### Download a dataset
 
@@ -92,7 +92,8 @@ The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets
 
 ## Loading and Querying Datasets
 
-> **Note:** in-memory dataset loading is currently supported only for certain datasets.
+!!! note
+    In-memory dataset loading is currently supported only for certain datasets.
 
 You can load supported datasets into memory as a `pandas` `DataFrame` for
 analysis:
@@ -140,9 +141,9 @@ or `load_dataset` again.
 4. Once the download completes successfully, the temporary files are automatically
    cleaned up.
 
-> [!TIP]
-> You don't need to do anything special to enable resume functionality, it works
-> automatically. Just call the same function again after an interruption.
+!!! tip
+    You don't need to do anything special to enable resume functionality, it works
+    automatically. Just call the same function again after an interruption.
 
 **Edge cases handled:**
 
@@ -163,8 +164,8 @@ The SDK identifies the data if the extracted folder name matches the archive nam
 
 For a detailed API reference, see the [API Reference](api.md) section of the documentation.
 
-> [!NOTE]
-> This section is intended for maintainers of the `datacollective` library.
+!!! note
+    This section is intended for maintainers of the `datacollective` library.
 
 ## Tests
 
