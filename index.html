@@ -17,7 +17,7 @@
       
       
       <link rel="icon" href="docs/mdc_ccc.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.3">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.4">
     
     
       
@@ -1113,16 +1113,16 @@ project root or present working directory.</p>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">MDC_API_URL</span><span class="o">=</span>https://datacollective.mozillafoundation.org/api
 </span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">MDC_DOWNLOAD_PATH</span><span class="o">=</span>~/.mozdata/datasets
 </span></code></pre></div>
-<blockquote>
-<p><strong>Security note:</strong> do not commit <code>.env</code> files to version control, as they
-contain secrets.</p>
-</blockquote>
+<div class="admonition warning">
+<p class="admonition-title">Security note</p>
+<p>Do not commit <code>.env</code> files to version control, as they contain secrets.</p>
+</div>
 <h2 id="basic-usage">Basic Usage</h2>
 <p><strong>IMPORTANT NOTE:</strong> Before trying to access any dataset, make sure you have thoroughly <strong>read and agreed</strong> to the specific dataset's conditions &amp; licensing terms.</p>
-<blockquote>
-<p>[!TIP]
-You can find the <code>dataset-id</code> by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the <code>/datasets/</code> path. For example, for URL <code>https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn</code> dataset id will be <code>cmflnuzw6lrt9e6ui4kwcshvn</code>.</p>
-</blockquote>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You can find the <code>dataset-id</code> by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the <code>/datasets/</code> path. For example, for URL <code>https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn</code> dataset id will be <code>cmflnuzw6lrt9e6ui4kwcshvn</code>.</p>
+</div>
 <h3 id="download-a-dataset">Download a dataset</h3>
 <p>Use <code>save_dataset_to_disk</code> to download a dataset to the configured download path:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_dataset_to_disk</span>
@@ -1134,9 +1134,10 @@ You can find the <code>dataset-id</code> by looking at the URL of the dataset's 
 </span></code></pre></div>
 <p>The files will be stored under <code>MDC_DOWNLOAD_PATH</code> (default <code>~/.mozdata/datasets</code>).</p>
 <h2 id="loading-and-querying-datasets">Loading and Querying Datasets</h2>
-<blockquote>
-<p><strong>Note:</strong> in-memory dataset loading is currently supported only for certain datasets.</p>
-</blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In-memory dataset loading is currently supported only for certain datasets.</p>
+</div>
 <p>You can load supported datasets into memory as a <code>pandas</code> <code>DataFrame</code> for
 analysis:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
@@ -1174,11 +1175,11 @@ or <code>load_dataset</code> again.</p>
 <li>Once the download completes successfully, the temporary files are automatically
    cleaned up.</li>
 </ol>
-<blockquote>
-<p>[!TIP]
-You don't need to do anything special to enable resume functionality, it works
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You don't need to do anything special to enable resume functionality, it works
 automatically. Just call the same function again after an interruption.</p>
-</blockquote>
+</div>
 <p><strong>Edge cases handled:</strong></p>
 <ul>
 <li>If the dataset has been updated since the interrupted download, the SDK detects
@@ -1193,10 +1194,10 @@ This behavior applies when <code>overwrite_existing=False</code> and <code>overw
 The SDK identifies the data if the extracted folder name matches the archive name without the extension.</p>
 <h2 id="api-reference">API Reference</h2>
 <p>For a detailed API reference, see the <a href="api/">API Reference</a> section of the documentation.</p>
-<blockquote>
-<p>[!NOTE]
-This section is intended for maintainers of the <code>datacollective</code> library.</p>
-</blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This section is intended for maintainers of the <code>datacollective</code> library.</p>
+</div>
 <h2 id="tests">Tests</h2>
 <p>Run the full test suite:
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>pytest<span class="w"> </span>-v
