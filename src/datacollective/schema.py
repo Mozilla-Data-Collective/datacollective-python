@@ -106,6 +106,9 @@ class DatasetSchema(BaseModel):
     splits_file_pattern: str | None = Field(
         default=None, description='glob pattern for split files, e.g. "**/*.tsv"'
     )
+    # --- Multi-section strategy (e.g. AIDH TTS datasets)
+    sections: list[str] | None = None  # subdirectories to load
+    section_root: str | None = None  # e.g. "Lingala_TTS_Dataset/"
 
     # --- Schema versioning ---
     checksum: str | None = Field(
@@ -227,6 +230,8 @@ def parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         "content_mapping",
         "splits",
         "splits_file_pattern",
+        "sections",
+        "section_root",
         "checksum",
     }
     extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -247,6 +252,8 @@ def parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         content_mapping=content_mapping,
         splits=data.get("splits"),
         splits_file_pattern=data.get("splits_file_pattern"),
+        sections=data.get("sections"),
+        section_root=data.get("section_root"),
         checksum=data.get("checksum"),
         extra=extra,
     )
