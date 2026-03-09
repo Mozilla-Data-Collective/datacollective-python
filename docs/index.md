@@ -96,7 +96,7 @@ The SDK supports creating dataset submissions and uploading files with resumable
 The upload state is stored in a JSON file alongside the archive so interrupted uploads can resume automatically.
 
 ```python
-from datacollective import DatasetSubmission, Task, create_submission_with_upload
+from datacollective import DatasetSubmission, License, Task, create_submission_with_upload
 
 submission = DatasetSubmission(
     name="Dataset Name",
@@ -105,9 +105,7 @@ submission = DatasetSubmission(
     locale="en-US",
     task=Task.ASR,
     format="TSV",
-    licenseAbbreviation="CC-BY-4.0",
-    license="Creative Commons Attribution",
-    licenseUrl="https://creativecommons.org/licenses/by/4.0/",
+    license=License.CC_BY_4_0,
     other="This text should provide a detailed description of the dataset, "
           "including its contents, structure, and any relevant information "
           "that would help users understand what the dataset is about "
@@ -142,6 +140,8 @@ response = create_submission_with_upload(
 
 print(response)
 ```
+
+For predefined licenses, pass `license=License.<VALUE>` and leave `licenseUrl` and `licenseAbbreviation` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
 > [!TIP]
 > If a file upload is interrupted, simply rerun the same function above and the upload will resume from where it left off.

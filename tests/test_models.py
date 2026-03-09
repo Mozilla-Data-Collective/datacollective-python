@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from datacollective.models import DatasetSubmission, Task
+from datacollective.models import DatasetSubmission, License, Task
 
 
 def test_submission_rejects_empty_strings() -> None:
@@ -30,11 +30,13 @@ def test_submission_accepts_agree_to_submit() -> None:
 def test_submission_accepts_partial_fields() -> None:
     model = DatasetSubmission(
         task=Task.ML,
-        licenseAbbreviation="CC-BY-4.0",
+        license="Mozilla Community Data License",
+        licenseAbbreviation="MCDL",
         locale="en-US",
     )
     assert model.task == Task.ML
-    assert model.licenseAbbreviation == "CC-BY-4.0"
+    assert model.license == "Mozilla Community Data License"
+    assert model.licenseAbbreviation == "MCDL"
     assert model.locale == "en-US"
     assert model.format is None
     assert model.fileUploadId is None
@@ -86,3 +88,44 @@ def test_task_rejects_case_variants() -> None:
         DatasetSubmission(task="asr")
     with pytest.raises(ValidationError):
         DatasetSubmission(task="Asr")
+
+
+def test_predefined_license_is_accepted_by_enum() -> None:
+    model = DatasetSubmission(license=License.CC_BY_4_0)
+    assert model.license == License.CC_BY_4_0
+
+
+def test_predefined_license_string_is_normalized_to_enum() -> None:
+    model = DatasetSubmission(license="MIT")
+    assert model.license == License.MIT
+
+
+def test_custom_license_allows_optional_details() -> None:
+    model = DatasetSubmission(
+        license="Mozilla Research License",
+        licenseAbbreviation="MRL",
+        licenseUrl="https://example.com/license",
+    )
+    assert model.license == "Mozilla Research License"
+    assert model.licenseAbbreviation == "MRL"
+    assert model.licenseUrl == "https://example.com/license"
+
+
+def test_predefined_license_rejects_custom_only_details() -> None:
+    with pytest.raises(ValidationError):
+        DatasetSubmission(
+            license=License.MIT,
+            licenseAbbreviation="MIT",
+        )
+    with pytest.raises(ValidationError):
+        DatasetSubmission(
+            license="CC-BY-4.0",
+            licenseUrl="https://creativecommons.org/licenses/by/4.0/",
+        )
+
+
+def test_license_details_require_license_name() -> None:
+    with pytest.raises(ValidationError):
+        DatasetSubmission(licenseAbbreviation="Custom")
+    with pytest.raises(ValidationError):
+        DatasetSubmission(licenseUrl="https://example.com/license")

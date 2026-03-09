@@ -5,7 +5,7 @@ from typing import Any
 
 
 from datacollective.api_utils import _get_api_url, send_api_request, _enable_verbose
-from datacollective.models import DatasetSubmission
+from datacollective.models import DatasetSubmission, License
 from datacollective.upload import upload_dataset_file
 
 logger = logging.getLogger(__name__)
@@ -50,8 +50,17 @@ SUBMIT_FIELDS = {"agreeToSubmit"}
 def _payload_for_fields(
     submission: DatasetSubmission, allowed_fields: set[str]
 ) -> dict[str, Any]:
-    data = submission.model_dump(exclude_none=True)
-    return {key: value for key, value in data.items() if key in allowed_fields}
+    data = submission.model_dump(mode="json", exclude_none=True)
+    payload = {key: value for key, value in data.items() if key in allowed_fields}
+
+    if "license" in allowed_fields and isinstance(submission.license, License):
+        payload["license"] = submission.license.value
+        if "licenseAbbreviation" in allowed_fields:
+            payload["licenseAbbreviation"] = None
+        if "licenseUrl" in allowed_fields:
+            payload["licenseUrl"] = None
+
+    return payload
 
 
 def create_submission_draft(submission: DatasetSubmission) -> dict[str, Any]:

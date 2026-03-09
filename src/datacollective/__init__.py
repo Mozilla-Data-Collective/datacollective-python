@@ -5,7 +5,7 @@ Mozilla Data Collective Python Client Library
 import logging
 
 from .datasets import get_dataset_details, load_dataset, save_dataset_to_disk
-from .models import DatasetSubmission, Task
+from .models import DatasetSubmission, License, Task
 from .submissions import (
     create_submission_draft,
     create_submission_with_upload,
@@ -24,6 +24,7 @@ __all__ = [
     "create_submission_with_upload",
     "upload_dataset_file",
     "DatasetSubmission",
+    "License",
     "Task",
     "__version__",
 ]
