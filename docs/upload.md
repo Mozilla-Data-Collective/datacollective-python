@@ -88,63 +88,11 @@ response = create_submission_with_upload(
 print(response)
 ```
 
-### Parameters
-
-| Parameter | Type                | Required | Description                                                                                                                                                                        |
-|-----------|---------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `file_path` | `str`               | Yes | Path to the dataset archive on disk                                                                                                                                                |
-| `submission` | `DatasetSubmission` | Yes | Submission metadata model                                                                                                                                                          |
-| `agreeToSubmit` | `bool`              | Yes | You confirm that you have the right to submit this dataset and that all information provided in the datasheet is accurate.  Required to be True to complete the submission process |
-| `submission_id` | `str`               | No | Existing submission ID to resume instead of creating a new draft                                                                                                                   |
-| `state_path` | `str`               | No | Optional path to persist upload state file (defaults to `<filename>.mdc-upload.json`)                                                                                              |
-| `resume` | `bool`              | No | Whether to resume a previous upload session (default: `True`)                                                                                                                      |
-
 ## Required Submission Fields
 
-When submitting a dataset, you must provide the following fields:
+For a detailed explanation of the required fields in the `DatasetSubmission` model, see the [API Reference](api.md#datacollective.models.DatasetSubmission) section.
 
-### Dataset Information
-
-| Field | Type | Description                                                                                                                                                        |
-|-------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `shortDescription` | `str` | Brief description of the dataset                                                                                                                                   |
-| `longDescription` | `str` | Detailed description of the dataset                                                                                                                                |
-| `locale` | `str` | Language/locale code (e.g., `en-US`, `de-DE`)                                                                                                                      |
-| `task` | `Task` | ML task type — must be one of the [`Task`](api.md) enum values: `N/A`, `NLP`, `ASR`, `LI`, `TTS`, `MT`, `LM`, `LLM`, `NLU`, `NLG`, `CALL`, `RAG`, `CV`, `ML`, `Other` |
-| `format` | `str` | File format (e.g., `TSV`, `WAV`)                                                                                                                           |
-
-### Licensing
-
-| Field | Type | Description                                   |
-|-------|------|-----------------------------------------------|
-| `licenseAbbreviation` | `str` | Short license name (e.g., `CC-BY-4.0`, `MIT`) |
-| `license` | `str` | Full license name                             |
-| `licenseUrl` | `str` | URL to the license text                       |
-
-### Usage Information
-
-| Field                  | Type | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-|------------------------|------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `other`                | `str` | The datasheet of the dataset                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `restrictions`         | `str` | Any restrictions on dataset use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `forbiddenUsage`       | `str` | Explicitly forbidden use cases                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `additionalConditions` | `str` | Additional conditions for use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `intendedUsage`        | `str` | Intended use of the dataset                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `ethicalReviewProcess` | `str` | Description of ethical review conducted                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `exclusivityOptOut`    | `bool` | True = This dataset is non-exclusive to Mozilla Data Collective, False = Dataset is exclusively hosted in Mozilla Data Collective. Mozilla Data Collective provides protections, management controls and visibility for Datasets hosted on the Platform. These safeguards and insights apply in full when your Dataset is hosted exclusively on the Platform. If your Dataset will also be hosted or made accessible in other places, certain of these protections and visibility features may not apply. Check this box if Mozilla Data Collective will not be the exclusive hosting and point for your Dataset. See more details [here](https://datacollective.mozillafoundation.org/terms/providers#appendix-1). |
-
-### Contact Information
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `pointOfContactFullName` | `str` | Primary contact name |
-| `pointOfContactEmail` | `str` | Primary contact email |
-| `fundedByFullName` | `str` | Funder's name |
-| `fundedByEmail` | `str` | Funder's email |
-| `legalContactFullName` | `str` | Legal contact name |
-| `legalContactEmail` | `str` | Legal contact email |
-| `createdByFullName` | `str` | Creator's name |
-| `createdByEmail` | `str` | Creator's email |
+Note that to complete the submission process, you must set `agreeToSubmit=True` in the `DatasetSubmission` model, which confirms that you have the right to submit the dataset and that all information provided is accurate.
 
 ## Step-by-Step Upload
 
@@ -156,8 +104,8 @@ For more control over the upload process, you can use the individual functions:
 from datacollective import DatasetSubmission, create_submission_draft
 
 submission = DatasetSubmission(
-    name="My Dataset Name",
-    longDescription="Full description of my dataset",
+    name="Dataset Name",
+    longDescription="A detailed description of the dataset.",
 )
 
 draft = create_submission_draft(submission)
@@ -166,7 +114,15 @@ submission_id = draft["submission"]["id"]
 print(f"Created draft submission: {submission_id}")
 ```
 
+Which should output something like:
+
+```
+Created draft submission: cmmjpewijXXXXXXXXX
+```
+
 ### Step 2: Upload the Dataset File
+
+Then, you can use the submission ID above to upload the dataset file:
 
 ```python
 from datacollective import upload_dataset_file
@@ -179,16 +135,23 @@ upload_state = upload_dataset_file(
 print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 ```
 
+> [!TIP]
+> You can also find your submission ID by going to your [Uploads](https://datacollective.mozillafoundation.org/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://datacollective.mozillafoundation.org/submissions/cmmjpewijXXXXXXXXX`).
+
 ### Step 3: Update Submission Metadata
+
+For this step, you will need the `fileUploadId` from the upload response above, which is required to link the uploaded file to your submission. Without this ID, you won't be able to proceed to the submission step. If you no longer have access to it, you will need to re-upload the file to get a new `fileUploadId`.
+
+At this step, you can also update any other metadata fields.
 
 ```python
 from datacollective import DatasetSubmission, Task, update_submission
 
 update_fields = DatasetSubmission(
-    task=Task.ML,
+    task=Task.ASR,
     licenseAbbreviation="CC-BY-4.0",
     locale="en-US",
-    format="text",
+    format="TSV",
     restrictions="No restrictions.",
     forbiddenUsage="Do not use for unlawful purposes.",
     pointOfContactFullName="Jane Doe",
@@ -232,21 +195,19 @@ The SDK automatically handles interrupted uploads using a state file.
 
 ### Automatic Resume
 
-Simply rerun the same upload call after an interruption:
+Simply rerun the same upload call after an interruption.
+
+#### Using create_submission_with_upload
 
 ```python
-submission = DatasetSubmission(
-    name="My Dataset",
-    longDescription="Description",
-    agreeToSubmit=True,
-)
+
+from datacollective import create_submission_with_upload
 
 # First attempt (interrupted)
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
     submission=submission
 )
-
 # Second attempt (resumes automatically)
 response = create_submission_with_upload(
     file_path="/path/to/dataset.tar.gz",
@@ -254,16 +215,21 @@ response = create_submission_with_upload(
 )
 ```
 
-### Resume an Existing Submission
-
-If you already created a draft submission (or a previous run created one before failing),
-pass its ID to resume the workflow without creating a new draft:
+#### Using upload_dataset_file
 
 ```python
-response = create_submission_with_upload(
-    file_path="/path/to/dataset.tar.gz",
-    submission=submission,
-    submission_id="existing-submission-id",
+from datacollective import upload_dataset_file
+
+# First attempt (interrupted)
+upload_state = upload_dataset_file(
+    file_path="/path/to/your/dataset.tar.gz",
+    submission_id=submission_id,
+)
+
+# Second attempt (resumes automatically)
+upload_state = upload_dataset_file(
+    file_path="/path/to/your/dataset.tar.gz",
+    submission_id=submission_id,
 )
 ```
 
@@ -281,45 +247,12 @@ response = create_submission_with_upload(
 
 ### Disabling Resume
 
-To force a fresh upload (ignoring any existing state):
-
-```python
-response = create_submission_with_upload(
-    file_path="/path/to/dataset.tar.gz",
-    submission=submission,
-    resume=False,
-)
-```
+To force a fresh upload (ignoring any existing state), simply delete the state file 
+(<filename>.mdc-upload.json) created by the SDK before starting another upload.
 
 ## Error Handling
 
 The SDK raises specific exceptions for common error cases:
-
-```python
-from datacollective import DatasetSubmission, create_submission_with_upload
-
-try:
-    response = create_submission_with_upload(
-        file_path="/path/to/dataset.tar.gz",
-        submission=DatasetSubmission(
-            name="My Dataset",
-            longDescription="Description",
-            agreeToSubmit=True,
-        ),
-    )
-except FileNotFoundError as e:
-    print(f"File not found: {e}")
-except ValidationError as e:
-    print(f"Validation error: {e}")
-except ValueError as e:
-    print(f"Invalid input: {e}")
-except PermissionError as e:
-    print(f"Access denied: {e}")
-except RuntimeError as e:
-    print(f"Upload error: {e}")
-```
-
-### Common Errors
 
 | Exception | Cause |
 |-----------|-------|
@@ -328,75 +261,6 @@ except RuntimeError as e:
 | `ValueError` | Missing or invalid required parameter |
 | `PermissionError` | API key is invalid or lacks permissions |
 | `RuntimeError` | Rate limit exceeded or upload failed |
-
-## Complete Example
-
-Here's a complete example that uploads a dataset with all required fields:
-
-```python
-import os
-from datacollective import DatasetSubmission, Task, create_submission_with_upload
-
-# Ensure API key is set
-if not os.getenv("MDC_API_KEY"):
-    raise EnvironmentError("Please set MDC_API_KEY environment variable")
-
-# Path to your dataset archive
-file_path = "/path/to/your/dataset.tar.gz"
-
-# Submission metadata
-submission = DatasetSubmission(
-    # Dataset info
-    name="English Speech Corpus v1.0",
-    shortDescription="Speech recognition dataset for English",
-    longDescription="""
-    This dataset contains 10,000 hours of transcribed English speech
-    collected from volunteer contributors. The data includes diverse
-    accents and speaking styles.
-    """,
-    locale="en-US",
-    task=Task.ASR,
-    format="tar.gz",
-
-    # Licensing
-    licenseAbbreviation="CC0",
-    license="Creative Commons Zero",
-    licenseUrl="https://creativecommons.org/publicdomain/zero/1.0/",
-
-    # Usage
-    other="Includes metadata CSV with speaker demographics",
-    restrictions="None",
-    forbiddenUsage="Surveillance applications",
-    additionalConditions="Attribution appreciated but not required",
-    intendedUsage="Training and evaluating speech recognition models",
-    ethicalReviewProcess="IRB approved under protocol #12345",
-    exclusivityOptOut=True,
-
-    # Contacts
-    pointOfContactFullName="Jane Doe",
-    pointOfContactEmail="jane.doe@example.org",
-    fundedByFullName="Mozilla Foundation",
-    fundedByEmail="grants@mozilla.org",
-    legalContactFullName="John Smith",
-    legalContactEmail="legal@example.org",
-    createdByFullName="Jane Doe",
-    createdByEmail="jane.doe@example.org",
-
-    # Submission
-    agreeToSubmit=True,
-)
-
-# Upload the dataset
-response = create_submission_with_upload(
-    file_path=file_path,
-    submission=submission
-)
-
-print("Upload complete!")
-submission_response = response.get("submission", {})
-print(f"Submission ID: {submission_response.get('id')}")
-print(f"Status: {submission_response.get('status')}")
-```
 
 ## Using the DatasetSubmission Model
 
@@ -414,8 +278,3 @@ For detailed API documentation, see the [API Reference](api.md) section.
 - [`update_submission`](api.md) - Update submission metadata
 - [`upload_dataset_file`](api.md) - Upload a file to a submission
 - [`submit_submission`](api.md) - Submit a draft for review
-
-### Key Models
-
-- [`DatasetSubmission`](api.md) - Pydantic model for submission metadata
-- [`UploadPart`](api.md) - Model representing an uploaded part
