@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 
 from datacollective.api_utils import _get_api_url, send_api_request, _enable_verbose
 from datacollective.models import DatasetSubmission, License
-from datacollective.upload import upload_dataset_file
+from datacollective.upload import _default_state_path, load_upload_state, upload_dataset_file
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +137,11 @@ def submit_submission(
     return dict(resp.json())
 
 
+def _resolve_upload_state(file_path: str, state_path: str | None) -> tuple[Path, Any | None]:
+    state_file = Path(state_path) if state_path else _default_state_path(Path(file_path))
+    return state_file, load_upload_state(state_file)
+
+
 def create_submission_with_upload(
     file_path: str,
     submission: DatasetSubmission,
@@ -144,6 +150,7 @@ def create_submission_with_upload(
 ) -> dict[str, Any]:
     """
     Single point function to create a submission, upload a file, update metadata, and submit for review.
+    Allows for resuming an upload if interrupted by persisting state to a file.
 
     Args:
         file_path: Path to dataset archive.
@@ -158,18 +165,26 @@ def create_submission_with_upload(
     if submission.agreeToSubmit is not True:
         raise ValueError("`agreeToSubmit` must be True to submit a dataset")
 
-    logger.info(f"Creating submission draft for '{submission.name}'...")
+    state_file, existing_upload_state = _resolve_upload_state(file_path, state_path)
 
-    draft = create_submission_draft(submission)
+    if existing_upload_state:
+        submission_id = existing_upload_state.submissionId
+        logger.info(
+            f"Found existing upload state at `{state_file}`. Resuming submission {submission_id}."
+        )
+    else:
+        logger.info(f"Creating submission draft for '{submission.name}'...")
 
-    submission_payload = draft.get("submission", {})
-    submission_id = (
-        submission_payload.get("id") if isinstance(submission_payload, dict) else None
-    )
-    if not submission_id:
-        raise RuntimeError("Draft creation did not return a submission id")
+        draft = create_submission_draft(submission)
 
-    logger.info(f"Draft created. Submission ID: {submission_id}")
+        submission_payload = draft.get("submission", {})
+        submission_id = (
+            submission_payload.get("id") if isinstance(submission_payload, dict) else None
+        )
+        if not submission_id:
+            raise RuntimeError("Draft creation did not return a submission id")
+
+        logger.info(f"Draft created. Submission ID: {submission_id}")
 
     upload_state = upload_dataset_file(
         file_path=file_path,

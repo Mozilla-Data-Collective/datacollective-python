@@ -56,20 +56,6 @@ class PresignedPartUrl(NonEmptyStrModel):
     url: str
     expiresAt: str | None = None
 
-    @property
-    def presignedUrl(self) -> str:
-        """Backward-compatible alias for the presigned URL."""
-        return self.url
-
-
-class _UploadFileArgs(NonEmptyStrModel):
-    filePath: str
-    submissionId: str
-
-
-class _FilenameOverride(NonEmptyStrModel):
-    filename: str
-
 
 class _UploadInitiatePayload(NonEmptyStrModel):
     submissionId: str
@@ -192,9 +178,7 @@ def upload_dataset_file(
     """
     _enable_verbose(verbose)
 
-    args = _UploadFileArgs(filePath=file_path, submissionId=submission_id)
-
-    path = Path(args.filePath)
+    path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"File not found: `{file_path}`")
 
@@ -210,14 +194,12 @@ def upload_dataset_file(
 
     state = _load_or_create_state(
         state_file=state_file,
-        submission_id=args.submissionId,
+        submission_id=submission_id,
         final_filename=final_filename,
         file_size=file_size,
     )
 
     expected_parts = _expected_parts(state.fileSize, state.partSize)
-    if expected_parts <= 0:
-        raise RuntimeError("Invalid upload configuration (expected parts <= 0)")
 
     parts_by_number = _normalize_parts(state)
     if parts_by_number:
@@ -259,10 +241,7 @@ def upload_dataset_file(
         )
 
     state.checksum = checksum
-    state.parts = [
-        UploadPart(partNumber=number, etag=etag)
-        for number, etag in sorted(parts_by_number.items())
-    ]
+    state.parts = _parts_from_mapping(parts_by_number)
     save_upload_state(state_file, state)
 
     logger.info("Completing multipart upload...")
@@ -280,16 +259,11 @@ def load_upload_state(path: Path) -> UploadState | None:
     """Load persisted upload state from disk."""
     if not path.exists():
         return None
-    payload = json.loads(path.read_text())
     try:
-        state = UploadState.model_validate(payload)
+        payload = json.loads(path.read_text())
+        return UploadState.model_validate(payload)
     except Exception:
         return None
-    if not state.fileUploadId or not state.uploadId:
-        return None
-    if state.fileSize <= 0 or state.partSize <= 0:
-        return None
-    return state
 
 
 def save_upload_state(path: Path, state: UploadState) -> None:
@@ -392,7 +366,7 @@ def _upload_missing_parts(
             response = _upload_part_with_retry(presigned.url, chunk)
             etag = _extract_etag(response)
             parts_by_number[part_number] = etag
-            state.parts.append(UploadPart(partNumber=part_number, etag=etag))
+            state.parts = _parts_from_mapping(parts_by_number)
             save_upload_state(state_file, state)
 
             if progress_bar:
@@ -402,18 +376,18 @@ def _upload_missing_parts(
 
 
 def _expected_parts(file_size: int, part_size: int) -> int:
-    if file_size <= 0 or part_size <= 0:
-        return 0
     return int(math.ceil(file_size / part_size))
 
 
 def _normalize_parts(state: UploadState) -> dict[int, str]:
-    parts_by_number: dict[int, str] = {}
-    for part in state.parts:
-        if part.partNumber <= 0:
-            continue
-        parts_by_number[part.partNumber] = part.etag
-    return parts_by_number
+    return {part.partNumber: part.etag for part in state.parts}
+
+
+def _parts_from_mapping(parts_by_number: dict[int, str]) -> list[UploadPart]:
+    return [
+        UploadPart(partNumber=number, etag=etag)
+        for number, etag in sorted(parts_by_number.items())
+    ]
 
 
 def _cleanup_state_file(state_file: Path) -> None:
