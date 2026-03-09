@@ -52,42 +52,89 @@ class DatasetSubmission(NonEmptyStrModel):
     Note: Fields are camelCase to match the API payloads.
     """
 
-    id: str | None = None
-    organizationId: str | None = None
-    createdBy: str | None = None
-    status: str | None = None
-    slug: str | None = None
-    name: str | None = None
-    shortDescription: str | None = None
-    longDescription: str | None = None
-    locale: str | None = None
-    task: Task | None = None
-    format: str | None = None
-    licenseAbbreviation: str | None = None
-    license: str | None = None
-    licenseUrl: str | None = None
-    other: str | None = None
-    restrictions: str | None = None
-    forbiddenUsage: str | None = None
-    additionalConditions: str | None = None
-    pointOfContactFullName: str | None = None
-    pointOfContactEmail: str | None = None
-    fundedByFullName: str | None = None
-    fundedByEmail: str | None = None
-    legalContactFullName: str | None = None
-    legalContactEmail: str | None = None
-    createdByFullName: str | None = None
-    createdByEmail: str | None = None
-    intendedUsage: str | None = None
-    ethicalReviewProcess: str | None = None
-    fileUploadId: str | None = None
-    exclusivityOptOut: bool | None = None
-    exclusivityOptOutAt: str | None = None
-    agreeToSubmit: bool | None = None
-    submittedAt: str | None = None
-    createdAt: str | None = None
-    updatedAt: str | None = None
-
+    # Defined by the user
+    name: str | None = Field(None, description="Name of the dataset.")
+    shortDescription: str | None = Field(
+        None, description="Brief description of the dataset."
+    )
+    longDescription: str | None = Field(
+        None, description="Detailed description of the dataset."
+    )
+    locale: str | None = Field(
+        None, description="Language/locale code (e.g., `en-US`, `de-DE`)."
+    )
+    task: Task | None = Field(
+        None,
+        description="ML task type — must be one of the Task enum values listed in api.md.",
+    )
+    format: str | None = Field(
+        None, description="File format (e.g., `TSV`, `WAV`)."
+    )
+    licenseAbbreviation: str | None = Field(
+        None,
+        description="Short license name (e.g., `CC-BY-4.0`, `MIT`).",
+    )
+    license: str | None = Field(None, description="Full license name.")
+    licenseUrl: str | None = Field(None, description="URL to the license text.")
+    other: str | None = Field(None, description="The datasheet of the dataset.")
+    restrictions: str | None = Field(
+        None, description="Any restrictions on dataset use."
+    )
+    forbiddenUsage: str | None = Field(
+        None, description="Explicitly forbidden use cases."
+    )
+    additionalConditions: str | None = Field(
+        None, description="Additional conditions for use."
+    )
+    pointOfContactFullName: str | None = Field(
+        None, description="Primary contact name."
+    )
+    pointOfContactEmail: str | None = Field(
+        None, description="Primary contact email."
+    )
+    fundedByFullName: str | None = Field(None, description="Funder's name.")
+    fundedByEmail: str | None = Field(None, description="Funder's email.")
+    legalContactFullName: str | None = Field(
+        None, description="Legal contact name."
+    )
+    legalContactEmail: str | None = Field(
+        None, description="Legal contact email."
+    )
+    createdByFullName: str | None = Field(None, description="Creator's name.")
+    createdByEmail: str | None = Field(None, description="Creator's email.")
+    intendedUsage: str | None = Field(
+        None, description="Intended use of the dataset."
+    )
+    ethicalReviewProcess: str | None = Field(
+        None, description="Description of ethical review conducted."
+    )
+    exclusivityOptOut: bool | None = Field(
+        None,
+        description="True if dataset is non-exclusive; False if hosted exclusively on Mozilla Data Collective (see https://datacollective.mozillafoundation.org/terms/providers#appendix-1).",
+    )
+    agreeToSubmit: bool | None = Field(
+        None,
+        description="You confirm that you have the right to submit this dataset and that all information provided in the datasheet is accurate. Required to be True to complete the submission process",
+    )
+    # Defined by the API and not user-editable
+    id: str | None = Field(None, description="Unique identifier for the submission as returned by the API.")
+    organizationId: str | None = Field(None, description="Identifier for the organization associated with the submission.")
+    createdBy: str | None = Field(None, description="Identifier for the user who created the submission.")
+    status: str | None = Field(None, description="Current status of the submission (e.g., 'draft', 'submitted'). Determined by the API.")
+    slug: str | None = Field(None, description="URL-friendly slug for the submission, generated from the name. Determined by the API.")
+    fileUploadId: str | None = Field(None, description="Identifier for the associated file upload, if any. Generated by the API when a file is uploaded.")
+    exclusivityOptOutAt: str | None = Field(
+        None, description="Timestamp when exclusivity opt-out was set, if applicable."
+    )
+    submittedAt: str | None = Field(
+        None, description="Timestamp when the submission was finalized and submitted. Set by the API upon submission."
+    )
+    createdAt: str | None = Field(
+        None, description="Timestamp when the submission was created. Set by the API upon creation."
+    )
+    updatedAt: str | None = Field(
+        None, description="Timestamp when the submission was last updated. Updated by the API on changes."
+    )
 
 class UploadPart(BaseModel):
     """A single multipart upload part."""
