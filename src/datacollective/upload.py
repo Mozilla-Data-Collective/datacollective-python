@@ -173,9 +173,7 @@ def _complete_upload(
 def upload_dataset_file(
     file_path: str,
     submission_id: str,
-    filename: str | None = None,
     state_path: str | None = None,
-    resume: bool = True,
     verbose: bool = False,
     show_progress: bool = True,
 ) -> UploadState:
@@ -187,10 +185,8 @@ def upload_dataset_file(
     Args:
         file_path: Path to the dataset archive on disk.
         submission_id: Dataset submission ID.
-        filename: Optional filename override for the upload.
         state_path: Optional path to persist upload state. Defaults to
             `<filename>.mdc-upload.json` alongside the archive.
-        resume: Whether to reuse an existing upload state file.
         verbose: Whether to enable detailed logging during the upload.
         show_progress: Whether to show a progress bar during upload.
     """
@@ -208,10 +204,7 @@ def upload_dataset_file(
     if file_size > MAX_UPLOAD_BYTES:
         raise ValueError("`file_path` exceeds the 80GB upload limit")
 
-    if filename is not None:
-        final_filename = _FilenameOverride(filename=filename).filename
-    else:
-        final_filename = path.name
+    final_filename = path.name
 
     state_file = Path(state_path) if state_path else _default_state_path(path)
 
@@ -220,7 +213,6 @@ def upload_dataset_file(
         submission_id=args.submissionId,
         final_filename=final_filename,
         file_size=file_size,
-        resume=resume,
     )
 
     expected_parts = _expected_parts(state.fileSize, state.partSize)
@@ -314,9 +306,8 @@ def _load_or_create_state(
     submission_id: str,
     final_filename: str,
     file_size: int,
-    resume: bool,
 ) -> UploadState:
-    state = load_upload_state(state_file) if resume else None
+    state = load_upload_state(state_file)
     if state:
         if not _state_matches(state, submission_id, final_filename, file_size):
             logger.warning(
