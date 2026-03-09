@@ -11,7 +11,7 @@ The SDK provides a complete workflow for uploading datasets:
 3. **Update submission metadata** - Add required metadata fields to the submission
 4. **Submit for review** - Finalize the submission for review
 
-The SDK supports **resumable uploads**, meaning if an upload is interrupted (network error, system shutdown, etc.), you can resume from where it left off.
+The SDK also supports **resumable uploads**, meaning if an upload is interrupted (network error, system shutdown, etc.), you can resume from where it left off.
 
 ## Prerequisites
 
@@ -42,59 +42,62 @@ The simplest way to upload a dataset is using `create_submission_with_upload`, w
 
 ```python
 from datacollective import DatasetSubmission, Task, create_submission_with_upload
-from pydantic import ValidationError
 
-# Define submission metadata
 submission = DatasetSubmission(
-    name="My Dataset Name",
-    longDescription="Full description of my dataset",
-    shortDescription="A brief description of your dataset",
+    name="Dataset Name",
+    longDescription="A detailed description of the dataset.",
+    shortDescription="A brief description of the dataset.",
     locale="en-US",
     task=Task.ASR,
-    format="tar.gz",
+    format="TSV",
+    licenseAbbreviation="CC-BY-4.0",
     license="Creative Commons Attribution",
     licenseUrl="https://creativecommons.org/licenses/by/4.0/",
-    other="Additional information about the dataset",
-    restrictions="Any restrictions on use",
-    forbiddenUsage="Forbidden use cases",
-    additionalConditions="Additional conditions",
+    other="This text should provide a detailed description of the dataset, "
+          "including its contents, structure, and any relevant information "
+          "that would help users understand what the dataset is about "
+          "and how it can be used.",
+    restrictions="Any restrictions you want to impose on the dataset",
+    forbiddenUsage="Use cases that are not allowed with this dataset",
+    additionalConditions="Any additional conditions for using the dataset",
     pointOfContactFullName="Jane Doe",
     pointOfContactEmail="jane@example.com",
     fundedByFullName="Funder Name",
     fundedByEmail="funder@example.com",
-    legalContactFullName="Legal Contact Name",
+    legalContactFullName="Legal Name",
     legalContactEmail="legal@example.com",
     createdByFullName="Creator Name",
     createdByEmail="creator@example.com",
-    intendedUsage="Intended use of the dataset",
-    ethicalReviewProcess="Description of ethical review",
-    exclusivityOptOut=True,
-    agreeToSubmit=True,
+    intendedUsage="Describe the intended usage of the dataset, including "
+                  "potential applications and use cases.",
+    ethicalReviewProcess="Describe the ethical review process that was "
+                         "followed for this dataset, including any approvals "
+                         "or considerations related to data collection and usage.",
+    exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
+                              # False = Dataset is exclusively hosted in Mozilla Data Collective
+    agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and 
+                         # that all information provided in the datasheet is accurate. 
+                         # Required to be True to complete the submission process
 )
 
-# Upload and submit in one call
 response = create_submission_with_upload(
-    file_path="/path/to/your/dataset.tar.gz",
+    file_path="/path/to/dataset.tar.gz",
     submission=submission
 )
 
-submission_response = response.get("submission", {})
-print(f"Submission ID: {submission_response.get('id')}")
-print(f"Status: {submission_response.get('status')}")
+print(response)
 ```
 
 ### Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `file_path` | `str` | Yes | Path to the dataset archive on disk |
-| `submission` | `DatasetSubmission` | Yes | Submission metadata model |
-| `submission_id` | `str` | No | Existing submission ID to resume instead of creating a new draft |
-| `filename` | `str` | No | Optional filename override for the upload |
-| `state_path` | `str` | No | Optional path to persist upload state (defaults to `<filename>.mdc-upload.json`) |
-| `resume` | `bool` | No | Whether to resume a previous upload session (default: `True`) |
-
-> `agreeToSubmit` must be `True` in the `DatasetSubmission` model when submitting a dataset.
+| Parameter | Type                | Required | Description                                                                                                                                                                        |
+|-----------|---------------------|----------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `file_path` | `str`               | Yes | Path to the dataset archive on disk                                                                                                                                                |
+| `submission` | `DatasetSubmission` | Yes | Submission metadata model                                                                                                                                                          |
+| `agreeToSubmit` | `bool`              | Yes | You confirm that you have the right to submit this dataset and that all information provided in the datasheet is accurate.  Required to be True to complete the submission process |
+| `submission_id` | `str`               | No | Existing submission ID to resume instead of creating a new draft                                                                                                                   |
+| `state_path` | `str`               | No | Optional path to persist upload state file (defaults to `<filename>.mdc-upload.json`)                                                                                              |
+| `resume` | `bool`              | No | Whether to resume a previous upload session (default: `True`)                                                                                                                      |
 
 ## Required Submission Fields
 
@@ -102,33 +105,33 @@ When submitting a dataset, you must provide the following fields:
 
 ### Dataset Information
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `shortDescription` | `str` | Brief description of the dataset |
-| `longDescription` | `str` | Detailed description of the dataset |
-| `locale` | `str` | Language/locale code (e.g., `en-US`, `de-DE`) |
+| Field | Type | Description                                                                                                                                                        |
+|-------|------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `shortDescription` | `str` | Brief description of the dataset                                                                                                                                   |
+| `longDescription` | `str` | Detailed description of the dataset                                                                                                                                |
+| `locale` | `str` | Language/locale code (e.g., `en-US`, `de-DE`)                                                                                                                      |
 | `task` | `Task` | ML task type — must be one of the [`Task`](api.md) enum values: `N/A`, `NLP`, `ASR`, `LI`, `TTS`, `MT`, `LM`, `LLM`, `NLU`, `NLG`, `CALL`, `RAG`, `CV`, `ML`, `Other` |
-| `format` | `str` | File format (e.g., `tar.gz`, `zip`, `parquet`) |
+| `format` | `str` | File format (e.g., `TSV`, `WAV`)                                                                                                                           |
 
 ### Licensing
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `licenseAbbreviation` | `str` | Short license name (e.g., `CC-BY`, `MIT`) |
-| `license` | `str` | Full license name |
-| `licenseUrl` | `str` | URL to the license text |
+| Field | Type | Description                                   |
+|-------|------|-----------------------------------------------|
+| `licenseAbbreviation` | `str` | Short license name (e.g., `CC-BY-4.0`, `MIT`) |
+| `license` | `str` | Full license name                             |
+| `licenseUrl` | `str` | URL to the license text                       |
 
 ### Usage Information
 
-| Field                  | Type | Description                                                                     |
-|------------------------|------|---------------------------------------------------------------------------------|
-| `other`                | `str` | Additional information about the dataset                                        |
-| `restrictions`         | `str` | Any restrictions on dataset use                                                 |
-| `forbiddenUsage`       | `str` | Explicitly forbidden use cases                                                  |
-| `additionalConditions` | `str` | Additional conditions for use                                                   |
-| `intendedUsage`        | `str` | Intended use of the dataset                                                     |
-| `ethicalReviewProcess` | `str` | Description of ethical review conducted                                         |
-| `exclusivityOptOut`    | `bool` | Whether to opt out of exclusivity                                               |
+| Field                  | Type | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+|------------------------|------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `other`                | `str` | The datasheet of the dataset                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| `restrictions`         | `str` | Any restrictions on dataset use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| `forbiddenUsage`       | `str` | Explicitly forbidden use cases                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| `additionalConditions` | `str` | Additional conditions for use                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `intendedUsage`        | `str` | Intended use of the dataset                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| `ethicalReviewProcess` | `str` | Description of ethical review conducted                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| `exclusivityOptOut`    | `bool` | True = This dataset is non-exclusive to Mozilla Data Collective, False = Dataset is exclusively hosted in Mozilla Data Collective. Mozilla Data Collective provides protections, management controls and visibility for Datasets hosted on the Platform. These safeguards and insights apply in full when your Dataset is hosted exclusively on the Platform. If your Dataset will also be hosted or made accessible in other places, certain of these protections and visibility features may not apply. Check this box if Mozilla Data Collective will not be the exclusive hosting and point for your Dataset. See more details [here](https://datacollective.mozillafoundation.org/terms/providers#appendix-1). |
 
 ### Contact Information
 
