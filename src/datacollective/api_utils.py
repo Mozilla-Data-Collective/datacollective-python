@@ -15,14 +15,14 @@ _PKG_LOGGER = logging.getLogger("datacollective")
 
 
 def _enable_verbose(verbose: bool) -> None:
-    if not verbose or _PKG_LOGGER.handlers:
+    if not verbose:
         return
     handler = logging.StreamHandler()
     handler.setFormatter(
         logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
     )
-    _PKG_LOGGER.addHandler(handler)
-    _PKG_LOGGER.setLevel(logging.DEBUG)
+    _PKG_LOGGER.handlers = [handler]
+    _PKG_LOGGER.setLevel(logging.INFO)
 
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
