@@ -20,6 +20,7 @@ def _ensure_submission_model(submission: DatasetSubmission) -> DatasetSubmission
 
 DRAFT_FIELDS = {"name"}
 UPDATE_FIELDS = {
+    "name",
     "shortDescription",
     "longDescription",
     "locale",
@@ -44,6 +45,7 @@ UPDATE_FIELDS = {
     "ethicalReviewProcess",
     "exclusivityOptOut",
     "fileUploadId",
+    "agreeToSubmit"
 }
 SUBMIT_FIELDS = {"agreeToSubmit"}
 
