@@ -1,11 +1,12 @@
 from datetime import datetime
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 
 import pytest
 from requests import HTTPError
 
+from datacollective.errors import RateLimitError
 from datacollective.models import DatasetSubmission, License, Task
 from datacollective.submissions import create_submission_with_upload
 
@@ -18,7 +19,9 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _skip_if_rate_limited(exc: Exception) -> None:
+def _skip_if_rate_limited(exc: Exception) -> NoReturn:
+    if isinstance(exc, RateLimitError):
+        pytest.skip("Skipped due to API rate limiting (HTTP 429)")
     if isinstance(exc, HTTPError) and getattr(exc, "response", None):
         if getattr(exc.response, "status_code", None) == 429:
             pytest.skip("Skipped due to API rate limiting (HTTP 429)")
@@ -90,4 +93,3 @@ def test_create_submission_with_upload(
         assert submission_payload.get("id")
         assert submission_payload.get("fileUploadId")
         assert not state_path.exists(), "Upload state should be cleaned up after success"
-

@@ -1,3 +1,5 @@
+import requests
+
 from datacollective.api_utils import _format_bytes
 
 
@@ -38,3 +40,19 @@ class DownloadError(Exception):
             - Total archive size: {self.total_archive_bytes}
             """
         return "Download failed. Unfortunately this dataset does not support resuming downloads — please try again."
+
+
+RATE_LIMIT_ERROR = "Rate limit exceeded. Please try again later."
+
+class RateLimitError(RuntimeError):
+    """Raised when the MDC API responds with HTTP 429."""
+
+    def __init__(
+        self,
+        message: str = RATE_LIMIT_ERROR,
+        *,
+        response: requests.Response | None = None,
+    ) -> None:
+        self.response = response
+        super().__init__(message)
+

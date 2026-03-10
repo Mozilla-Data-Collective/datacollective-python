@@ -34,8 +34,6 @@ ENV_API_URL = "MDC_API_URL"
 ENV_DOWNLOAD_PATH = "MDC_DOWNLOAD_PATH"
 HTTP_TIMEOUT = (10, 60)  # (connect, read)
 
-RATE_LIMIT_ERROR = "Rate limit exceeded. Please try again later."
-
 load_dotenv(find_dotenv())
 
 
@@ -68,7 +66,7 @@ def send_api_request(
     Raises:
         FileNotFoundError: If the resource is not found (404).
         PermissionError: If access is denied (403).
-        RuntimeError: If rate limit is exceeded (429).
+        RateLimitError: If rate limit is exceeded (429).
         ValueError: If API key is missing when authentication is required.
         requests.HTTPError: For other non-2xx responses.
     """
@@ -104,7 +102,7 @@ def send_api_request(
             f"{detail}"
         )
     if resp.status_code == 429:
-        raise RuntimeError(RATE_LIMIT_ERROR)
+        raise RateLimitError(response=resp)
     resp.raise_for_status()
 
     return resp
