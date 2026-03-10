@@ -7,7 +7,11 @@ from typing import Any
 
 from datacollective.api_utils import _get_api_url, send_api_request, _enable_verbose
 from datacollective.models import DatasetSubmission, License
-from datacollective.upload import _default_state_path, load_upload_state, upload_dataset_file
+from datacollective.upload import (
+    _default_state_path,
+    load_upload_state,
+    upload_dataset_file,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +49,7 @@ UPDATE_FIELDS = {
     "ethicalReviewProcess",
     "exclusivityOptOut",
     "fileUploadId",
-    "agreeToSubmit"
+    "agreeToSubmit",
 }
 SUBMIT_FIELDS = {"agreeToSubmit"}
 
@@ -56,7 +60,9 @@ def _payload_for_fields(
     data = submission.model_dump(mode="json", exclude_none=True)
     payload = {key: value for key, value in data.items() if key in allowed_fields}
 
-    if "licenseAbbreviation" in allowed_fields and isinstance(submission.license, License):
+    if "licenseAbbreviation" in allowed_fields and isinstance(
+        submission.license, License
+    ):
         payload["licenseAbbreviation"] = submission.license.value
         # Remove custom license fields if a predefined license is used
         payload.pop("license", None)
@@ -138,8 +144,12 @@ def submit_submission(
     return dict(resp.json())
 
 
-def _resolve_upload_state(file_path: str, state_path: str | None) -> tuple[Path, Any | None]:
-    state_file = Path(state_path) if state_path else _default_state_path(Path(file_path))
+def _resolve_upload_state(
+    file_path: str, state_path: str | None
+) -> tuple[Path, Any | None]:
+    state_file = (
+        Path(state_path) if state_path else _default_state_path(Path(file_path))
+    )
     return state_file, load_upload_state(state_file)
 
 
@@ -180,7 +190,9 @@ def create_submission_with_upload(
 
         submission_payload = draft.get("submission", {})
         submission_id = (
-            submission_payload.get("id") if isinstance(submission_payload, dict) else None
+            submission_payload.get("id")
+            if isinstance(submission_payload, dict)
+            else None
         )
         if not submission_id:
             raise RuntimeError("Draft creation did not return a submission id")

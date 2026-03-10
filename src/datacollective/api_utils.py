@@ -9,6 +9,8 @@ from typing import Any
 import requests
 from dotenv import find_dotenv, load_dotenv
 
+from datacollective.errors import RateLimitError
+
 logger = logging.getLogger(__name__)
 
 _PKG_LOGGER = logging.getLogger("datacollective")

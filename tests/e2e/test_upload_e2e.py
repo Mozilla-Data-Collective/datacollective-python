@@ -36,7 +36,7 @@ def _submission(**data: Any) -> DatasetSubmission:
     return DatasetSubmission.model_validate(data)
 
 
-def _full_submission(    name: str) -> DatasetSubmission:
+def _full_submission(name: str) -> DatasetSubmission:
     return _submission(
         name=name,
         longDescription="End-to-end test submission created by the Python SDK test suite.",
@@ -92,4 +92,6 @@ def test_create_submission_with_upload(
         assert isinstance(submission_payload, dict)
         assert submission_payload.get("id")
         assert submission_payload.get("fileUploadId")
-        assert not state_path.exists(), "Upload state should be cleaned up after success"
+        assert not state_path.exists(), (
+            "Upload state should be cleaned up after success"
+        )

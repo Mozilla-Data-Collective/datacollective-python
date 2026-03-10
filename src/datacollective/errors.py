@@ -44,6 +44,7 @@ class DownloadError(Exception):
 
 RATE_LIMIT_ERROR = "Rate limit exceeded. Please try again later."
 
+
 class RateLimitError(RuntimeError):
     """Raised when the MDC API responds with HTTP 429."""
 
@@ -55,4 +56,3 @@ class RateLimitError(RuntimeError):
     ) -> None:
         self.response = response
         super().__init__(message)
-
