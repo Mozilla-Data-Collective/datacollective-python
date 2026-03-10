@@ -61,9 +61,9 @@ def _payload_for_fields(
     payload = {key: value for key, value in data.items() if key in allowed_fields}
 
     if "licenseAbbreviation" in allowed_fields and isinstance(
-        submission.license, License
+        submission.licenseAbbreviation, License
     ):
-        payload["licenseAbbreviation"] = submission.license.value
+        payload["licenseAbbreviation"] = submission.licenseAbbreviation.value
         # Remove custom license fields if a predefined license is used
         payload.pop("license", None)
         payload.pop("licenseUrl", None)
