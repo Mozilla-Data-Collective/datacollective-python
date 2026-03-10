@@ -18,7 +18,7 @@ def _ensure_submission_model(submission: DatasetSubmission) -> DatasetSubmission
     return submission
 
 
-DRAFT_FIELDS = {"name", "longDescription"}
+DRAFT_FIELDS = {"name"}
 UPDATE_FIELDS = {
     "shortDescription",
     "longDescription",
@@ -78,8 +78,8 @@ def create_submission_draft(submission: DatasetSubmission) -> dict[str, Any]:
     """
     submission = _ensure_submission_model(submission)
     payload = _payload_for_fields(submission, DRAFT_FIELDS)
-    if "name" not in payload or "longDescription" not in payload:
-        raise ValueError("`submission` must include `name` and `longDescription`")
+    if "name" not in payload:
+        raise ValueError("`submission` must include `name`")
 
     url = f"{_get_api_url()}/submissions"
     resp = send_api_request("POST", url, json_body=payload)
