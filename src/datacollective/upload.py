@@ -28,7 +28,7 @@ UPLOAD_TIMEOUT = (10, 300)
 MAX_UPLOAD_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
 
-DEFAULT_PART_SIZE = 50 * 1024 * 1024  # 50 MB default part size
+DEFAULT_PART_SIZE = 5 * 1024 * 1024  # 5 MB default part size to upload chunk by chunk
 DEFAULT_MIME_TYPE = "application/gzip"
 MAX_UPLOAD_BYTES = 80 * 1000 * 1000 * 1000  # 80 GB
 
@@ -97,6 +97,7 @@ def _initiate_upload(
     url = f"{_get_api_url()}/uploads"
     resp = send_api_request("POST", url, json_body=payload.model_dump())
     data = dict(resp.json())
+    print(data)
     session_payload = {
         "fileUploadId": str(data.get("fileUploadId", "")),
         "uploadId": str(data.get("uploadId", "")),
