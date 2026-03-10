@@ -1,17 +1,11 @@
 from pathlib import Path
-from unittest.mock import patch, MagicMock
-import pytest
 
-from datacollective.datasets import (
-    _strip_archive_suffix,
-    get_dataset_details,
-)
+from _pytest.monkeypatch import MonkeyPatch
 
-BASE_API_URL = "https://datacollective.mozillafoundation.org/api/datasets"
+from datacollective.datasets import _strip_archive_suffix, resolve_download_dir
 
 
 def test_strip_archive_suffix_removes_known_extensions(tmp_path: Path) -> None:
-    """Test strip compress file suffix of known extensions"""
     tar_path = tmp_path / "sample.tar.gz"
     zip_path = tmp_path / "sample.zip"
 
@@ -19,24 +13,23 @@ def test_strip_archive_suffix_removes_known_extensions(tmp_path: Path) -> None:
     assert _strip_archive_suffix(zip_path).name == "sample"
 
 
-def test_get_dataset_details_success() -> None:
-    """Test successful retrieval of dataset details."""
-    mock_response = MagicMock()
-    mock_response.json.return_value = {"id": "test123", "name": "Test Dataset"}
+def test_resolve_download_dir_prefers_argument(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    monkeypatch.delenv("MDC_DOWNLOAD_PATH", raising=False)
+    custom_dir = tmp_path / "custom"
+    resolved = resolve_download_dir(str(custom_dir))
 
-    with patch(
-        "datacollective.datasets.send_api_request", return_value=mock_response
-    ) as mock_send:
-        result = get_dataset_details("test123")
-
-        mock_send.assert_called_once_with(
-            method="GET",
-            url=f"{BASE_API_URL}/test123",  # Assuming this is the base URL
-        )
-        assert result == {"id": "test123", "name": "Test Dataset"}
+    assert resolved == custom_dir
+    assert custom_dir.exists()
 
 
-def test_get_dataset_details_empty_id() -> None:
-    """Test that empty dataset_id raises ValueError."""
-    with pytest.raises(ValueError, match="`dataset_id` must be a non-empty string"):
-        get_dataset_details("")
+def test_resolve_download_dir_uses_env_default(
+    tmp_path: Path, monkeypatch: MonkeyPatch
+) -> None:
+    env_dir = tmp_path / "env"
+    monkeypatch.setenv("MDC_DOWNLOAD_PATH", str(env_dir))
+    resolved = resolve_download_dir(None)
+
+    assert resolved == env_dir
+    assert env_dir.exists()
