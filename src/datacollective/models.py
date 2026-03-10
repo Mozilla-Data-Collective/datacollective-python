@@ -98,13 +98,13 @@ class DatasetSubmission(NonEmptyStrModel):
         description="ML task type — must be one of the Task enum values listed in api.md.",
     )
     format: str | None = Field(None, description="File format (e.g., `TSV`, `WAV`).")
-    licenseAbbreviation: str | None = Field(
+    licenseAbbreviation: License | None = Field(
         None,
-        description="Optional short license name for custom licenses.",
+        description="Either one of the predefined License enum values or, optionally, a custom abbreviated license name.",
     )
-    license: License | str | None = Field(
+    license: str | None = Field(
         None,
-        description="Either one of the predefined License enum values or a custom full license name.",
+        description="Full license name for custom licenses.",
     )
     licenseUrl: str | None = Field(
         None,
@@ -181,7 +181,7 @@ class DatasetSubmission(NonEmptyStrModel):
         description="Timestamp when the submission was last updated. Updated by the API on changes.",
     )
 
-    @field_validator("license", mode="after")
+    @field_validator("licenseAbbreviation", mode="after")
     @classmethod
     def _normalize_license(cls, value: License | str | None) -> License | str | None:
         if isinstance(value, str):
@@ -190,17 +190,6 @@ class DatasetSubmission(NonEmptyStrModel):
             except ValueError:
                 return value
         return value
-
-    @model_validator(mode="after")
-    def _validate_license_fields(self) -> "DatasetSubmission":
-        has_license_details = (
-            self.licenseAbbreviation is not None or self.licenseUrl is not None
-        )
-
-        if self.license is None and has_license_details:
-            raise ValueError(
-                "`license` must be provided when `licenseUrl` or `licenseAbbreviation` is set"
-            )
 
         return self
 

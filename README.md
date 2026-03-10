@@ -93,7 +93,7 @@ submission = DatasetSubmission(
     locale="en-US",
     task=Task.ASR,
     format="TSV",
-    license=License.CC_BY_4_0,
+    licenseAbbreviation=License.CC_BY_4_0,
     other="This text should provide a detailed description of the dataset, "
           "including its contents, structure, and any relevant information "
           "that would help users understand what the dataset is about "
@@ -129,7 +129,7 @@ response = create_submission_with_upload(
 print(response)
 ```
 
-For predefined licenses, pass `license=License.<VALUE>` and leave `licenseUrl` and `licenseAbbreviation` unset. For custom licenses, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
+For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For custom licenses, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
 ## For more details, visit [our docs](https://Mozilla-Data-Collective.github.io/datacollective-python/)
 
