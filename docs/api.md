@@ -6,6 +6,12 @@
 
 ::: datacollective.api_utils
 
+::: datacollective.submissions
+
+::: datacollective.upload
+
+::: datacollective.models
+
 ::: datacollective.schema
 
 ::: datacollective.schema_loaders.base

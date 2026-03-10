@@ -1,3 +1,8 @@
+import requests
+
+from datacollective.api_utils import _format_bytes
+
+
 class DownloadError(Exception):
     """Exception raised when a download fails."""
 
@@ -37,12 +42,17 @@ class DownloadError(Exception):
         return "Download failed. Unfortunately this dataset does not support resuming downloads — please try again."
 
 
-def _format_bytes(bytes_val: int) -> str:
-    """Format bytes into a human-readable string."""
-    units = ["B", "KB", "MB", "GB", "TB", "PB"]
-    value = float(bytes_val)
-    for unit in units:
-        if value < 1024.0 or unit == units[-1]:
-            return f"{value:.1f} {unit}"
-        value /= 1024.0
-    return ""
+RATE_LIMIT_ERROR = "Rate limit exceeded. Please try again later."
+
+
+class RateLimitError(RuntimeError):
+    """Raised when the MDC API responds with HTTP 429."""
+
+    def __init__(
+        self,
+        message: str = RATE_LIMIT_ERROR,
+        *,
+        response: requests.Response | None = None,
+    ) -> None:
+        self.response = response
+        super().__init__(message)

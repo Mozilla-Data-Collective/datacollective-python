@@ -1,10 +1,10 @@
 import logging
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 from fox_progress_bar import ProgressBar
+from pydantic import Field
 
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
@@ -14,17 +14,17 @@ from datacollective.api_utils import (
     send_api_request,
 )
 from datacollective.errors import DownloadError
+from datacollective.models import NonEmptyStrModel
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class DownloadPlan:
+class DownloadPlan(NonEmptyStrModel):
     download_url: str
     filename: str
     target_filepath: Path
     tmp_filepath: Path
-    size_bytes: int
+    size_bytes: int = Field(..., gt=0)
     checksum: (
         str | None
     )  # We allow None if the API does not return a checksum, but that's generally unexpected.

@@ -3,10 +3,27 @@ import logging
 import os
 import platform
 from pathlib import Path
+from typing import Any
+
 import requests
 from dotenv import find_dotenv, load_dotenv
 
+
 logger = logging.getLogger(__name__)
+
+_PKG_LOGGER = logging.getLogger("datacollective")
+
+
+def _enable_verbose(verbose: bool) -> None:
+    if not verbose:
+        return
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    )
+    _PKG_LOGGER.handlers = [handler]
+    _PKG_LOGGER.setLevel(logging.INFO)
+
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
 SCHEMA_REGISTRY_RAW_BASE_URL = (
@@ -16,8 +33,6 @@ ENV_API_KEY = "MDC_API_KEY"
 ENV_API_URL = "MDC_API_URL"
 ENV_DOWNLOAD_PATH = "MDC_DOWNLOAD_PATH"
 HTTP_TIMEOUT = (10, 60)  # (connect, read)
-
-RATE_LIMIT_ERROR = "Rate limit exceeded. Please try again later."
 
 load_dotenv(find_dotenv())
 
@@ -29,6 +44,8 @@ def send_api_request(
     extra_headers: dict[str, str] | None = None,
     timeout: tuple[int, int] | None = HTTP_TIMEOUT,
     include_auth_headers: bool = True,
+    json_body: dict[str, Any] | None = None,
+    params: dict[str, Any] | None = None,
 ) -> requests.Response:
     """
     Send an HTTP request to the MDC API with appropriate headers and error handling.
@@ -40,6 +57,8 @@ def send_api_request(
         extra_headers: Additional headers to include in the request (default: None). E.g. for resuming
         timeout: A tuple specifying (connect timeout, read timeout) in seconds (default: None).
         include_auth_headers: Whether to include authentication (API KEY) headers (default: True).
+        json_body: Optional JSON body to send with the request.
+        params: Optional query parameters to include in the request.
 
     Returns:
         The HTTP response object.
@@ -47,7 +66,7 @@ def send_api_request(
     Raises:
         FileNotFoundError: If the resource is not found (404).
         PermissionError: If access is denied (403).
-        RuntimeError: If rate limit is exceeded (429).
+        RateLimitError: If rate limit is exceeded (429).
         ValueError: If API key is missing when authentication is required.
         requests.HTTPError: For other non-2xx responses.
     """
@@ -65,17 +84,27 @@ def send_api_request(
         stream=stream,
         headers=headers,
         timeout=timeout,
+        json=json_body,
+        params=params,
     )
 
     if resp.status_code == 404:
-        raise FileNotFoundError("Dataset not found")
+        detail = _extract_error_detail(resp)
+        raise FileNotFoundError(
+            f"Resource not found: {method.upper()} {url}"
+            + (f" — {detail}" if detail else "")
+        )
     if resp.status_code == 403:
+        detail = _extract_error_detail(resp)
         raise PermissionError(
-            "Access denied. If the dataset is public, make sure you have read thoroughly and agreed"
-            " to the dataset's Terms & Conditions in its respective page on the MDC platform before downloading. "
+            f"Access denied. If the dataset is public, make sure you have read thoroughly and agreed"
+            " to the dataset's Terms & Conditions in its respective page on the MDC platform before downloading. \n"
+            f"{detail}"
         )
     if resp.status_code == 429:
-        raise RuntimeError(RATE_LIMIT_ERROR)
+        from datacollective.errors import RateLimitError
+
+        raise RateLimitError(response=resp)
     resp.raise_for_status()
 
     return resp
@@ -83,6 +112,15 @@ def send_api_request(
 
 def _get_api_url() -> str:
     return os.getenv(ENV_API_URL, DEFAULT_API_URL).rstrip("/")
+
+
+def _extract_error_detail(resp: requests.Response) -> str:
+    """Pull a human-readable message from a JSON error response."""
+    try:
+        body = resp.json()
+        return str(body.get("message") or body.get("error") or "")
+    except Exception:
+        return ""
 
 
 def _get_api_key() -> str:
@@ -135,3 +173,14 @@ def _prepare_download_headers(
 
     tmp_path.unlink()  # remove existing file if no resume checksum supplied
     return {}, 0
+
+
+def _format_bytes(bytes_val: int) -> str:
+    """Format bytes into a human-readable string."""
+    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    value = float(bytes_val)
+    for unit in units:
+        if value < 1024.0 or unit == units[-1]:
+            return f"{value:.1f} {unit}"
+        value /= 1024.0
+    return ""
