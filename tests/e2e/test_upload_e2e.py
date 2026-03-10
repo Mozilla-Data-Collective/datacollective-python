@@ -32,12 +32,8 @@ def _archive_path() -> Path:
     return Path(__file__).resolve().parents[2] / "docs/example_dataset.tar.gz"
 
 
-def _submission(**data: Any) -> DatasetSubmission:
-    return DatasetSubmission.model_validate(data)
-
-
 def _full_submission(name: str) -> DatasetSubmission:
-    return _submission(
+    return DatasetSubmission(
         name=name,
         longDescription="End-to-end test submission created by the Python SDK test suite.",
         shortDescription="SDK live upload test",
