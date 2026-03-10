@@ -12,8 +12,6 @@
 
 ::: datacollective.models
 
-::: datacollective.dataset_loading_scripts.registry
-
 ::: datacollective.schema
 
 ::: datacollective.schema_loaders.base
