@@ -25,8 +25,29 @@ from datacollective.schema_loaders.cache_schema import _resolve_schema
 from datacollective.schema_loaders.registry import load_dataset_from_schema
 from datacollective.schema import get_dataset_schema
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)    
 
+
+def _resolve_dataset_id(dataset_id: str) -> str:
+    """
+    Resolves a dataset ID or slug to its canonical MDC ID.
+
+    Args:
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
+    
+    Returns:
+        The canonical dataset ID.
+
+    Raises:
+        RuntimeError: If the dataset does not exist.
+    """
+    try:
+        dataset_details = get_dataset_details(dataset_id)
+        return dataset_details.get("id", "")
+    except FileNotFoundError:
+        raise RuntimeError(
+            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
+        )
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     """
@@ -83,14 +104,7 @@ def save_dataset_to_disk(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    try:
-        dataset_details = get_dataset_details(dataset_id)
-    except FileNotFoundError:
-        raise RuntimeError(
-            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
-        )
-
-    _id = dataset_details.get("id", "")
+    _id = _resolve_dataset_id(dataset_id)
     download_plan = get_download_plan(_id, download_directory)
 
     # Case 1: Skip download if complete dataset archive already exists
@@ -167,14 +181,7 @@ def load_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    try:
-        dataset_details = get_dataset_details(dataset_id)
-    except FileNotFoundError:
-        raise RuntimeError(
-            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
-        )
-
-    _id = dataset_details.get("id", "")
+    _id = _resolve_dataset_id(dataset_id)
     schema = get_dataset_schema(_id)
     if schema is None:
         raise RuntimeError(
