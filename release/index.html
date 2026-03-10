@@ -901,7 +901,7 @@
 <li><code>bump-my-version</code> as the single source of truth for the version and updating it.</li>
 <li>GitHub Releases to trigger automatic publishing to PyPI via GitHub Actions.</li>
 </ul>
-<p>Publishing to PyPI happens <strong>only</strong> when a GitHub Release is created for a version tag (for example, <code>v0.1.0</code>).</p>
+<p>Publishing to PyPI happens <strong>only</strong> when a GitHub Release is created for a version tag (for example, <code>0.1.0</code>).</p>
 <hr />
 <h2 id="prerequisites">Prerequisites</h2>
 <p>Before doing a release, make sure you have:</p>
@@ -961,15 +961,15 @@
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Bump version to X.Y.Z&quot;</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main
 </span></code></pre></div>
-<p>Replace <code>vX.Y.Z</code> with the tag created in the previous step (for example, <code>v0.0.35</code>).</p>
+<p>Replace <code>vX.Y.Z</code> with the tag created in the previous step (for example, <code>0.0.35</code>).</p>
 <hr />
 <h2 id="5-create-a-github-release">5. Create a GitHub Release</h2>
 <ol>
 <li>Go to the repository page on GitHub.</li>
 <li>Open the <code>Releases</code> section.</li>
 <li>Click <code>Draft a new release</code>.</li>
-<li>Select the tag you just pushed (for example, <code>v0.0.35</code>).</li>
-<li>Set the release title to the same value (e.g. <code>v0.0.35</code>).</li>
+<li>Select the tag you just pushed (for example, <code>0.0.35</code>).</li>
+<li>Set the release title to the same value (e.g. <code>0.0.35</code>).</li>
 <li>Add release notes (high-level changes).</li>
 <li>Click <code>Publish release</code>.</li>
 </ol>
@@ -1006,7 +1006,7 @@
 <p><strong>Single source of truth</strong>: The version is managed only by bump-my-version. Do <strong>not</strong> manually edit the version in any file.</p>
 </li>
 <li>
-<p><strong>Tag format</strong>: Always use <code>vX.Y.Z</code> tags (for example, <code>v0.0.35</code>). The <code>bump-my-version</code> configuration enforces this.</p>
+<p><strong>Tag format</strong>: Always use <code>X.Y.Z</code> tags (for example, <code>0.0.35</code>). The <code>bump-my-version</code> configuration enforces this.</p>
 </li>
 <li>
 <p><strong>Manual workflow dispatch (advanced)</strong>: In rare cases, you can re-run the publish job from the <code>Actions</code> tab using <code>workflow_dispatch</code>, but normally you should always go through a GitHub Release.</p>
