@@ -167,7 +167,7 @@ Once loaded into a `DataFrame`, you can use standard `pandas` operations
 to filter, aggregate, and analyze the data.
 
 > For details on how `schema.yaml` files drive the loading process, see
-> [Schema-Based Dataset Loading](schema_parse.md).
+> [Schema-Based Dataset Loading](schema_documentation.md).
 
 ## Get dataset details
 
