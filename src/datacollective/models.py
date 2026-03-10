@@ -197,13 +197,6 @@ class DatasetSubmission(NonEmptyStrModel):
             self.licenseAbbreviation is not None or self.licenseUrl is not None
         )
 
-        if isinstance(self.license, License):
-            if has_license_details:
-                raise ValueError(
-                    "`licenseUrl` and `licenseAbbreviation` must be omitted when `license` is one of the predefined License values"
-                )
-            return self
-
         if self.license is None and has_license_details:
             raise ValueError(
                 "`license` must be provided when `licenseUrl` or `licenseAbbreviation` is set"
