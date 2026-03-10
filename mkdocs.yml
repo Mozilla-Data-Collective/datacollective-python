@@ -5,14 +5,13 @@ repo_name: datacollective-python
 nav:
   - Home: index.md
   - Programmatic Uploads: upload.md
-  - Schema-Based Loading: schema_parse.md
-  - Loaders:
-    - ASR: loaders/asr.md
-    - TTS: loaders/tts.md
-  - For Data Owners:
+  - Schema-Based Loading:
+    - How it works: schema_documentation.md
     - Adding a New Schema: add_new_schema.md
-  - For Developers:
-    - Extending Loading Logic: extend_schema_loading_logic.md
+    - Extending the Loading Logic: extend_schema_loading_logic.md
+    - Loaders:
+      - ASR: loaders/asr.md
+      - TTS: loaders/tts.md
   - API Reference: api.md
   - Release Workflow: release.md
 
