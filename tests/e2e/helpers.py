@@ -52,4 +52,3 @@ def build_full_submission(name: str) -> DatasetSubmission:
         exclusivityOptOut=True,
         agreeToSubmit=True,
     )
-

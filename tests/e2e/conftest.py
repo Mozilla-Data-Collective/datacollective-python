@@ -12,7 +12,7 @@ from tests.e2e.helpers import (
 
 
 @pytest.fixture(scope="session")
-def live_api_settings() -> tuple[str, str]:
+def live_api_settings() -> tuple[str | None, str | None]:
     api_key = os.getenv("MDC_TEST_API_KEY")
     api_url = os.getenv("MDC_TEST_API_URL")
     if not (api_key and api_url):
