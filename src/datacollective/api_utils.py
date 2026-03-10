@@ -9,7 +9,6 @@ from typing import Any
 import requests
 from dotenv import find_dotenv, load_dotenv
 
-from datacollective.errors import RateLimitError
 
 logger = logging.getLogger(__name__)
 
@@ -104,6 +103,7 @@ def send_api_request(
             f"{detail}"
         )
     if resp.status_code == 429:
+        from datacollective.errors import RateLimitError
         raise RateLimitError(response=resp)
     resp.raise_for_status()
 
