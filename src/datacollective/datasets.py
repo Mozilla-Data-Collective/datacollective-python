@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import logging
 import shutil
 import tarfile
@@ -26,6 +24,7 @@ from datacollective.schema_loaders.registry import load_dataset_from_schema
 from datacollective.schema import get_dataset_schema
 
 logger = logging.getLogger(__name__)
+TAR_GZ_SUFFIX = ".tar.gz"
 
 
 def _resolve_dataset_id(dataset_id: str) -> str:
@@ -248,7 +247,7 @@ def _extract_archive(
     if archive_path.suffix == ".zip":
         with zipfile.ZipFile(archive_path, "r") as zf:
             zf.extractall(target)
-    elif archive_path.name.endswith(".tar.gz") or archive_path.suffix == ".tgz":
+    elif archive_path.name.endswith(TAR_GZ_SUFFIX) or archive_path.suffix == ".tgz":
         with tarfile.open(archive_path, "r:gz") as tf:
             tf.extractall(path=target, filter="fully_trusted")
     else:
@@ -267,8 +266,8 @@ def _strip_archive_suffix(path: Path) -> Path:
         Path with the archive suffix removed.
     """
     name = path.name
-    if name.endswith(".tar.gz"):
-        return path.with_name(name[: -len(".tar.gz")])
+    if name.endswith(TAR_GZ_SUFFIX):
+        return path.with_name(name[: -len(TAR_GZ_SUFFIX)])
     if name.endswith(".tgz"):
         return path.with_name(name[: -len(".tgz")])
     if name.endswith(".zip"):
