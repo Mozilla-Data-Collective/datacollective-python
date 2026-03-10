@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -60,6 +60,9 @@ class NonEmptyStrModel(BaseModel):
     """Base model that trims string fields and rejects empty values."""
 
     model_config = ConfigDict(extra="forbid")
+    _allow_empty_trimmed_strings: ClassVar[frozenset[str]] = frozenset(
+        {"licenseAbbreviation"}
+    )
 
     @field_validator("*", mode="before")
     @classmethod
@@ -69,6 +72,8 @@ class NonEmptyStrModel(BaseModel):
         if isinstance(value, str):
             trimmed = value.strip()
             if not trimmed:
+                if info.field_name in cls._allow_empty_trimmed_strings:
+                    return trimmed
                 raise ValueError(f"`{info.field_name}` must be a non-empty string")
             return trimmed
         return value
@@ -98,7 +103,7 @@ class DatasetSubmission(NonEmptyStrModel):
         description="ML task type — must be one of the Task enum values listed in api.md.",
     )
     format: str | None = Field(None, description="File format (e.g., `TSV`, `WAV`).")
-    licenseAbbreviation: License | None = Field(
+    licenseAbbreviation: License | str | None = Field(
         None,
         description="Either one of the predefined License enum values or, optionally, a custom abbreviated license name.",
     )
@@ -181,16 +186,19 @@ class DatasetSubmission(NonEmptyStrModel):
         description="Timestamp when the submission was last updated. Updated by the API on changes.",
     )
 
-    @field_validator("licenseAbbreviation", mode="after")
-    @classmethod
-    def _normalize_license(cls, value: License | str | None) -> License | str | None:
-        if isinstance(value, str):
-            try:
-                return License(value)
-            except ValueError:
-                return value
-        return value
-
+    @model_validator(mode="after")
+    def _validate_license_details(self) -> DatasetSubmission:
+        has_custom_license_abbreviation = (
+            self.licenseAbbreviation is not None
+            and not isinstance(self.licenseAbbreviation, License)
+        )
+        requires_license_name = (
+            has_custom_license_abbreviation or self.licenseUrl is not None
+        )
+        if requires_license_name and self.license is None:
+            raise ValueError(
+                "`license` is required when providing a custom `licenseAbbreviation` or `licenseUrl`"
+            )
         return self
 
 

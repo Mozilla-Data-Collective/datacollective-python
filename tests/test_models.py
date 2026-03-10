@@ -92,12 +92,7 @@ def test_task_rejects_case_variants() -> None:
 
 def test_predefined_license_is_accepted_by_enum() -> None:
     model = DatasetSubmission(licenseAbbreviation=License.CC_BY_4_0)
-    assert model.license == License.CC_BY_4_0
-
-
-def test_predefined_license_string_is_normalized_to_enum() -> None:
-    model = DatasetSubmission(licenseAbbreviation="MIT")
-    assert model.license == License.MIT
+    assert model.licenseAbbreviation == License.CC_BY_4_0
 
 
 def test_custom_license_allows_optional_details() -> None:
@@ -116,3 +111,15 @@ def test_license_details_require_license_name() -> None:
         DatasetSubmission(licenseAbbreviation="Custom")
     with pytest.raises(ValidationError):
         DatasetSubmission(licenseUrl="https://example.com/license")
+
+
+def test_empty_license_abbreviation_requires_or_uses_license_name() -> None:
+    with pytest.raises(ValidationError):
+        DatasetSubmission(licenseAbbreviation="")
+
+    model = DatasetSubmission(
+        licenseAbbreviation="",
+        license="Mozilla Research License",
+    )
+    assert model.licenseAbbreviation == ""
+    assert model.license == "Mozilla Research License"
