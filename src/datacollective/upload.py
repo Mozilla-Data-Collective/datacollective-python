@@ -244,7 +244,7 @@ def upload_dataset_file(
     state.parts = _parts_from_mapping(parts_by_number)
     save_upload_state(state_file, state)
 
-    logger.info("Completing multipart upload...")
+    logger.info("Completing upload...")
 
     _complete_upload(state.fileUploadId, state.uploadId, state.parts, state.checksum)
 
