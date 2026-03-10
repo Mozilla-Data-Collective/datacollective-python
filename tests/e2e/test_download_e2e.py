@@ -1,59 +1,31 @@
 import logging
-import os
 from pathlib import Path
-from typing import NoReturn
 
-import pandas as pd
 import pytest
-from _pytest.monkeypatch import MonkeyPatch
-from requests import HTTPError
 
-from datacollective import get_dataset_details, load_dataset, save_dataset_to_disk
+from datacollective import get_dataset_details, save_dataset_to_disk
 from datacollective.api_utils import (
     _prepare_download_headers,
     send_api_request,
 )
-from datacollective.errors import RateLimitError
 from datacollective.download import (
     get_download_plan,
     write_checksum_file,
 )
-
-MDC_TEST_API_KEY = os.getenv("MDC_TEST_API_KEY")
-MDC_TEST_API_URL = os.getenv("MDC_TEST_API_URL")
-
-pytestmark = pytest.mark.skipif(
-    not (MDC_TEST_API_KEY and MDC_TEST_API_URL),
-    reason="Set MDC_TEST_API_KEY and MDC_TEST_API_URL to run live API tests.",
-)
-
-
-def _skip_if_rate_limited(exc: Exception) -> NoReturn:
-    """
-    Since our backend implements strict rate limiting
-    there is a chance that our e2e tests might hit it,
-    so we skip the tests when backend returns HTTP 429 (rate limit)."""
-    if isinstance(exc, RateLimitError):
-        pytest.skip("Skipped due to API rate limiting (HTTP 429)")
-    if isinstance(exc, HTTPError) and getattr(exc, "response", None):
-        if getattr(exc.response, "status_code", None) == 429:
-            pytest.skip("Skipped due to API rate limiting (HTTP 429)")
-    raise exc
+from tests.e2e.helpers import skip_if_rate_limited
 
 
 def test_get_dataset_details_live_api(
-    monkeypatch: MonkeyPatch,
-    dataset_id: str = "cmiq2s3q5000fo207k9g6g7ou",
+    live_api_env: None,
+    dataset_id: str,
 ) -> None:
     """NOTE: This test calls a live MDC API endpoint (dev)."""
-    monkeypatch.setenv("MDC_API_KEY", MDC_TEST_API_KEY)
-    monkeypatch.setenv("MDC_API_URL", MDC_TEST_API_URL)
 
     details = None
     try:
         details = get_dataset_details(dataset_id)
     except Exception as exc:
-        _skip_if_rate_limited(exc)
+        skip_if_rate_limited(exc)
 
     assert details is not None
     assert isinstance(details, dict)
@@ -63,39 +35,11 @@ def test_get_dataset_details_live_api(
     assert dataset_name.strip()
 
 
-def test_load_dataset_live_api(
-    tmp_path: Path,
-    monkeypatch: MonkeyPatch,
-    dataset_id: str = "cmiq2s3q5000fo207k9g6g7ou",
-) -> None:
-    """NOTE: This test calls a live MDC API endpoint (dev)."""
-
-    monkeypatch.setenv("MDC_API_KEY", MDC_TEST_API_KEY)
-    monkeypatch.setenv("MDC_DOWNLOAD_PATH", str(tmp_path))
-    monkeypatch.setenv("MDC_API_URL", MDC_TEST_API_URL)
-
-    df = None
-    try:
-        df = load_dataset(
-            dataset_id,
-            download_directory=str(tmp_path),
-            show_progress=False,
-            overwrite_existing=True,
-        )
-    except Exception as exc:  # noqa: BLE001
-        _skip_if_rate_limited(exc)
-
-    assert df is not None
-    assert isinstance(df, pd.DataFrame)
-    assert not df.empty
-    assert len(df.columns) > 0
-
-
 def test_resume_download(
     tmp_path: Path,
-    monkeypatch: MonkeyPatch,
+    live_api_env: None,
     caplog: pytest.LogCaptureFixture,
-    dataset_id: str = "cmiq2s3q5000fo207k9g6g7ou",
+    dataset_id: str,
 ) -> None:
     """
     Verify that download resumes after an interruption.
@@ -105,8 +49,6 @@ def test_resume_download(
     3. Resumes the download and verifies it completes successfully
     NOTE: This test calls a live MDC API endpoint.
     """
-    monkeypatch.setenv("MDC_API_KEY", MDC_TEST_API_KEY)
-    monkeypatch.setenv("MDC_API_URL", MDC_TEST_API_URL)
 
     plan = None
     result_path = None
@@ -168,7 +110,7 @@ def test_resume_download(
         assert "Resuming previously interrupted download" in caplog.text
 
     except Exception as exc:
-        _skip_if_rate_limited(exc)
+        skip_if_rate_limited(exc)
 
     assert plan is not None
     assert result_path is not None

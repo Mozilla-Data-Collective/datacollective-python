@@ -76,6 +76,6 @@ Place it under `registry/<your-dataset-id>/schema.yaml`.
 
 ## Next steps
 
-- For a full list of available fields and data types, see the [Schema-Based Loading](schema_parse.md) reference.
+- For a full list of available fields and data types, see the [Schema-Based Loading](schema_documentation.md) reference.
 - If your dataset requires a custom loading logic not covered by existing strategies, see [Extending Schema Loading Logic](extend_schema_loading_logic.md).
 
