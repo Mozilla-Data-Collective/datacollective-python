@@ -69,6 +69,8 @@ class NonEmptyStrModel(BaseModel):
     def _non_empty_strings(cls, value: Any, info: Any) -> Any:
         if value is None:
             return value
+        if isinstance(value, Enum):
+            return value
         if isinstance(value, str):
             trimmed = value.strip()
             if not trimmed:
