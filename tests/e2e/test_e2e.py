@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+from typing import NoReturn
 
 import pandas as pd
 import pytest
@@ -8,7 +9,11 @@ from _pytest.monkeypatch import MonkeyPatch
 from requests import HTTPError
 
 from datacollective import get_dataset_details, load_dataset, save_dataset_to_disk
-from datacollective.api_utils import _prepare_download_headers, send_api_request
+from datacollective.api_utils import (
+    _prepare_download_headers,
+    send_api_request,
+)
+from datacollective.errors import RateLimitError
 from datacollective.download import (
     get_download_plan,
     write_checksum_file,
@@ -23,11 +28,13 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def _skip_if_rate_limited(exc: Exception) -> None:
+def _skip_if_rate_limited(exc: Exception) -> NoReturn:
     """
     Since our backend implements strict rate limiting
     there is a chance that our e2e tests might hit it,
     so we skip the tests when backend returns HTTP 429 (rate limit)."""
+    if isinstance(exc, RateLimitError):
+        pytest.skip("Skipped due to API rate limiting (HTTP 429)")
     if isinstance(exc, HTTPError) and getattr(exc, "response", None):
         if getattr(exc.response, "status_code", None) == 429:
             pytest.skip("Skipped due to API rate limiting (HTTP 429)")
@@ -42,14 +49,18 @@ def test_get_dataset_details_live_api(
     monkeypatch.setenv("MDC_API_KEY", MDC_TEST_API_KEY)
     monkeypatch.setenv("MDC_API_URL", MDC_TEST_API_URL)
 
+    details = None
     try:
         details = get_dataset_details(dataset_id)
     except Exception as exc:
         _skip_if_rate_limited(exc)
 
+    assert details is not None
     assert isinstance(details, dict)
     assert details.get("id") == dataset_id
-    assert isinstance(details.get("name"), str) and details["name"].strip()
+    dataset_name = details.get("name")
+    assert isinstance(dataset_name, str)
+    assert dataset_name.strip()
 
 
 def test_load_dataset_live_api(
@@ -63,6 +74,7 @@ def test_load_dataset_live_api(
     monkeypatch.setenv("MDC_DOWNLOAD_PATH", str(tmp_path))
     monkeypatch.setenv("MDC_API_URL", MDC_TEST_API_URL)
 
+    df = None
     try:
         df = load_dataset(
             dataset_id,
@@ -73,6 +85,7 @@ def test_load_dataset_live_api(
     except Exception as exc:  # noqa: BLE001
         _skip_if_rate_limited(exc)
 
+    assert df is not None
     assert isinstance(df, pd.DataFrame)
     assert not df.empty
     assert len(df.columns) > 0
@@ -95,6 +108,8 @@ def test_resume_download(
     monkeypatch.setenv("MDC_API_KEY", MDC_TEST_API_KEY)
     monkeypatch.setenv("MDC_API_URL", MDC_TEST_API_URL)
 
+    plan = None
+    result_path = None
     try:
         # Get download plan to know the expected checksum and file paths
         plan = get_download_plan(dataset_id, str(tmp_path))
@@ -155,6 +170,8 @@ def test_resume_download(
     except Exception as exc:
         _skip_if_rate_limited(exc)
 
+    assert plan is not None
+    assert result_path is not None
     # After successful download:
     assert result_path.exists(), "Final file should exist"
     assert result_path.stat().st_size == plan.size_bytes, (
