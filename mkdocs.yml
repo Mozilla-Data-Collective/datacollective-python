@@ -4,6 +4,7 @@ repo_name: datacollective-python
 
 nav:
   - Home: index.md
+  - Programmatic Uploads: upload.md
   - Schema-Based Loading: schema_parse.md
   - Loaders:
     - ASR: loaders/asr.md
