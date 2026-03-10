@@ -82,11 +82,19 @@ bump-my-version bump minor -vv
 bump-my-version bump major -vv
 ```
 
-This will update the version in `pyproject.toml` and `__init__.py`.
+This will update the version in `pyproject.toml` and `src/datacollective/__init__.py`.
 
 ---
 
-## 4. Push the changes and tag
+## 4. Update uv.lock
+
+After bumping the version, you need to update the `uv.lock` file to reflect the new version:
+
+```bash
+uv lock
+```
+
+## 5. Push the changes and tag
 
 Commit the version bump and push to the `main` branch:
 
@@ -96,11 +104,11 @@ git commit -m "Bump version to X.Y.Z"
 git push origin main
 ```
 
-Replace `vX.Y.Z` with the tag created in the previous step (for example, `0.0.35`).
+Replace `X.Y.Z` with the tag created in the previous step (for example, `0.0.35`).
 
 ---
 
-## 5. Create a GitHub Release
+## 6. Create a GitHub Release
 
 1. Go to the repository page on GitHub.
 2. Open the `Releases` section.
@@ -114,7 +122,7 @@ This will trigger the `Publish to PyPI` GitHub Actions workflow.
 
 ---
 
-## 6. Automatic publish to PyPI
+## 7. Automatic publish to PyPI
 
 Once the GitHub Release is published:
 
@@ -131,7 +139,7 @@ You can monitor the progress:
 
 ---
 
-## 7. Verify the release on PyPI
+## 8. Verify the release on PyPI
 
 After the workflow succeeds:
 
