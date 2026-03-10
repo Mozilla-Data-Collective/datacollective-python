@@ -25,7 +25,7 @@ from datacollective.schema_loaders.cache_schema import _resolve_schema
 from datacollective.schema_loaders.registry import load_dataset_from_schema
 from datacollective.schema import get_dataset_schema
 
-logger = logging.getLogger(__name__)    
+logger = logging.getLogger(__name__)
 
 
 def _resolve_dataset_id(dataset_id: str) -> str:
@@ -34,7 +34,7 @@ def _resolve_dataset_id(dataset_id: str) -> str:
 
     Args:
         dataset_id: The dataset ID (as shown in MDC platform) or slug.
-    
+
     Returns:
         The canonical dataset ID.
 
@@ -48,6 +48,7 @@ def _resolve_dataset_id(dataset_id: str) -> str:
         raise RuntimeError(
             f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
         )
+
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     """
