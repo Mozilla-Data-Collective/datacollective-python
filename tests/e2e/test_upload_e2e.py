@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 from pathlib import Path
-from typing import Any, NoReturn
+from typing import NoReturn
 
 import pytest
 from requests import HTTPError

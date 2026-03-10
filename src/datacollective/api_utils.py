@@ -104,6 +104,7 @@ def send_api_request(
         )
     if resp.status_code == 429:
         from datacollective.errors import RateLimitError
+
         raise RateLimitError(response=resp)
     resp.raise_for_status()
 
