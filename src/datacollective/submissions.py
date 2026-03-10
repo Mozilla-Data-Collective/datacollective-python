@@ -56,10 +56,9 @@ def _payload_for_fields(
 
     if "license" in allowed_fields and isinstance(submission.license, License):
         payload["license"] = submission.license.value
-        if "licenseAbbreviation" in allowed_fields:
-            payload["licenseAbbreviation"] = None
-        if "licenseUrl" in allowed_fields:
-            payload["licenseUrl"] = None
+        # Remove custom license fields if a predefined license is used
+        payload.pop("licenseAbbreviation", None)
+        payload.pop("licenseUrl", None)
 
     return payload
 
