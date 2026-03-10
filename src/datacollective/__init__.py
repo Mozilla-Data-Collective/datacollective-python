@@ -30,7 +30,7 @@ __all__ = [
 ]
 
 # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 # Configure a package-level logger with a NullHandler so that library users
 # can opt-in to logging without seeing unexpected output by default.

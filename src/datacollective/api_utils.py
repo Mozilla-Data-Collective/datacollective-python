@@ -26,6 +26,9 @@ def _enable_verbose(verbose: bool) -> None:
 
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
+SCHEMA_REGISTRY_RAW_BASE_URL = (
+    "https://raw.githubusercontent.com/Mozilla-Data-Collective/dataset-schema-registry"
+)
 ENV_API_KEY = "MDC_API_KEY"
 ENV_API_URL = "MDC_API_URL"
 ENV_DOWNLOAD_PATH = "MDC_DOWNLOAD_PATH"

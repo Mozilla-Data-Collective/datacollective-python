@@ -13,9 +13,6 @@ from datacollective.api_utils import (
     _get_api_url,
     send_api_request,
 )
-from datacollective.dataset_loading_scripts.registry import (
-    load_dataset_from_name_as_dataframe,
-)
 from datacollective.download import (
     cleanup_partial_download,
     determine_resume_state,
@@ -24,8 +21,33 @@ from datacollective.download import (
     resolve_download_dir,
     write_checksum_file,
 )
+from datacollective.schema_loaders.cache_schema import _resolve_schema
+from datacollective.schema_loaders.registry import load_dataset_from_schema
+from datacollective.schema import get_dataset_schema
 
 logger = logging.getLogger(__name__)
+
+
+def _resolve_dataset_id(dataset_id: str) -> str:
+    """
+    Resolves a dataset ID or slug to its canonical MDC ID.
+
+    Args:
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
+
+    Returns:
+        The canonical dataset ID.
+
+    Raises:
+        RuntimeError: If the dataset does not exist.
+    """
+    try:
+        dataset_details = get_dataset_details(dataset_id)
+        return dataset_details.get("id", "")
+    except FileNotFoundError:
+        raise RuntimeError(
+            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
+        )
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
@@ -33,7 +55,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     Return dataset details from the MDC API as a dictionary.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
 
     Returns:
         A dict with dataset details as returned by the API.
@@ -67,7 +89,7 @@ def save_dataset_to_disk(
     previous attempt.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
         download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
@@ -83,7 +105,8 @@ def save_dataset_to_disk(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    download_plan = get_download_plan(dataset_id, download_directory)
+    _id = _resolve_dataset_id(dataset_id)
+    download_plan = get_download_plan(_id, download_directory)
 
     # Case 1: Skip download if complete dataset archive already exists
     if download_plan.target_filepath.exists() and not overwrite_existing:
@@ -135,13 +158,13 @@ def load_dataset(
     If there is a directory with the same name as the archive file without the suffix extension, we assume
     it has already been extracted, and it will not be re-extracted unless `overwrite_extracted=True`.
 
-    Uses dataset `details['name']` to check in registry.py for dataset-specific loading logic.
+    Uses the dataset schema to determine task-specific loading logic.
 
     Automatically resumes interrupted downloads if a .checksum file exists from a
     previous attempt.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
         download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
@@ -153,14 +176,26 @@ def load_dataset(
         A pandas DataFrame with the loaded dataset.
 
     Raises:
-        ValueError: If dataset_id is empty.
+        ValueError: If dataset_id is empty or schema is unsupported.
         FileNotFoundError: If the dataset does not exist (404).
         PermissionError: If access is denied (403) or download directory is not writable.
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
+    _id = _resolve_dataset_id(dataset_id)
+    schema = get_dataset_schema(_id)
+    if schema is None:
+        raise RuntimeError(
+            f"Dataset '{_id}' exists but is not supported by load_dataset yet. "
+            f"You can download the raw archive with: save_dataset_to_disk('{_id}'). "
+            f"If you are the data owner consider submitting a schema for your dataset via the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
+        )
+
+    download_plan = get_download_plan(_id, download_directory)
+    archive_checksum = download_plan.checksum
+
     archive_path = save_dataset_to_disk(
-        dataset_id=dataset_id,
+        dataset_id=_id,
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
@@ -172,10 +207,8 @@ def load_dataset(
         overwrite_extracted=overwrite_extracted,
     )
 
-    details = get_dataset_details(dataset_id)
-    dataset_name = str(details.get("name", "")).lower()
-
-    return load_dataset_from_name_as_dataframe(dataset_name, extract_dir)
+    schema = _resolve_schema(_id, extract_dir, archive_checksum)
+    return load_dataset_from_schema(schema, extract_dir)
 
 
 def _extract_archive(
