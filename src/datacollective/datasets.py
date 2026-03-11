@@ -12,6 +12,7 @@ from datacollective.api_utils import (
     send_api_request,
 )
 from datacollective.download import (
+    DownloadPlan,
     cleanup_partial_download,
     determine_resume_state,
     execute_download_plan,
@@ -105,8 +106,23 @@ def save_dataset_to_disk(
         requests.HTTPError: For other non-2xx responses.
     """
     _id = _resolve_dataset_id(dataset_id)
-    download_plan = get_download_plan(_id, download_directory)
+    download_plan = get_download_plan(
+        _id,
+        download_directory,
+    )
+    return _resolve_and_execute_download_plan(
+        download_plan=download_plan,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+    )
 
+
+def _resolve_and_execute_download_plan(
+    download_plan: DownloadPlan,
+    show_progress: bool,
+    overwrite_existing: bool,
+) -> Path:
+    """Persist a planned dataset download to disk with the given analytics source."""
     # Case 1: Skip download if complete dataset archive already exists
     if download_plan.target_filepath.exists() and not overwrite_existing:
         logger.info(
@@ -130,7 +146,11 @@ def save_dataset_to_disk(
     if download_plan.checksum and not resume_checksum:
         write_checksum_file(download_plan.checksum_filepath, download_plan.checksum)
 
-    execute_download_plan(download_plan, resume_checksum, show_progress)
+    execute_download_plan(
+        download_plan,
+        resume_checksum,
+        show_progress,
+    )
 
     # Download complete. Rename temp file to target and remove checksum file
     download_plan.tmp_filepath.replace(download_plan.target_filepath)
@@ -190,12 +210,14 @@ def load_dataset(
             f"If you are the data owner consider submitting a schema for your dataset via the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
         )
 
-    download_plan = get_download_plan(_id, download_directory)
+    download_plan = get_download_plan(
+        _id,
+        download_directory,
+    )
     archive_checksum = download_plan.checksum
 
-    archive_path = save_dataset_to_disk(
-        dataset_id=_id,
-        download_directory=download_directory,
+    archive_path = _resolve_and_execute_download_plan(
+        download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
     )
