@@ -1,6 +1,7 @@
 import logging
 import shutil
 import tarfile
+import warnings
 import zipfile
 from pathlib import Path
 from typing import Any
@@ -74,7 +75,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     return dict(resp.json())
 
 
-def save_dataset_to_disk(
+def download_dataset(
     dataset_id: str,
     download_directory: str | None = None,
     show_progress: bool = True,
@@ -86,6 +87,9 @@ def save_dataset_to_disk(
 
     Automatically resumes interrupted downloads if a matching .checksum file exists from a
     previous attempt.
+
+    Note: This function was previously called `save_dataset_to_disk`, which remains available as a
+    deprecated alias for backward compatibility.
 
     Args:
         dataset_id: The dataset ID (as shown in MDC platform) or slug.
@@ -186,14 +190,14 @@ def load_dataset(
     if schema is None:
         raise RuntimeError(
             f"Dataset '{_id}' exists but is not supported by load_dataset yet. "
-            f"You can download the raw archive with: save_dataset_to_disk('{_id}'). "
+            f"You can download the raw archive with: download_dataset('{_id}'). "
             f"If you are the data owner consider submitting a schema for your dataset via the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
         )
 
     download_plan = get_download_plan(_id, download_directory)
     archive_checksum = download_plan.checksum
 
-    archive_path = save_dataset_to_disk(
+    archive_path = download_dataset(
         dataset_id=_id,
         download_directory=download_directory,
         show_progress=show_progress,
@@ -208,6 +212,31 @@ def load_dataset(
 
     schema = _resolve_schema(_id, extract_dir, archive_checksum)
     return load_dataset_from_schema(schema, extract_dir)
+
+
+def save_dataset_to_disk(
+    dataset_id: str,
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
+) -> Path:
+    """
+    Deprecated alias for `download_dataset`.
+
+    Use `download_dataset` instead. This name is kept for backward compatibility.
+    """
+    warnings.warn(
+        "`save_dataset_to_disk` is deprecated and will be removed in a future "
+        "release. Use `download_dataset` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return download_dataset(
+        dataset_id=dataset_id,
+        download_directory=download_directory,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+    )
 
 
 def _extract_archive(

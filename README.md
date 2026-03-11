@@ -54,10 +54,13 @@ MDC_API_KEY=your-api-key-here
 
 4. **Save a dataset locally**:
 ```
-from datacollective import save_dataset_to_disk
+from datacollective import download_dataset
 
-dataset_path = save_dataset_to_disk("your-dataset-id")
+dataset_path = download_dataset("your-dataset-id")
 ```
+
+> [!NOTE]
+> `download_dataset` was previously called `save_dataset_to_disk`. The old name still works for backward compatibility, but it is deprecated and new code should use `download_dataset`.
 
 > [!TIP]
 > **Automatic Resume:** If a download is interrupted (e.g., due to a network error or it gets stopped it manually), the next time you try download the same dataset at the same folder location, we will automatically resume from where the download left off!

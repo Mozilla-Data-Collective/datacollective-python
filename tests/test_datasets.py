@@ -1,8 +1,14 @@
 from pathlib import Path
 
+import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
-from datacollective.datasets import _strip_archive_suffix, resolve_download_dir
+import datacollective
+from datacollective.datasets import (
+    _strip_archive_suffix,
+    resolve_download_dir,
+    save_dataset_to_disk,
+)
 
 
 def test_strip_archive_suffix_removes_known_extensions(tmp_path: Path) -> None:
@@ -33,3 +39,38 @@ def test_resolve_download_dir_uses_env_default(
 
     assert resolved == env_dir
     assert env_dir.exists()
+
+
+def test_download_dataset_is_exported_from_package() -> None:
+    assert datacollective.download_dataset is datacollective.datasets.download_dataset
+
+
+def test_save_dataset_to_disk_warns_and_delegates(
+    monkeypatch: MonkeyPatch, tmp_path: Path
+) -> None:
+    expected_path = tmp_path / "dataset.tar.gz"
+    captured_kwargs: dict[str, object] = {}
+
+    def fake_download_dataset(**kwargs: object) -> Path:
+        captured_kwargs.update(kwargs)
+        return expected_path
+
+    monkeypatch.setattr(
+        datacollective.datasets, "download_dataset", fake_download_dataset
+    )
+
+    with pytest.warns(DeprecationWarning, match="download_dataset"):
+        result = save_dataset_to_disk(
+            "dataset-id",
+            download_directory=str(tmp_path),
+            show_progress=False,
+            overwrite_existing=True,
+        )
+
+    assert result == expected_path
+    assert captured_kwargs == {
+        "dataset_id": "dataset-id",
+        "download_directory": str(tmp_path),
+        "show_progress": False,
+        "overwrite_existing": True,
+    }
