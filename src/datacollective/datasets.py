@@ -110,14 +110,14 @@ def save_dataset_to_disk(
         _id,
         download_directory,
     )
-    return _save_dataset_to_disk_from_plan(
+    return _resolve_and_execute_download_plan(
         download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
     )
 
 
-def _save_dataset_to_disk_from_plan(
+def _resolve_and_execute_download_plan(
     download_plan: DownloadPlan,
     show_progress: bool,
     overwrite_existing: bool,
@@ -216,7 +216,7 @@ def load_dataset(
     )
     archive_checksum = download_plan.checksum
 
-    archive_path = _save_dataset_to_disk_from_plan(
+    archive_path = _resolve_and_execute_download_plan(
         download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
