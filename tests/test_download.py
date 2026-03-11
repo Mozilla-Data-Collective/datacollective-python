@@ -172,7 +172,7 @@ def test_get_download_plan_forwards_download_source(
 
     assert plan.filename == "dataset.tar.gz"
     assert captured["method"] == "POST"
-    assert captured["download_source"] == "load_dataset"
+    assert captured["source_function"] == "load_dataset"
 
 
 def test_execute_download_plan_forwards_download_source(
@@ -211,5 +211,5 @@ def test_execute_download_plan_forwards_download_source(
     assert plan.tmp_filepath.read_bytes() == b"abcdef"
     assert captured["method"] == "GET"
     assert captured["url"] == plan.download_url
-    assert captured["download_source"] == "save_dataset_to_disk"
+    assert captured["source_function"] == "save_dataset_to_disk"
     assert captured["include_auth_headers"] is False

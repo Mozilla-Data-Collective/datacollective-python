@@ -14,4 +14,4 @@ def test_get_user_agent_omits_download_source_by_default() -> None:
 def test_get_user_agent_appends_download_source_token() -> None:
     user_agent = _get_user_agent(source_function="load_dataset")
 
-    assert user_agent.endswith("mdc-download-source/load_dataset")
+    assert user_agent.endswith("source function: load_dataset")
