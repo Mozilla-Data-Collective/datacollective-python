@@ -6,11 +6,11 @@ import pytest
 from datacollective import get_dataset_details, save_dataset_to_disk
 from datacollective.api_utils import (
     _prepare_download_headers,
-    send_api_request,
+    _send_api_request,
 )
 from datacollective.download import (
-    get_download_plan,
-    write_checksum_file,
+    _get_download_plan,
+    _write_checksum_file,
 )
 from tests.e2e.helpers import skip_if_rate_limited
 
@@ -54,18 +54,18 @@ def test_resume_download(
     result_path = None
     try:
         # Get download plan to know the expected checksum and file paths
-        plan = get_download_plan(dataset_id, str(tmp_path))
+        plan = _get_download_plan(dataset_id, str(tmp_path))
 
         # Write the checksum file (as save_dataset_to_disk would do before downloading)
         if plan.checksum:
-            write_checksum_file(plan.checksum_filepath, plan.checksum)
+            _write_checksum_file(plan.checksum_filepath, plan.checksum)
 
         # Start a real download but interrupt it after downloading some bytes
         # We'll download only a portion by manually streaming and stopping early
 
         headers, _ = _prepare_download_headers(plan.tmp_filepath, None)
 
-        with send_api_request(
+        with _send_api_request(
             "GET",
             plan.download_url,
             stream=True,

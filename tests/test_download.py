@@ -7,8 +7,27 @@ import pytest
 from datacollective.download import (
     DownloadPlan,
     _get_checksum_filepath,
-    determine_resume_state,
+    _determine_resume_state,
+    _resolve_download_dir,
 )
+
+
+def test_resolve_download_dir_prefers_argument(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.delenv("MDC_DOWNLOAD_PATH", raising=False)
+    custom_dir = tmp_path / "custom"
+    resolved = _resolve_download_dir(str(custom_dir))
+
+    assert resolved == custom_dir
+    assert custom_dir.exists()
+
+
+def test_resolve_download_dir_uses_env_default(tmp_path: Path, monkeypatch) -> None:
+    env_dir = tmp_path / "env"
+    monkeypatch.setenv("MDC_DOWNLOAD_PATH", str(env_dir))
+    resolved = _resolve_download_dir(None)
+
+    assert resolved == env_dir
+    assert env_dir.exists()
 
 
 def _make_download_plan(
@@ -38,7 +57,7 @@ def test_case1_checksum_and_part_exist_checksum_matches_returns_checksum(
     plan.checksum_filepath.write_text("matching_checksum")
 
     with caplog.at_level(logging.INFO, logger="datacollective.download"):
-        result = determine_resume_state(plan)
+        result = _determine_resume_state(plan)
 
     assert result == "matching_checksum"
     assert "Resuming previously interrupted download" in caplog.text
@@ -55,7 +74,7 @@ def test_case2_checksum_and_part_exist_checksum_mismatch_cleans_up_returns_none(
     plan.checksum_filepath.write_text("old_checksum")
 
     with caplog.at_level(logging.INFO, logger="datacollective.download"):
-        result = determine_resume_state(plan)
+        result = _determine_resume_state(plan)
 
     assert result is None
     assert not plan.tmp_filepath.exists()
@@ -73,7 +92,7 @@ def test_case3_part_exists_no_checksum_cleans_up_returns_none(
     plan.tmp_filepath.write_text("partial data")
 
     with caplog.at_level(logging.WARNING, logger="datacollective.download"):
-        result = determine_resume_state(plan)
+        result = _determine_resume_state(plan)
 
     assert result is None
     assert not plan.tmp_filepath.exists()
@@ -87,7 +106,7 @@ def test_case4_checksum_exists_no_part_cleans_up_returns_none(tmp_path: Path) ->
     # Create only .checksum file
     plan.checksum_filepath.write_text("orphan_checksum")
 
-    result = determine_resume_state(plan)
+    result = _determine_resume_state(plan)
 
     assert result is None
     assert not plan.checksum_filepath.exists()
@@ -97,7 +116,7 @@ def test_case5_neither_checksum_nor_part_exist_returns_none(tmp_path: Path) -> N
     """Case 5: Neither .checksum nor .part exist -> start fresh."""
     plan = _make_download_plan(tmp_path)
 
-    result = determine_resume_state(plan)
+    result = _determine_resume_state(plan)
 
     assert result is None
 
@@ -113,7 +132,7 @@ def test_resume_preserves_part_file_content(tmp_path: Path) -> None:
     # Create matching .checksum file
     plan.checksum_filepath.write_text("test_checksum")
 
-    result = determine_resume_state(plan)
+    result = _determine_resume_state(plan)
 
     # Part file should still exist with same content
     assert result == "test_checksum"
@@ -128,7 +147,7 @@ def test_handles_empty_checksum_file(tmp_path: Path) -> None:
     plan.tmp_filepath.write_text("partial")
     plan.checksum_filepath.write_text("")  # Empty checksum file
 
-    result = determine_resume_state(plan)
+    result = _determine_resume_state(plan)
 
     # Empty stored_checksum is falsy, so it won't match
     assert result is None

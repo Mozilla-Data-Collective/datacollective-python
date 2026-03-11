@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 import yaml
 
-from datacollective.schema import DatasetSchema, parse_schema, get_dataset_schema
+from datacollective.schema import DatasetSchema, _parse_schema, _get_dataset_schema
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ def _resolve_schema(
         return cached_schema
 
     # Cache miss or no archive checksum available -> fetch from the registry
-    remote_schema = get_dataset_schema(dataset_id)
+    remote_schema = _get_dataset_schema(dataset_id)
     if remote_schema is None:
         if cached_schema is not None:
             logger.info("Dataset not found in registry – using cached schema.")
@@ -80,7 +80,7 @@ def _load_cached_schema(schema_path: Path) -> DatasetSchema | None:
     if not schema_path.is_file():
         return None
     try:
-        return parse_schema(schema_path)
+        return _parse_schema(schema_path)
     except Exception:
         logger.debug(f"Failed to parse cached schema at {schema_path}", exc_info=True)
         return None

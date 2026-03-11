@@ -1,7 +1,4 @@
 import logging
-import shutil
-import tarfile
-import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -9,45 +6,19 @@ import pandas as pd
 
 from datacollective.api_utils import (
     _get_api_url,
-    send_api_request,
+    _send_api_request,
 )
+from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
-    DownloadPlan,
-    cleanup_partial_download,
-    determine_resume_state,
-    execute_download_plan,
-    get_download_plan,
-    resolve_download_dir,
-    write_checksum_file,
+    _get_download_plan,
+    _resolve_download_dir,
+    _resolve_and_execute_download_plan,
 )
 from datacollective.schema_loaders.cache_schema import _resolve_schema
-from datacollective.schema_loaders.registry import load_dataset_from_schema
-from datacollective.schema import get_dataset_schema
+from datacollective.schema_loaders.registry import _load_dataset_from_schema
+from datacollective.schema import _get_dataset_schema
 
 logger = logging.getLogger(__name__)
-TAR_GZ_SUFFIX = ".tar.gz"
-
-
-def _resolve_dataset_id(dataset_id: str) -> str:
-    """
-    Resolves a dataset ID or slug to its canonical MDC ID.
-
-    Args:
-        dataset_id: The dataset ID (as shown in MDC platform) or slug.
-
-    Returns:
-        The canonical dataset ID.
-
-    Raises:
-        RuntimeError: If the dataset does not exist.
-    """
-    try:
-        dataset_details = get_dataset_details(dataset_id)
-        return dataset_details.get("id", "")
-    except FileNotFoundError:
-        raise RuntimeError(
-            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
-        )
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
@@ -71,7 +42,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
         raise ValueError("`dataset_id` must be a non-empty string")
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
-    resp = send_api_request(method="GET", url=url)
+    resp = _send_api_request(method="GET", url=url)
     return dict(resp.json())
 
 
@@ -105,8 +76,8 @@ def save_dataset_to_disk(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    _id = _resolve_dataset_id(dataset_id)
-    download_plan = get_download_plan(
+    _id = resolve_dataset_id(dataset_id)
+    download_plan = _get_download_plan(
         _id,
         download_directory,
     )
@@ -115,50 +86,6 @@ def save_dataset_to_disk(
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
     )
-
-
-def _resolve_and_execute_download_plan(
-    download_plan: DownloadPlan,
-    show_progress: bool,
-    overwrite_existing: bool,
-) -> Path:
-    """Persist a planned dataset download to disk with the given analytics source."""
-    # Case 1: Skip download if complete dataset archive already exists
-    if download_plan.target_filepath.exists() and not overwrite_existing:
-        logger.info(
-            f"File already exists. "
-            f"Skipping download: `{str(download_plan.target_filepath)}`"
-        )
-        return Path(download_plan.target_filepath)
-
-    # If overwriting, clean up any existing complete or partial download files
-    if overwrite_existing:
-        cleanup_partial_download(
-            download_plan.tmp_filepath, download_plan.checksum_filepath
-        )
-        if download_plan.target_filepath.exists():
-            download_plan.target_filepath.unlink()
-
-    # Determine whether to resume download based on existing .checksum and .part files
-    resume_checksum = determine_resume_state(download_plan)
-
-    # Write checksum file before starting download (for potential resume later)
-    if download_plan.checksum and not resume_checksum:
-        write_checksum_file(download_plan.checksum_filepath, download_plan.checksum)
-
-    execute_download_plan(
-        download_plan,
-        resume_checksum,
-        show_progress,
-    )
-
-    # Download complete. Rename temp file to target and remove checksum file
-    download_plan.tmp_filepath.replace(download_plan.target_filepath)
-    if download_plan.checksum_filepath.exists():
-        download_plan.checksum_filepath.unlink()
-
-    logger.info(f"Saved dataset to `{str(download_plan.target_filepath)}`")
-    return Path(download_plan.target_filepath)
 
 
 def load_dataset(
@@ -201,8 +128,8 @@ def load_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    _id = _resolve_dataset_id(dataset_id)
-    schema = get_dataset_schema(_id)
+    _id = resolve_dataset_id(dataset_id)
+    schema = _get_dataset_schema(_id)
     if schema is None:
         raise RuntimeError(
             f"Dataset '{_id}' exists but is not supported by load_dataset yet. "
@@ -210,7 +137,7 @@ def load_dataset(
             f"If you are the data owner consider submitting a schema for your dataset via the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
         )
 
-    download_plan = get_download_plan(
+    download_plan = _get_download_plan(
         _id,
         download_directory,
     )
@@ -221,7 +148,7 @@ def load_dataset(
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
     )
-    base_dir = resolve_download_dir(download_directory)
+    base_dir = _resolve_download_dir(download_directory)
     extract_dir = _extract_archive(
         archive_path=archive_path,
         dest_dir=base_dir,
@@ -229,70 +156,26 @@ def load_dataset(
     )
 
     schema = _resolve_schema(_id, extract_dir, archive_checksum)
-    return load_dataset_from_schema(schema, extract_dir)
+    return _load_dataset_from_schema(schema, extract_dir)
 
 
-def _extract_archive(
-    archive_path: Path, dest_dir: Path, overwrite_extracted: bool
-) -> Path:
+def resolve_dataset_id(dataset_id: str) -> str:
     """
-    Extract the given archive (.tar.gz, .zip) into `dest_dir`. If the extracted
-    directory already exists (check if the default extracted folder exists) and overwrite_extracted is False,
-    skip extraction.
+    Resolves a dataset ID or slug to its canonical MDC ID.
 
     Args:
-        archive_path: Path to the archive file.
-        dest_dir: Directory where to extract the contents.
-        overwrite_extracted: Whether to overwrite existing extracted files.
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
+
     Returns:
-        Path to the extracted root directory.
+        The canonical dataset ID.
 
     Raises:
-        ValueError: If the archive type is unsupported.
+        RuntimeError: If the dataset does not exist.
     """
-    extract_root = _strip_archive_suffix(archive_path)
-    # Extract into a dedicated directory under `dest_dir` using stripped name
-    target = dest_dir / extract_root.name
-    if target.exists():
-        if not overwrite_extracted:
-            logger.info(
-                f"Extracted directory already exists. "
-                f"Skipping extraction: `{str(target)}`"
-            )
-            return target
-
-        logger.info(f"Overwriting existing extracted directory: `{str(target)}`")
-        shutil.rmtree(target)
-
-    target.mkdir(parents=True, exist_ok=True)
-
-    if archive_path.suffix == ".zip":
-        with zipfile.ZipFile(archive_path, "r") as zf:
-            zf.extractall(target)
-    elif archive_path.name.endswith(TAR_GZ_SUFFIX) or archive_path.suffix == ".tgz":
-        with tarfile.open(archive_path, "r:gz") as tf:
-            tf.extractall(path=target, filter="fully_trusted")
-    else:
-        raise ValueError(
-            f"Unsupported archive type for `{archive_path.name}`. Expected .tar.gz, .tgz, or .zip."
+    try:
+        dataset_details = get_dataset_details(dataset_id)
+        return dataset_details.get("id", "")
+    except FileNotFoundError:
+        raise RuntimeError(
+            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
         )
-    return target
-
-
-def _strip_archive_suffix(path: Path) -> Path:
-    """
-    Strip known archive suffixes from the filename.
-    Args:
-        path: Path to the archive file.
-    Returns:
-        Path with the archive suffix removed.
-    """
-    name = path.name
-    if name.endswith(TAR_GZ_SUFFIX):
-        return path.with_name(name[: -len(TAR_GZ_SUFFIX)])
-    if name.endswith(".tgz"):
-        return path.with_name(name[: -len(".tgz")])
-    if name.endswith(".zip"):
-        return path.with_name(name[: -len(".zip")])
-    # Unknown; drop one suffix if present
-    return path.with_suffix("")

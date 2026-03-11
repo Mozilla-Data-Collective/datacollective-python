@@ -11,7 +11,7 @@ from datacollective.api_utils import (
     HTTP_TIMEOUT,
     _get_api_url,
     _prepare_download_headers,
-    send_api_request,
+    _send_api_request,
 )
 from datacollective.errors import DownloadError
 from datacollective.models import NonEmptyStrModel
@@ -31,7 +31,7 @@ class DownloadPlan(NonEmptyStrModel):
     checksum_filepath: Path
 
 
-def get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
+def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
     """
     Send a POST request to the API to receive the download session details for a dataset.
 
@@ -59,11 +59,11 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
     if not dataset_id or not dataset_id.strip():
         raise ValueError("`dataset_id` must be a non-empty string")
 
-    base_dir = resolve_download_dir(download_directory)
+    base_dir = _resolve_download_dir(download_directory)
 
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    resp = send_api_request(method="POST", url=session_url)
+    resp = _send_api_request(method="POST", url=session_url)
 
     payload: dict[str, Any] = dict(resp.json())
     download_url = payload.get("downloadUrl")
@@ -96,7 +96,7 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
     return download_plan
 
 
-def determine_resume_state(download_plan: DownloadPlan) -> str | None:
+def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
     """
     Determine whether to resume a download based on existing files.
 
@@ -136,7 +136,7 @@ def determine_resume_state(download_plan: DownloadPlan) -> str | None:
                 "Dataset has been updated since the previous download attempt. "
                 "Starting fresh download..."
             )
-            cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
+            _cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
             return None
 
     # Case 3: .part exists but no .checksum: cannot safely resume -> start fresh
@@ -144,19 +144,63 @@ def determine_resume_state(download_plan: DownloadPlan) -> str | None:
         logger.warning(
             "Partial download found without checksum file. Starting fresh download..."
         )
-        cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
+        _cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
         return None
 
     # Case 4: .checksum exists but no .part -> start fresh
     if checksum_file_exists and not part_exists:
-        cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
+        _cleanup_partial_download(tmp_filepath, download_plan.checksum_filepath)
         return None
 
     # Case 5: Neither .checksum nor .part exist -> start fresh
     return None
 
 
-def execute_download_plan(
+def _resolve_and_execute_download_plan(
+    download_plan: DownloadPlan,
+    show_progress: bool,
+    overwrite_existing: bool,
+) -> Path:
+    """Persist a planned dataset download to disk with the given analytics source."""
+    # Case 1: Skip download if complete dataset archive already exists
+    if download_plan.target_filepath.exists() and not overwrite_existing:
+        logger.info(
+            f"File already exists. "
+            f"Skipping download: `{str(download_plan.target_filepath)}`"
+        )
+        return Path(download_plan.target_filepath)
+
+    # If overwriting, clean up any existing complete or partial download files
+    if overwrite_existing:
+        _cleanup_partial_download(
+            download_plan.tmp_filepath, download_plan.checksum_filepath
+        )
+        if download_plan.target_filepath.exists():
+            download_plan.target_filepath.unlink()
+
+    # Determine whether to resume download based on existing .checksum and .part files
+    resume_checksum = _determine_resume_state(download_plan)
+
+    # Write checksum file before starting download (for potential resume later)
+    if download_plan.checksum and not resume_checksum:
+        _write_checksum_file(download_plan.checksum_filepath, download_plan.checksum)
+
+    _execute_download_plan(
+        download_plan,
+        resume_checksum,
+        show_progress,
+    )
+
+    # Download complete. Rename temp file to target and remove checksum file
+    download_plan.tmp_filepath.replace(download_plan.target_filepath)
+    if download_plan.checksum_filepath.exists():
+        download_plan.checksum_filepath.unlink()
+
+    logger.info(f"Saved dataset to `{str(download_plan.target_filepath)}`")
+    return Path(download_plan.target_filepath)
+
+
+def _execute_download_plan(
     download_plan: DownloadPlan,
     resume_download_checksum: str | None,
     show_progress: bool,
@@ -186,7 +230,7 @@ def execute_download_plan(
         progress_bar.update(downloaded_bytes_so_far)
         progress_bar._display()
     try:
-        with send_api_request(
+        with _send_api_request(
             method="GET",
             url=download_plan.download_url,
             stream=True,
@@ -217,7 +261,7 @@ def execute_download_plan(
         ) from e
 
 
-def resolve_download_dir(download_directory: str | None) -> Path:
+def _resolve_download_dir(download_directory: str | None) -> Path:
     """
     Resolve and ensure the download directory exists and is writable.
 
@@ -245,7 +289,7 @@ def _get_checksum_filepath(target_filepath: Path) -> Path:
     return target_filepath.with_suffix(target_filepath.suffix + ".checksum")
 
 
-def write_checksum_file(checksum_filepath: Path, checksum: str) -> None:
+def _write_checksum_file(checksum_filepath: Path, checksum: str) -> None:
     """Write the checksum to the .checksum file."""
     checksum_filepath.write_text(checksum)
 
@@ -257,7 +301,7 @@ def _read_checksum_file(checksum_filepath: Path) -> str | None:
     return checksum_filepath.read_text().strip()
 
 
-def cleanup_partial_download(tmp_filepath: Path, checksum_filepath: Path) -> None:
+def _cleanup_partial_download(tmp_filepath: Path, checksum_filepath: Path) -> None:
     """Remove partial download files (.part and .checksum)."""
     if tmp_filepath.exists():
         tmp_filepath.unlink()

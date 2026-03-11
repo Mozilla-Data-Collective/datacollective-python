@@ -13,17 +13,6 @@ logger = logging.getLogger(__name__)
 _PKG_LOGGER = logging.getLogger("datacollective")
 
 
-def _enable_verbose(verbose: bool) -> None:
-    if not verbose:
-        return
-    handler = logging.StreamHandler()
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    )
-    _PKG_LOGGER.handlers = [handler]
-    _PKG_LOGGER.setLevel(logging.INFO)
-
-
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
 SCHEMA_REGISTRY_RAW_BASE_URL = (
     "https://raw.githubusercontent.com/Mozilla-Data-Collective/dataset-schema-registry"
@@ -36,7 +25,7 @@ HTTP_TIMEOUT = (10, 60)  # (connect, read)
 load_dotenv(find_dotenv())
 
 
-def send_api_request(
+def _send_api_request(
     method: str,
     url: str,
     stream: bool = False,
@@ -183,3 +172,14 @@ def _format_bytes(bytes_val: int) -> str:
             return f"{value:.1f} {unit}"
         value /= 1024.0
     return ""
+
+
+def _enable_verbose(verbose: bool) -> None:
+    if not verbose:
+        return
+    handler = logging.StreamHandler()
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
+    )
+    _PKG_LOGGER.handlers = [handler]
+    _PKG_LOGGER.setLevel(logging.INFO)

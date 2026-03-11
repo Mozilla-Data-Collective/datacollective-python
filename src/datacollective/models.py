@@ -204,6 +204,29 @@ class DatasetSubmission(NonEmptyStrModel):
         return self
 
 
+def _ensure_submission_model(submission: DatasetSubmission) -> DatasetSubmission:
+    if not isinstance(submission, DatasetSubmission):
+        raise TypeError("`submission` must be a DatasetSubmission model")
+    return submission
+
+
+def _payload_for_fields(
+    submission: DatasetSubmission, allowed_fields: set[str]
+) -> dict[str, Any]:
+    data = submission.model_dump(mode="json", exclude_none=True)
+    payload = {key: value for key, value in data.items() if key in allowed_fields}
+
+    if "licenseAbbreviation" in allowed_fields and isinstance(
+        submission.licenseAbbreviation, License
+    ):
+        payload["licenseAbbreviation"] = submission.licenseAbbreviation.value
+        # Remove custom license fields if a predefined license is used
+        payload.pop("license", None)
+        payload.pop("licenseUrl", None)
+
+    return payload
+
+
 class UploadPart(BaseModel):
     """A single multipart upload part."""
 
