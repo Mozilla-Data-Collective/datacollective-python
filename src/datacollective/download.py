@@ -31,7 +31,11 @@ class DownloadPlan(NonEmptyStrModel):
     checksum_filepath: Path
 
 
-def get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
+def get_download_plan(
+    dataset_id: str,
+    download_directory: str | None,
+    download_source: str | None = None,
+) -> DownloadPlan:
     """
     Send a POST request to the API to receive the download session details for a dataset.
 
@@ -39,6 +43,7 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
         dataset_id: The dataset ID (as shown in MDC platform).
         download_directory: Directory where to save the downloaded dataset.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
+        download_source: Optional context appended to the User-Agent for download analytics.
 
     Returns:
         a DownloadPlan containing:
@@ -63,7 +68,9 @@ def get_download_plan(dataset_id: str, download_directory: str | None) -> Downlo
 
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    resp = send_api_request(method="POST", url=session_url)
+    resp = send_api_request(
+        method="POST", url=session_url, source_function=download_source
+    )
 
     payload: dict[str, Any] = dict(resp.json())
     download_url = payload.get("downloadUrl")
@@ -160,6 +167,7 @@ def execute_download_plan(
     download_plan: DownloadPlan,
     resume_download_checksum: str | None,
     show_progress: bool,
+    download_source: str | None = None,
 ) -> None:
     """
     Execute the download plan, downloading the dataset to a temporary path.
@@ -168,6 +176,7 @@ def execute_download_plan(
         download_plan: The DownloadPlan object with download details.
         resume_download_checksum: Provide the checksum to resume a previously interrupted download.
         show_progress: Whether to show a progress bar during download.
+        download_source: Optional context appended to the User-Agent for download analytics.
 
     Raises:
         DownloadError: If the download fails or is interrupted.
@@ -193,6 +202,7 @@ def execute_download_plan(
             timeout=HTTP_TIMEOUT,
             extra_headers=headers,
             include_auth_headers=False,  # Download URL is pre-signed, no auth needed
+            source_function=download_source,
         ) as response:
             with open(download_plan.tmp_filepath, "ab") as f:
                 # Iterate over response in 64KB chunks to avoid using too much memory

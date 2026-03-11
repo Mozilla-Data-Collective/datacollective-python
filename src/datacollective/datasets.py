@@ -26,6 +26,8 @@ from datacollective.schema import get_dataset_schema
 
 logger = logging.getLogger(__name__)
 TAR_GZ_SUFFIX = ".tar.gz"
+DOWNLOAD_SOURCE_SAVE = "save_dataset_to_disk"
+DOWNLOAD_SOURCE_LOAD = "load_dataset"
 
 
 def _resolve_dataset_id(dataset_id: str) -> str:
@@ -109,11 +111,13 @@ def save_dataset_to_disk(
     download_plan = get_download_plan(
         _id,
         download_directory,
+        download_source=DOWNLOAD_SOURCE_SAVE,
     )
     return _resolve_and_execute_download_plan(
         download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        download_source=DOWNLOAD_SOURCE_SAVE,
     )
 
 
@@ -121,6 +125,7 @@ def _resolve_and_execute_download_plan(
     download_plan: DownloadPlan,
     show_progress: bool,
     overwrite_existing: bool,
+    download_source: str,
 ) -> Path:
     """Persist a planned dataset download to disk with the given analytics source."""
     # Case 1: Skip download if complete dataset archive already exists
@@ -150,6 +155,7 @@ def _resolve_and_execute_download_plan(
         download_plan,
         resume_checksum,
         show_progress,
+        download_source=download_source,
     )
 
     # Download complete. Rename temp file to target and remove checksum file
@@ -213,6 +219,7 @@ def load_dataset(
     download_plan = get_download_plan(
         _id,
         download_directory,
+        download_source=DOWNLOAD_SOURCE_LOAD,
     )
     archive_checksum = download_plan.checksum
 
@@ -220,6 +227,7 @@ def load_dataset(
         download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        download_source=DOWNLOAD_SOURCE_LOAD,
     )
     base_dir = resolve_download_dir(download_directory)
     extract_dir = _extract_archive(
