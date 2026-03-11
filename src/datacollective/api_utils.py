@@ -152,7 +152,7 @@ def _get_user_agent(source_function: str | None = None) -> str:
         f"datacollective-python/{__version__} (Python {python_version}; {system})"
     )
     if source_function:
-        user_agent = f"{user_agent} init by: {source_function}"
+        user_agent = f"{user_agent} source function: {source_function}"
     return user_agent
 
 
