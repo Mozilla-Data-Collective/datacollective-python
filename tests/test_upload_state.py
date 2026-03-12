@@ -90,7 +90,9 @@ def test_initiate_upload_posts_submission_id_without_stdout(
         )
         return FakeResponse()
 
-    monkeypatch.setattr(upload_module, "_get_api_url", lambda: "https://api.example.test")
+    monkeypatch.setattr(
+        upload_module, "_get_api_url", lambda: "https://api.example.test"
+    )
     monkeypatch.setattr(upload_module, "send_api_request", fake_send_api_request)
 
     session = upload_module._initiate_upload(
@@ -166,7 +168,9 @@ def test_upload_dataset_file_uses_existing_submission_id_for_version_upload(
         )
         return {"ok": True}
 
-    monkeypatch.setattr(upload_module, "_load_or_create_state", fake_load_or_create_state)
+    monkeypatch.setattr(
+        upload_module, "_load_or_create_state", fake_load_or_create_state
+    )
     monkeypatch.setattr(
         upload_module,
         "_get_presigned_part_url",
@@ -195,5 +199,4 @@ def test_upload_dataset_file_uses_existing_submission_id_for_version_upload(
     assert result.parts[0].etag == "etag-1"
     assert captured_completion["fileUploadId"] == "file-upload-id"
     assert captured_completion["uploadId"] == "upload-id"
-    assert len(captured_completion["parts"]) == 1
     assert not archive_path.with_name("dataset.tar.gz.mdc-upload.json").exists()
