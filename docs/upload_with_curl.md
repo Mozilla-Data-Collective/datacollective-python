@@ -98,54 +98,15 @@ The upload flow uses several API calls under the hood:
 3. Upload each part directly to the presigned storage URL
 4. Complete the upload with `POST /uploads/{fileUploadId}`
 
-### Upload script
+### Upload commands
 
-The shell script below performs the full multipart upload and prints the resulting `fileUploadId`.
+The commands below perform the full multipart upload and export the resulting `FILE_UPLOAD_ID` for the next steps.
 
-It:
+This version keeps the commands intentionally minimal and assumes your environment variables and inputs are already valid.
 
-- asks the API for the multipart upload session
-- calculates the file checksum
-- uploads each part in order
-- records each returned `ETag`
-- completes the upload
+Paste the full sequence into your shell:
 
 ```bash
-cat > upload_mdc_file.sh <<'EOF'
-#!/usr/bin/env sh
-set -eu
-
-if [ -z "${MDC_API_KEY:-}" ]; then
-  echo "MDC_API_KEY is required" >&2
-  exit 1
-fi
-
-API_BASE="${MDC_API_URL:-https://datacollective.mozillafoundation.org/api}"
-FILE_PATH="${1:?usage: upload_mdc_file.sh /path/to/dataset.tar.gz submission-id}"
-SUBMISSION_ID="${2:?usage: upload_mdc_file.sh /path/to/dataset.tar.gz submission-id}"
-
-if [ ! -f "$FILE_PATH" ]; then
-  echo "File not found: $FILE_PATH" >&2
-  exit 1
-fi
-
-FILE_NAME="$(basename "$FILE_PATH")"
-FILE_SIZE="$(wc -c < "$FILE_PATH" | tr -d ' ')"
-
-if [ "$FILE_SIZE" -le 0 ]; then
-  echo "File must be non-empty: $FILE_PATH" >&2
-  exit 1
-fi
-
-if [ "$FILE_SIZE" -gt 80000000000 ]; then
-  echo "File exceeds the 80 GB upload limit: $FILE_PATH" >&2
-  exit 1
-fi
-
-log() {
-  printf '%s\n' "$*" >&2
-}
-
 compute_sha256() {
   if command -v sha256sum >/dev/null 2>&1; then
     sha256sum "$1" | awk '{print $1}'
@@ -155,7 +116,7 @@ compute_sha256() {
 }
 
 CHECKSUM="$(compute_sha256 "$FILE_PATH")"
-log "Checksum: $CHECKSUM"
+FILE_SIZE="$(wc -c < "$FILE_PATH" | tr -d ' ')"
 
 INITIATE_RESPONSE=$(curl --silent --show-error --fail \
   --request POST \
@@ -169,45 +130,20 @@ INITIATE_RESPONSE=$(curl --silent --show-error --fail \
     --argjson fileSize "$FILE_SIZE" \
     '{submissionId: $submissionId, filename: $filename, fileSize: $fileSize, mimeType: $mimeType}')")
 
-FILE_UPLOAD_ID="$(printf '%s' "$INITIATE_RESPONSE" | jq -r '.fileUploadId')"
+export FILE_UPLOAD_ID="$(printf '%s' "$INITIATE_RESPONSE" | jq -r '.fileUploadId')"
 UPLOAD_ID="$(printf '%s' "$INITIATE_RESPONSE" | jq -r '.uploadId')"
 PART_SIZE="$(printf '%s' "$INITIATE_RESPONSE" | jq -r '.partSize')"
-
-if [ -z "$FILE_UPLOAD_ID" ] || [ "$FILE_UPLOAD_ID" = "null" ]; then
-  echo "Upload initiation did not return fileUploadId" >&2
-  exit 1
-fi
-
-if [ -z "$PART_SIZE" ] || [ "$PART_SIZE" = "null" ]; then
-  echo "Upload initiation did not return partSize" >&2
-  exit 1
-fi
-
 TOTAL_PARTS=$(( (FILE_SIZE + PART_SIZE - 1) / PART_SIZE ))
 PARTS_JSON='[]'
 
-log "Upload session created"
-log "fileUploadId=$FILE_UPLOAD_ID"
-log "uploadId=$UPLOAD_ID"
-log "partSize=$PART_SIZE"
-log "totalParts=$TOTAL_PARTS"
-
 PART_NUMBER=1
 while [ "$PART_NUMBER" -le "$TOTAL_PARTS" ]; do
-  log "Uploading part $PART_NUMBER/$TOTAL_PARTS"
-
   PRESIGNED_RESPONSE=$(curl --silent --show-error --fail \
     --request GET \
     --url "$API_BASE/uploads/$FILE_UPLOAD_ID/parts/$PART_NUMBER" \
     --header "Authorization: Bearer $MDC_API_KEY")
 
   PRESIGNED_URL="$(printf '%s' "$PRESIGNED_RESPONSE" | jq -r '.url // .presignedUrl')"
-
-  if [ -z "$PRESIGNED_URL" ] || [ "$PRESIGNED_URL" = "null" ]; then
-    echo "Missing presigned URL for part $PART_NUMBER" >&2
-    exit 1
-  fi
-
   HEADERS_FILE="$(mktemp)"
 
   dd if="$FILE_PATH" bs="$PART_SIZE" skip=$((PART_NUMBER - 1)) count=1 2>/dev/null | \
@@ -218,13 +154,8 @@ while [ "$PART_NUMBER" -le "$TOTAL_PARTS" ]; do
       --output /dev/null \
       "$PRESIGNED_URL"
 
-  ETAG="$(grep -i '^ETag:' "$HEADERS_FILE" | tail -n 1 | cut -d' ' -f2- | tr -d '\r')"
+  ETAG="$(grep -i '^ETag:' "$HEADERS_FILE" | tail -n 1 | cut -d' ' -f2- | tr -d '\r' | sed 's/^"//; s/"$//')"
   rm -f "$HEADERS_FILE"
-
-  if [ -z "$ETAG" ]; then
-    echo "Could not read ETag for part $PART_NUMBER" >&2
-    exit 1
-  fi
 
   PARTS_JSON="$(printf '%s' "$PARTS_JSON" | jq \
     --argjson partNumber "$PART_NUMBER" \
@@ -234,7 +165,7 @@ while [ "$PART_NUMBER" -le "$TOTAL_PARTS" ]; do
   PART_NUMBER=$((PART_NUMBER + 1))
 done
 
-COMPLETE_RESPONSE=$(curl --silent --show-error --fail \
+curl --silent --show-error --fail \
   --request POST \
   --url "$API_BASE/uploads/$FILE_UPLOAD_ID" \
   --header "Authorization: Bearer $MDC_API_KEY" \
@@ -243,21 +174,9 @@ COMPLETE_RESPONSE=$(curl --silent --show-error --fail \
     --arg uploadId "$UPLOAD_ID" \
     --arg checksum "$CHECKSUM" \
     --argjson parts "$PARTS_JSON" \
-    '{uploadId: $uploadId, checksum: $checksum, parts: $parts}')")
+    '{uploadId: $uploadId, checksum: $checksum, parts: $parts}')" \
+  >/dev/null
 
-log "Upload completed"
-log "Completion response: $(printf '%s' "$COMPLETE_RESPONSE" | jq -c '.')"
-
-printf '%s\n' "$FILE_UPLOAD_ID"
-EOF
-
-chmod +x upload_mdc_file.sh
-```
-
-Run it like this:
-
-```bash
-export FILE_UPLOAD_ID="$(./upload_mdc_file.sh "$FILE_PATH" "$SUBMISSION_ID")"
 echo "Uploaded file. fileUploadId: $FILE_UPLOAD_ID"
 ```
 
@@ -363,13 +282,14 @@ Symptoms:
 
 Make sure you have attached `fileUploadId` and provided the required metadata fields expected by the platform for review.
 
-### 3. The upload script cannot read an `ETag`
+### 3. The upload commands cannot capture the `ETag` correctly
 
 Symptoms:
 
-- a part upload succeeds but the script exits with `Could not read ETag`
+- the multipart completion request fails after the part uploads finish
+- the uploaded part list contains empty or malformed `etag` values
 
-The multipart completion request needs the `ETag` for every uploaded part. If that header is missing or cannot be parsed, the upload cannot be completed safely.
+The multipart completion request needs the `ETag` for every uploaded part. If those values are missing or malformed, the upload cannot be completed safely.
 
 ### 4. Expired or invalid presigned URL
 
@@ -400,7 +320,7 @@ This upload flow expects a dataset archive uploaded as `application/gzip`, typic
 
 Symptoms:
 
-- local checks or API validation fail for very large archives
+- the upload request or completion request is rejected for a very large archive
 
 Dataset uploads must be **80 GB or smaller**.
 
