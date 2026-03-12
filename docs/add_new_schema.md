@@ -55,14 +55,14 @@ You can test your schema before submitting it. Place your `schema.yaml` in the f
 
 ```python
 from pathlib import Path
-from datacollective.schema import parse_schema
-from datacollective.schema_loaders.registry import load_dataset_from_schema
+from datacollective.schema import _parse_schema
+from datacollective.schema_loaders.registry import _load_dataset_from_schema
 
 # Path to your local schema
-schema = parse_schema(Path("path/to/extracted/schema.yaml"))
+schema = _parse_schema(Path("path/to/extracted/schema.yaml"))
 
 # Load using the schema
-df = load_dataset_from_schema(schema, extract_dir=Path("path/to/extracted/"))
+df = _load_dataset_from_schema(schema, extract_dir=Path("path/to/extracted/"))
 
 print(df.head())
 ```
