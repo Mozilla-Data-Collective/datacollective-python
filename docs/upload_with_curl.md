@@ -132,7 +132,7 @@ INITIATE_RESPONSE=$(curl --silent --show-error --fail \
 
 export FILE_UPLOAD_ID="$(printf '%s' "$INITIATE_RESPONSE" | jq -r '.fileUploadId')"
 UPLOAD_ID="$(printf '%s' "$INITIATE_RESPONSE" | jq -r '.uploadId')"
-PART_SIZE="$(printf '%s' "$INITIATE_RESPONSE" | jq -r '.partSize')"
+PART_SIZE="$(printf '%s' "$INITIATE_RESPONSE" | jq -r 'if (.partSize // 0) > 0 then .partSize else 5242880 end')"
 TOTAL_PARTS=$(( (FILE_SIZE + PART_SIZE - 1) / PART_SIZE ))
 PARTS_JSON='[]'
 
@@ -183,7 +183,7 @@ echo "Uploaded file. fileUploadId: $FILE_UPLOAD_ID"
 ### Notes about the raw upload flow
 
 - The upload request must use `application/gzip`
-- The part size comes from the API response to `POST /uploads`
+- Use the `partSize` from `POST /uploads` when present; if the API omits it, use `5242880` bytes (5 MiB), which matches the Python SDK fallback
 - The `ETag` from each uploaded part must be preserved and sent back when completing the upload
 - The final completion request must include the full-file SHA-256 checksum
 - The presigned upload URLs are storage URLs, so the `PUT` requests go directly to those URLs rather than back to the MDC API

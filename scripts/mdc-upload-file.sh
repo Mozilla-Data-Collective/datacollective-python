@@ -73,7 +73,7 @@ init_response="$(mdc_api_request_json POST '/uploads' "$init_payload")"
 
 FILE_UPLOAD_ID="$(mdc_json_get '.fileUploadId' "$init_response")"
 UPLOAD_ID="$(mdc_json_get '.uploadId' "$init_response")"
-PART_SIZE="$(mdc_json_get '.partSize' "$init_response")"
+PART_SIZE="$(printf '%s' "$init_response" | jq -r 'if (.partSize // 0) > 0 then .partSize else 5242880 end')"
 TOTAL_PARTS=$(( (FILE_SIZE + PART_SIZE - 1) / PART_SIZE ))
 PARTS_JSON='[]'
 
