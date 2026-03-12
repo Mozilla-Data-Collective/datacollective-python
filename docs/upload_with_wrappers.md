@@ -51,36 +51,24 @@ If `MDC_API_URL` is omitted, the scripts default to the production API base URL.
 
 The update and workflow commands expect a JSON file containing submission metadata in the same shape as the `DatasetSubmission` API payload.
 
-Example `submission.json`:
+A ready-to-edit example is included in the repository at `scripts/submission.json`.
+
+You can copy it and customize it, or point the wrapper scripts at it directly while testing:
 
 ```bash
-cat > submission.json <<'EOF'
-{
-  "name": "Dataset Name",
-  "shortDescription": "A brief description of the dataset.",
-  "longDescription": "A detailed description of the dataset.",
-  "locale": "en-US",
-  "task": "ASR",
-  "format": "TSV",
-  "licenseAbbreviation": "CC-BY-4.0",
-  "other": "A detailed datasheet-style description of the dataset contents.",
-  "restrictions": "No restrictions.",
-  "forbiddenUsage": "Do not use for unlawful purposes.",
-  "additionalConditions": "No additional conditions.",
-  "pointOfContactFullName": "Jane Doe",
-  "pointOfContactEmail": "jane@example.com",
-  "fundedByFullName": "Funder Name",
-  "fundedByEmail": "funder@example.com",
-  "legalContactFullName": "Legal Name",
-  "legalContactEmail": "legal@example.com",
-  "createdByFullName": "Creator Name",
-  "createdByEmail": "creator@example.com",
-  "intendedUsage": "Describe the intended usage of the dataset.",
-  "ethicalReviewProcess": "Describe the ethical review process.",
-  "exclusivityOptOut": false
-}
-EOF
+cp scripts/submission.json my-submission.json
 ```
+
+The example file includes fields such as:
+
+- `name`
+- `shortDescription`
+- `longDescription`
+- `locale`
+- `task`
+- `format`
+- `licenseAbbreviation`
+- contact and usage metadata fields
 
 The full workflow script requires `name` in this file, because it uses that value when creating the draft submission.
 
@@ -91,7 +79,7 @@ The fastest way to use the wrappers is the end-to-end script:
 ```bash
 bash scripts/mdc-upload-workflow.sh \
   --file /path/to/dataset.tar.gz \
-  --metadata-file submission.json
+  --metadata-file scripts/submission.json
 ```
 
 By default, it prints a JSON summary at the end:
@@ -109,7 +97,7 @@ If you prefer simple key/value output instead, use:
 ```bash
 bash scripts/mdc-upload-workflow.sh \
   --file /path/to/dataset.tar.gz \
-  --metadata-file submission.json \
+  --metadata-file scripts/submission.json \
   --output summary
 ```
 
@@ -172,7 +160,7 @@ bash scripts/mdc-upload-file.sh \
 ```bash
 bash scripts/mdc-upload-update.sh \
   --submission-id "$SUBMISSION_ID" \
-  --metadata-file submission.json \
+  --metadata-file scripts/submission.json \
   --file-upload-id "$FILE_UPLOAD_ID"
 ```
 
@@ -181,7 +169,7 @@ By default, this prints the updated submission JSON. If you only need the submis
 ```bash
 bash scripts/mdc-upload-update.sh \
   --submission-id "$SUBMISSION_ID" \
-  --metadata-file submission.json \
+  --metadata-file scripts/submission.json \
   --file-upload-id "$FILE_UPLOAD_ID" \
   --output id
 ```
@@ -211,36 +199,12 @@ For most local shell usage, this is the most practical flow:
 export MDC_API_KEY="your-api-key-here"
 export MDC_API_URL="https://datacollective.mozillafoundation.org/api"
 
-cat > submission.json <<'EOF'
-{
-  "name": "Dataset Name",
-  "shortDescription": "A brief description of the dataset.",
-  "longDescription": "A detailed description of the dataset.",
-  "locale": "en-US",
-  "task": "ASR",
-  "format": "TSV",
-  "licenseAbbreviation": "CC-BY-4.0",
-  "other": "A detailed datasheet-style description of the dataset contents.",
-  "restrictions": "No restrictions.",
-  "forbiddenUsage": "Do not use for unlawful purposes.",
-  "additionalConditions": "No additional conditions.",
-  "pointOfContactFullName": "Jane Doe",
-  "pointOfContactEmail": "jane@example.com",
-  "fundedByFullName": "Funder Name",
-  "fundedByEmail": "funder@example.com",
-  "legalContactFullName": "Legal Name",
-  "legalContactEmail": "legal@example.com",
-  "createdByFullName": "Creator Name",
-  "createdByEmail": "creator@example.com",
-  "intendedUsage": "Describe the intended usage of the dataset.",
-  "ethicalReviewProcess": "Describe the ethical review process.",
-  "exclusivityOptOut": false
-}
-EOF
+cp scripts/submission.json my-submission.json
+# Edit my-submission.json before uploading
 
 bash scripts/mdc-upload-workflow.sh \
   --file /path/to/dataset.tar.gz \
-  --metadata-file submission.json \
+  --metadata-file my-submission.json \
   --output summary
 ```
 

@@ -1,0 +1,25 @@
+{
+  "name": "Dataset Name",
+  "shortDescription": "A brief description of the dataset.",
+  "longDescription": "A detailed description of the dataset.",
+  "locale": "en-US",
+  "task": "ASR",
+  "format": "TSV",
+  "licenseAbbreviation": "CC-BY-4.0",
+  "other": "A detailed datasheet-style description of the dataset contents.",
+  "restrictions": "No restrictions.",
+  "forbiddenUsage": "Do not use for unlawful purposes.",
+  "additionalConditions": "No additional conditions.",
+  "pointOfContactFullName": "Jane Doe",
+  "pointOfContactEmail": "jane@example.com",
+  "fundedByFullName": "Funder Name",
+  "fundedByEmail": "funder@example.com",
+  "legalContactFullName": "Legal Name",
+  "legalContactEmail": "legal@example.com",
+  "createdByFullName": "Creator Name",
+  "createdByEmail": "creator@example.com",
+  "intendedUsage": "Describe the intended usage of the dataset.",
+  "ethicalReviewProcess": "Describe the ethical review process.",
+  "exclusivityOptOut": false
+}
+
