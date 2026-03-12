@@ -177,10 +177,10 @@ def test_get_download_plan_forwards_download_source(
         return FakeResponse()
 
     monkeypatch.setattr(
-        "datacollective.download.resolve_download_dir", fake_resolve_download_dir
+        "datacollective.download._resolve_download_dir", fake_resolve_download_dir
     )
     monkeypatch.setattr(
-        "datacollective.download.send_api_request", fake_send_api_request
+        "datacollective.download._send_api_request", fake_send_api_request
     )
 
     plan = _get_download_plan(
@@ -217,7 +217,7 @@ def test_execute_download_plan_forwards_download_source(
         return FakeResponse()
 
     monkeypatch.setattr(
-        "datacollective.download.send_api_request", fake_send_api_request
+        "datacollective.download._send_api_request", fake_send_api_request
     )
 
     _execute_download_plan(
