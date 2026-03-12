@@ -4,20 +4,20 @@ Mozilla Data Collective Python Client Library
 
 import logging
 
-from .datasets import (
+from datacollective.datasets import (
     download_dataset,
     get_dataset_details,
     load_dataset,
     save_dataset_to_disk,
 )
-from .models import DatasetSubmission, License, Task
-from .submissions import (
+from datacollective.models import DatasetSubmission, License, Task
+from datacollective.submissions import (
     create_submission_draft,
     create_submission_with_upload,
     submit_submission,
     update_submission,
 )
-from .upload import upload_dataset_file
+from datacollective.upload import upload_dataset_file
 
 __all__ = [
     "download_dataset",
