@@ -97,7 +97,6 @@ def _initiate_upload(
     url = f"{_get_api_url()}/uploads"
     resp = send_api_request("POST", url, json_body=payload.model_dump())
     data = dict(resp.json())
-    print(data)
     session_payload = {
         "fileUploadId": str(data.get("fileUploadId", "")),
         "uploadId": str(data.get("uploadId", "")),
@@ -168,10 +167,13 @@ def upload_dataset_file(
     Upload a dataset file using multipart uploads with resumable state.
 
     Uploads are limited to 80GB and use the `application/gzip` MIME type.
+    Pass the submission ID of the target dataset submission. This works for
+    both draft submissions and for uploading a new `.tar.gz` version to an
+    already approved dataset submission.
 
     Args:
         file_path: Path to the dataset archive on disk.
-        submission_id: Dataset submission ID.
+        submission_id: Dataset submission ID (not the dataset ID).
         state_path: Optional path to persist upload state. Defaults to
             `<filename>.mdc-upload.json` alongside the archive.
         verbose: Whether to enable detailed logging during the upload.
@@ -354,7 +356,7 @@ def _upload_missing_parts(
     with open(path, "rb") as file_handle:
         for part_index in range(expected_parts):
             part_number = part_index + 1
-            chunk = file_handle.read(state.partSize)
+            chunk = bytearray(file_handle.read(state.partSize))
             if not chunk:
                 break
             bytes_read += len(chunk)
