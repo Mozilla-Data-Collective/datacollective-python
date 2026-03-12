@@ -5,6 +5,8 @@ repo_name: datacollective-python
 nav:
   - Home: index.md
   - Programmatic Uploads: upload.md
+  - Uploading with bash wrapper scripts: upload_with_wrappers.md
+  - Uploading with curl: upload_with_curl.md
   - Schema-Based Loading:
     - How it works: schema_documentation.md
     - Adding a New Schema: add_new_schema.md

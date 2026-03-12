@@ -2,6 +2,8 @@
 
 This guide explains how to programmatically upload datasets to the Mozilla Data Collective using the `datacollective` Python SDK.
 
+If you want a terminal-based workflow without writing Python, see [Uploading with bash wrapper scripts](upload_with_wrappers.md). If you want to call the upload endpoints directly from the terminal instead of using wrappers, see [Uploading with curl and the raw API](upload_with_curl.md).
+
 ## Overview
 
 The SDK provides a complete workflow for uploading datasets:

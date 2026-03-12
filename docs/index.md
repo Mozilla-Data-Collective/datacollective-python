@@ -98,6 +98,8 @@ The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets
 The SDK supports creating dataset submissions and uploading files with resumable uploads. 
 The upload state is stored in a JSON file alongside the archive so interrupted uploads can resume automatically.
 
+If you want a terminal-based workflow without writing Python, see [Uploading with bash wrapper scripts](upload_with_wrappers.md). If you want to work directly with the HTTP endpoints from a shell script, see [Uploading with curl and the raw API](upload_with_curl.md).
+
 ```python
 from datacollective import DatasetSubmission, License, Task, create_submission_with_upload
 
