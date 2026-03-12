@@ -1060,7 +1060,7 @@
 <h3 id="data-flow">Data Flow</h3>
 <p>When a user calls <code>load_dataset("id")</code>:</p>
 <ol>
-<li><strong><code>save_dataset_to_disk()</code></strong>: Downloads the archive. (Skipped if already downloaded)</li>
+<li><strong><code>download_dataset()</code></strong>: Downloads the archive. (Skipped if already downloaded; previously called <code>save_dataset_to_disk()</code>)</li>
 <li><strong><code>_extract_archive()</code></strong>: Extracts it to a local directory. (Skipped if already extracted)</li>
 <li><strong><code>_resolve_schema()</code></strong>: Locates or downloads <code>schema.yaml</code>.</li>
 <li><strong><code>parse_schema()</code></strong>: Validates YAML into a <code>DatasetSchema</code> object.</li>

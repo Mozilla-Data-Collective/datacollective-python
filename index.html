@@ -1121,14 +1121,18 @@ project root or present working directory.</p>
 <p>You can find the <code>dataset-id</code> by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the <code>/datasets/</code> path. For example, for URL <code>https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn</code> dataset id will be <code>cmflnuzw6lrt9e6ui4kwcshvn</code>.</p>
 </div>
 <h3 id="download-a-dataset">Download a dataset</h3>
-<p>Use <code>save_dataset_to_disk</code> to download a dataset to the configured download path:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">save_dataset_to_disk</span>
+<p>Use <code>download_dataset</code> to download a dataset to the configured download path:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">download_dataset</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">save_dataset_to_disk</span><span class="p">(</span><span class="s2">&quot;your-dataset-id&quot;</span><span class="p">)</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">download_dataset</span><span class="p">(</span><span class="s2">&quot;your-dataset-id&quot;</span><span class="p">)</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># Depending on the implementation, `dataset` may contain metadata</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># about the downloaded files or a higher-level dataset object.</span>
 </span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code>download_dataset</code> was previously called <code>save_dataset_to_disk</code>. The old name still works for backward compatibility, but it is deprecated and new code should use <code>download_dataset</code>.</p>
+</div>
 <p>The files will be stored under <code>MDC_DOWNLOAD_PATH</code> (default <code>~/.mozdata/datasets</code>).</p>
 <h2 id="programmatic-submissions-and-uploads">Programmatic submissions and uploads</h2>
 <p>The SDK supports creating dataset submissions and uploading files with resumable uploads. 
@@ -1212,7 +1216,7 @@ to filter, aggregate, and analyze the data.</p>
 <h3 id="automatic-download-resume">Automatic Download Resume</h3>
 <p>The SDK automatically handles interrupted downloads. If a download is interrupted
 for any reason (network error, user cancellation, system shutdown, etc.), the SDK
-will automatically resume from where it left off when you call <code>save_dataset_to_disk</code>
+will automatically resume from where it left off when you call <code>download_dataset</code>
 or <code>load_dataset</code> again.</p>
 <p><strong>How it works:</strong></p>
 <ol>
