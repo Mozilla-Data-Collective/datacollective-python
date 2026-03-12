@@ -77,16 +77,19 @@ MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 
 ### Download a dataset
 
-Use `save_dataset_to_disk` to download a dataset to the configured download path:
+Use `download_dataset` to download a dataset to the configured download path:
 
 ```python
-from datacollective import save_dataset_to_disk
+from datacollective import download_dataset
 
-dataset = save_dataset_to_disk("your-dataset-id")
+dataset = download_dataset("your-dataset-id")
 
 # Depending on the implementation, `dataset` may contain metadata
 # about the downloaded files or a higher-level dataset object.
 ```
+
+!!! note
+    `download_dataset` was previously called `save_dataset_to_disk`. The old name still works for backward compatibility, but it is deprecated and new code should use `download_dataset`.
 
 The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets`).
 
@@ -184,7 +187,7 @@ print(info)
 
 The SDK automatically handles interrupted downloads. If a download is interrupted
 for any reason (network error, user cancellation, system shutdown, etc.), the SDK
-will automatically resume from where it left off when you call `save_dataset_to_disk`
+will automatically resume from where it left off when you call `download_dataset`
 or `load_dataset` again.
 
 **How it works:**

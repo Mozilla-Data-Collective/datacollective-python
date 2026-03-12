@@ -1,4 +1,5 @@
 import logging
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,8 @@ from datacollective.api_utils import (
 )
 from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
+    DOWNLOAD_SOURCE_SAVE,
+    DOWNLOAD_SOURCE_LOAD,
     _get_download_plan,
     _resolve_download_dir,
     _resolve_and_execute_download_plan,
@@ -46,7 +49,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     return dict(resp.json())
 
 
-def save_dataset_to_disk(
+def download_dataset(
     dataset_id: str,
     download_directory: str | None = None,
     show_progress: bool = True,
@@ -58,6 +61,9 @@ def save_dataset_to_disk(
 
     Automatically resumes interrupted downloads if a matching .checksum file exists from a
     previous attempt.
+
+    Note: Previously called `save_dataset_to_disk`, which remains available as a
+    deprecated alias for backward compatibility.
 
     Args:
         dataset_id: The dataset ID (as shown in MDC platform) or slug.
@@ -80,11 +86,13 @@ def save_dataset_to_disk(
     download_plan = _get_download_plan(
         _id,
         download_directory,
+        download_source=DOWNLOAD_SOURCE_SAVE,
     )
     return _resolve_and_execute_download_plan(
         download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        download_source=DOWNLOAD_SOURCE_SAVE,
     )
 
 
@@ -133,13 +141,14 @@ def load_dataset(
     if schema is None:
         raise RuntimeError(
             f"Dataset '{_id}' exists but is not supported by load_dataset yet. "
-            f"You can download the raw archive with: save_dataset_to_disk('{_id}'). "
+            f"You can download the raw archive with: download_dataset('{_id}'). "
             f"If you are the data owner consider submitting a schema for your dataset via the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
         )
 
     download_plan = _get_download_plan(
         _id,
         download_directory,
+        download_source=DOWNLOAD_SOURCE_LOAD,
     )
     archive_checksum = download_plan.checksum
 
@@ -147,6 +156,7 @@ def load_dataset(
         download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        download_source=DOWNLOAD_SOURCE_LOAD,
     )
     base_dir = _resolve_download_dir(download_directory)
     extract_dir = _extract_archive(
@@ -179,3 +189,28 @@ def resolve_dataset_id(dataset_id: str) -> str:
         raise RuntimeError(
             f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
         )
+
+
+def save_dataset_to_disk(
+    dataset_id: str,
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
+) -> Path:
+    """
+    Deprecated alias for `download_dataset`.
+
+    Use `download_dataset` instead. This name is kept for backward compatibility.
+    """
+    warnings.warn(
+        "`save_dataset_to_disk` is deprecated and will be removed in a future "
+        "release. Use `download_dataset` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return download_dataset(
+        dataset_id=dataset_id,
+        download_directory=download_directory,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+    )

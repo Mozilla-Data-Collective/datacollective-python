@@ -18,6 +18,9 @@ from datacollective.models import NonEmptyStrModel
 
 logger = logging.getLogger(__name__)
 
+DOWNLOAD_SOURCE_SAVE = "save_dataset_to_disk"
+DOWNLOAD_SOURCE_LOAD = "load_dataset"
+
 
 class DownloadPlan(NonEmptyStrModel):
     download_url: str
@@ -31,7 +34,11 @@ class DownloadPlan(NonEmptyStrModel):
     checksum_filepath: Path
 
 
-def _get_download_plan(dataset_id: str, download_directory: str | None) -> DownloadPlan:
+def _get_download_plan(
+    dataset_id: str,
+    download_directory: str | None,
+    download_source: str | None = None,
+) -> DownloadPlan:
     """
     Send a POST request to the API to receive the download session details for a dataset.
 
@@ -39,6 +46,7 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
         dataset_id: The dataset ID (as shown in MDC platform).
         download_directory: Directory where to save the downloaded dataset.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
+        download_source: Optional context appended to the User-Agent for download analytics.
 
     Returns:
         a DownloadPlan containing:
@@ -63,7 +71,9 @@ def _get_download_plan(dataset_id: str, download_directory: str | None) -> Downl
 
     # Create a download session to get `downloadUrl` and `filename`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
-    resp = _send_api_request(method="POST", url=session_url)
+    resp = _send_api_request(
+        method="POST", url=session_url, source_function=download_source
+    )
 
     payload: dict[str, Any] = dict(resp.json())
     download_url = payload.get("downloadUrl")
@@ -160,8 +170,21 @@ def _resolve_and_execute_download_plan(
     download_plan: DownloadPlan,
     show_progress: bool,
     overwrite_existing: bool,
+    download_source: str | None = None,
 ) -> Path:
-    """Persist a planned dataset download to disk with the given analytics source."""
+    """
+    Resolve the different scenarios / cases of the download plan and
+    execute the download through the API in the target directory.
+
+    Args:
+        download_plan: The DownloadPlan object with download details.
+        show_progress: Whether to show a progress bar during download.
+        overwrite_existing: Whether to overwrite existing complete archive file.
+        download_source: Optional context appended to the User-Agent for download analytics.
+    Returns:
+        Path to the downloaded dataset archive.
+    """
+
     # Case 1: Skip download if complete dataset archive already exists
     if download_plan.target_filepath.exists() and not overwrite_existing:
         logger.info(
@@ -186,9 +209,10 @@ def _resolve_and_execute_download_plan(
         _write_checksum_file(download_plan.checksum_filepath, download_plan.checksum)
 
     _execute_download_plan(
-        download_plan,
-        resume_checksum,
-        show_progress,
+        download_plan=download_plan,
+        resume_download_checksum=resume_checksum,
+        show_progress=show_progress,
+        download_source=download_source,
     )
 
     # Download complete. Rename temp file to target and remove checksum file
@@ -204,6 +228,7 @@ def _execute_download_plan(
     download_plan: DownloadPlan,
     resume_download_checksum: str | None,
     show_progress: bool,
+    download_source: str | None = None,
 ) -> None:
     """
     Execute the download plan, downloading the dataset to a temporary path.
@@ -212,6 +237,7 @@ def _execute_download_plan(
         download_plan: The DownloadPlan object with download details.
         resume_download_checksum: Provide the checksum to resume a previously interrupted download.
         show_progress: Whether to show a progress bar during download.
+        download_source: Optional context appended to the User-Agent for download analytics.
 
     Raises:
         DownloadError: If the download fails or is interrupted.
@@ -237,6 +263,7 @@ def _execute_download_plan(
             timeout=HTTP_TIMEOUT,
             extra_headers=headers,
             include_auth_headers=False,  # Download URL is pre-signed, no auth needed
+            source_function=download_source,
         ) as response:
             with open(download_plan.tmp_filepath, "ab") as f:
                 # Iterate over response in 64KB chunks to avoid using too much memory

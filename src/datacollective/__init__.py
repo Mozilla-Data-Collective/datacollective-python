@@ -4,7 +4,12 @@ Mozilla Data Collective Python Client Library
 
 import logging
 
-from .datasets import get_dataset_details, load_dataset, save_dataset_to_disk
+from .datasets import (
+    download_dataset,
+    get_dataset_details,
+    load_dataset,
+    save_dataset_to_disk,
+)
 from .models import DatasetSubmission, License, Task
 from .submissions import (
     create_submission_draft,
@@ -15,6 +20,7 @@ from .submissions import (
 from .upload import upload_dataset_file
 
 __all__ = [
+    "download_dataset",
     "save_dataset_to_disk",
     "load_dataset",
     "get_dataset_details",
@@ -30,7 +36,7 @@ __all__ = [
 ]
 
 # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 
 # Configure a package-level logger with a NullHandler so that library users
 # can opt-in to logging without seeing unexpected output by default.

@@ -34,6 +34,7 @@ def _send_api_request(
     include_auth_headers: bool = True,
     json_body: dict[str, Any] | None = None,
     params: dict[str, Any] | None = None,
+    source_function: str | None = None,
 ) -> requests.Response:
     """
     Send an HTTP request to the MDC API with appropriate headers and error handling.
@@ -47,6 +48,8 @@ def _send_api_request(
         include_auth_headers: Whether to include authentication (API KEY) headers (default: True).
         json_body: Optional JSON body to send with the request.
         params: Optional query parameters to include in the request.
+        source_function: Optional context appended to the User-Agent to track which function
+                         initiated the request (e.g., 'load_dataset', 'save_dataset_to_disk').
 
     Returns:
         The HTTP response object.
@@ -58,7 +61,7 @@ def _send_api_request(
         ValueError: If API key is missing when authentication is required.
         requests.HTTPError: For other non-2xx responses.
     """
-    headers = {"User-Agent": _get_user_agent()}
+    headers = {"User-Agent": _get_user_agent(source_function=source_function)}
     if include_auth_headers:
         headers.update(_auth_headers())
     if extra_headers:
@@ -124,8 +127,8 @@ def _auth_headers() -> dict[str, str]:
     return {"Authorization": f"Bearer {_get_api_key()}"}
 
 
-def _get_user_agent() -> str:
-    """Generate a user agent string with SDK name, version, and Python runtime info."""
+def _get_user_agent(source_function: str | None = None) -> str:
+    """Generate a user agent string with SDK/runtime info and optional context of initiated function."""
     # Import here to avoid circular dependency
     try:
         from datacollective import __version__
@@ -134,7 +137,12 @@ def _get_user_agent() -> str:
 
     python_version = platform.python_version()
     system = platform.system()
-    return f"datacollective-python/{__version__} (Python {python_version}; {system})"
+    user_agent = (
+        f"datacollective-python/{__version__} (Python {python_version}; {system})"
+    )
+    if source_function:
+        user_agent = f"{user_agent} source function: {source_function}"
+    return user_agent
 
 
 def _prepare_download_headers(

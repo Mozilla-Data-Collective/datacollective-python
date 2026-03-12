@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from datacollective import get_dataset_details, save_dataset_to_disk
+from datacollective import download_dataset, get_dataset_details
 from datacollective.api_utils import (
     _prepare_download_headers,
     _send_api_request,
@@ -56,7 +56,7 @@ def test_resume_download(
         # Get download plan to know the expected checksum and file paths
         plan = _get_download_plan(dataset_id, str(tmp_path))
 
-        # Write the checksum file (as save_dataset_to_disk would do before downloading)
+        # Write the checksum file (as download_dataset would do before downloading)
         if plan.checksum:
             _write_checksum_file(plan.checksum_filepath, plan.checksum)
 
@@ -98,9 +98,9 @@ def test_resume_download(
             "Part file should be smaller than full file"
         )
 
-        # Now resume the download using save_dataset_to_disk
+        # Now resume the download using download_dataset
         with caplog.at_level(logging.INFO, logger="datacollective.download"):
-            result_path = save_dataset_to_disk(
+            result_path = download_dataset(
                 dataset_id,
                 download_directory=str(tmp_path),
                 show_progress=False,
