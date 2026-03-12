@@ -1,0 +1,27 @@
+{
+  "name": "Dataset Name (Custom License)",
+  "shortDescription": "A brief description of the dataset.",
+  "longDescription": "A detailed description of the dataset.",
+  "locale": "en-US",
+  "task": "ASR",
+  "format": "TSV",
+  "licenseAbbreviation": "Custom",
+  "license": "Research-only internal license",
+  "licenseUrl": "https://example.com/license",
+  "other": "A detailed datasheet-style description of the dataset contents.",
+  "restrictions": "Research use only.",
+  "forbiddenUsage": "Do not use for unlawful purposes.",
+  "additionalConditions": "Contact the dataset owner before redistribution.",
+  "pointOfContactFullName": "Jane Doe",
+  "pointOfContactEmail": "jane@example.com",
+  "fundedByFullName": "Funder Name",
+  "fundedByEmail": "funder@example.com",
+  "legalContactFullName": "Legal Name",
+  "legalContactEmail": "legal@example.com",
+  "createdByFullName": "Creator Name",
+  "createdByEmail": "creator@example.com",
+  "intendedUsage": "Describe the intended usage of the dataset.",
+  "ethicalReviewProcess": "Describe the ethical review process.",
+  "exclusivityOptOut": false
+}
+

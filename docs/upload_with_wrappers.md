@@ -51,15 +51,20 @@ If `MDC_API_URL` is omitted, the scripts default to the production API base URL.
 
 The update and workflow commands expect a JSON file containing submission metadata in the same shape as the `DatasetSubmission` API payload.
 
-A ready-to-edit example is included in the repository at `scripts/submission.json`.
+Two ready-to-edit examples are included in the repository:
 
-You can copy it and customize it, or point the wrapper scripts at it directly while testing:
+- `scripts/submission.json` for predefined licenses such as `CC-BY-4.0`
+- `scripts/submission.custom-license.json` for custom licenses that include `license` and optionally `licenseUrl`
+
+You can copy the one that matches your workflow and customize it:
 
 ```bash
 cp scripts/submission.json my-submission.json
+# or
+cp scripts/submission.custom-license.json my-submission.json
 ```
 
-The example file includes fields such as:
+The example files include fields such as:
 
 - `name`
 - `shortDescription`
@@ -67,8 +72,12 @@ The example file includes fields such as:
 - `locale`
 - `task`
 - `format`
-- `licenseAbbreviation`
+- license metadata fields
 - contact and usage metadata fields
+
+For predefined licenses, keep `licenseAbbreviation` set to the SPDX-style value and leave `license` and `licenseUrl` out.
+
+For custom licenses, include `license`, optionally `licenseUrl`, and use a custom `licenseAbbreviation` such as `Custom`.
 
 The full workflow script requires `name` in this file, because it uses that value when creating the draft submission.
 
@@ -164,6 +173,15 @@ bash scripts/mdc-upload-update.sh \
   --file-upload-id "$FILE_UPLOAD_ID"
 ```
 
+If you are using a custom license payload instead:
+
+```bash
+bash scripts/mdc-upload-update.sh \
+  --submission-id "$SUBMISSION_ID" \
+  --metadata-file scripts/submission.custom-license.json \
+  --file-upload-id "$FILE_UPLOAD_ID"
+```
+
 By default, this prints the updated submission JSON. If you only need the submission ID back:
 
 ```bash
@@ -200,6 +218,7 @@ export MDC_API_KEY="your-api-key-here"
 export MDC_API_URL="https://datacollective.mozillafoundation.org/api"
 
 cp scripts/submission.json my-submission.json
+# or: cp scripts/submission.custom-license.json my-submission.json
 # Edit my-submission.json before uploading
 
 bash scripts/mdc-upload-workflow.sh \
