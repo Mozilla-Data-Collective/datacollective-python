@@ -1184,6 +1184,8 @@ The upload state is stored in a JSON file alongside the archive so interrupted u
 <p>For predefined licenses, pass <code>licenseAbbreviation=License.&lt;VALUE&gt;</code> and leave <code>licenseUrl</code> and <code>license</code> unset. For a custom license, pass a custom string to <code>license</code> and optionally include <code>licenseUrl</code> and <code>licenseAbbreviation</code>.</p>
 <blockquote>
 <p>[!TIP]
+To upload a new <code>.tar.gz</code> version to an already approved and published dataset, call <code>upload_dataset_file(file_path=..., submission_id=...)</code> directly. Get the submission ID from <strong>Profile → Uploads</strong> by opening the approved dataset and copying the value after <code>/profile/submissions/</code> in the URL. This submission ID is different from the dataset ID.</p>
+<p>[!TIP]
 If a file upload is interrupted, simply rerun the same function above and the upload will resume from where it left off.</p>
 </blockquote>
 <h2 id="loading-and-querying-datasets">Loading and Querying Datasets</h2>
