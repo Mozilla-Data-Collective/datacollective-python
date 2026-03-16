@@ -73,7 +73,7 @@ MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 **IMPORTANT NOTE:** Before trying to access any dataset, make sure you have thoroughly **read and agreed** to the specific dataset's conditions & licensing terms.
 
 !!! tip
-    You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn` dataset id will be `cmflnuzw6lrt9e6ui4kwcshvn`.
+    You can access datasets from the MDC platform using either their unique ID or their slug name. To find them, open the dataset page, click `Connect API`, and look for the `Dataset ID` and `Dataset slug` fields.
 
 ### Download a dataset
 
@@ -82,7 +82,7 @@ Use `download_dataset` to download a dataset to the configured download path:
 ```python
 from datacollective import download_dataset
 
-dataset = download_dataset("your-dataset-id")
+dataset = download_dataset("your-dataset-id-or-slug")
 
 # Depending on the implementation, `dataset` may contain metadata
 # about the downloaded files or a higher-level dataset object.
@@ -163,7 +163,7 @@ analysis:
 ```python
 from datacollective import load_dataset
 
-df = load_dataset("your-dataset-id")
+df = load_dataset("your-dataset-id-or-slug")
 
 # Inspect the loaded DataFrame
 print(df.head())
@@ -182,7 +182,7 @@ You can retrieve info from the datasheet of a dataset without downloading it:
 ```python
 from datacollective import get_dataset_details
 
-info = get_dataset_details("your-dataset-id")
+info = get_dataset_details("your-dataset-id-or-slug")
 ```
 
 ### Automatic Download Resume

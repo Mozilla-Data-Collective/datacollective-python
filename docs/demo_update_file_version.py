@@ -1,8 +1,8 @@
 from datacollective import upload_dataset_file
 
 # The dataset must already be approved on the platform.
-# Copy the dataset ID or slug from:
-# https://datacollective.mozillafoundation.org/datasets/<dataset-id-or-slug>
+# Open the dataset page, click "Connect API", and copy either the
+# "Dataset ID" or the "Dataset slug".
 dataset_id_or_slug = "XXXXXXXXXXXXX"
 
 upload_state = upload_dataset_file(

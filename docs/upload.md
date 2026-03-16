@@ -95,9 +95,9 @@ For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `l
 Use `upload_dataset_file` when the dataset already exists on the platform and is already in the **Published / Approved** state.
 
 1. Open the dataset page on the platform.
-2. Copy either the dataset ID or the dataset slug from the URL, for example:
-   `https://datacollective.mozillafoundation.org/datasets/<DATASET-ID-OR-SLUG>`
-3. Pass that value to `upload_dataset_file` as `dataset_id_or_slug`.
+2. Click `Connect API`.
+3. Copy either the `Dataset ID` or the `Dataset slug`.
+4. Pass that value to `upload_dataset_file` as `dataset_id_or_slug`.
 
 
 ```python

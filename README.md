@@ -47,10 +47,10 @@ export MDC_API_KEY=your-api-key-here
 MDC_API_KEY=your-api-key-here
 ```
 
-3. **Get your dataset ID from the last section of the dataset URL at the MDC website**. 
+3. **Get your dataset ID or slug from dataset page at the MDC website**. 
 
 > [!TIP]
-> You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://datacollective.mozillafoundation.org/datasets/cminc35no007no707hql26lzk` dataset id will be `cminc35no007no707hql26lzk`.
+> You can access datasets either through their unique ID or their slug name. To find them, open the dataset page, click `Connect API`, and look for the `Dataset ID` and `Dataset slug` fields.
 
 4. **Save a dataset locally**:
 ```
