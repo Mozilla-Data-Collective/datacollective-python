@@ -101,7 +101,7 @@ def interrupt_first_download(monkeypatch: pytest.MonkeyPatch) -> dict[str, bool]
                     interrupted["value"] = True
                     raise requests.ConnectionError("Simulated interruption")
 
-            response.iter_content = interrupted_iter_content
+            response.iter_content = interrupted_iter_content  # type: ignore
 
         return response
 
