@@ -1344,7 +1344,22 @@ The value after <code>/profile/submissions/</code> is the <strong>submission ID<
 <p>If the upload is interrupted, rerun the same call and the SDK will resume from the saved state file.</p>
 <h2 id="required-submission-fields">Required Submission Fields</h2>
 <p>For a detailed explanation of the required fields in the <code>DatasetSubmission</code> model, see the <a href="../api/#datacollective.models.DatasetSubmission">API Reference</a> section.</p>
-<p>Note that to complete the submission process, you must set <code>agreeToSubmit=True</code> in the <code>DatasetSubmission</code> model, which confirms that you have the right to submit the dataset and that all information provided is accurate.</p>
+<p>To complete the submission process, the submission <strong>must</strong> include at least all of the following fields:</p>
+<ul>
+<li><code>name</code></li>
+<li><code>longDescription</code></li>
+<li><code>task</code></li>
+<li><code>locale</code></li>
+<li><code>format</code></li>
+<li><code>licenseAbbreviation</code> or <code>license</code></li>
+<li><code>restrictions</code></li>
+<li><code>forbiddenUsage</code></li>
+<li><code>pointOfContactFullName</code></li>
+<li><code>pointOfContactEmail</code></li>
+<li><code>agreeToSubmit=True</code></li>
+<li><code>fileUploadId</code></li>
+</ul>
+<p>The <code>fileUploadId</code> is only available after a successful file upload and is required to link the uploaded archive to the submission. </p>
 <h2 id="step-by-step-upload">Step-by-Step Upload</h2>
 <p>For more control over the upload process, you can use the individual functions:</p>
 <h3 id="step-1-create-a-draft-submission">Step 1: Create a Draft Submission</h3>
