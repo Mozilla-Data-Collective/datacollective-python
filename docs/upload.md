@@ -122,7 +122,22 @@ If the upload is interrupted, rerun the same call and the SDK will resume from t
 
 For a detailed explanation of the required fields in the `DatasetSubmission` model, see the [API Reference](api.md#datacollective.models.DatasetSubmission) section.
 
-Note that to complete the submission process, you must set `agreeToSubmit=True` in the `DatasetSubmission` model, which confirms that you have the right to submit the dataset and that all information provided is accurate.
+To complete the submission process, the submission **must** include at least all of the following fields:
+
+- `name`
+- `longDescription`
+- `task`
+- `locale`
+- `format`
+- `licenseAbbreviation` or `license`
+- `restrictions`
+- `forbiddenUsage`
+- `pointOfContactFullName`
+- `pointOfContactEmail`
+- `agreeToSubmit=True`
+- `fileUploadId`
+
+The `fileUploadId` is only available after a successful file upload and is required to link the uploaded archive to the submission. 
 
 ## Step-by-Step Upload
 

@@ -22,6 +22,22 @@ def _ensure_submission_model(submission: DatasetSubmission) -> DatasetSubmission
     return submission
 
 
+FINAL_SUBMISSION_REQUIRED_FIELDS = (
+    "name",
+    "longDescription",
+    "task",
+    "locale",
+    "format",
+    "restrictions",
+    "forbiddenUsage",
+    "pointOfContactFullName",
+    "pointOfContactEmail",
+)
+FINAL_SUBMISSION_LOCAL_FIELDS = set(FINAL_SUBMISSION_REQUIRED_FIELDS) | {
+    "licenseAbbreviation",
+    "license",
+    "fileUploadId",
+}
 DRAFT_FIELDS = {"name"}
 UPDATE_FIELDS = {
     "name",
@@ -52,6 +68,52 @@ UPDATE_FIELDS = {
     "agreeToSubmit",
 }
 SUBMIT_FIELDS = {"agreeToSubmit"}
+
+
+def _build_final_submission_error(
+    missing_items: list[str], *, missing_file_upload_id: bool
+) -> str:
+    message = (
+        "Cannot submit dataset. Missing required fields for final submission: "
+        f"{', '.join(missing_items)}."
+    )
+    if missing_file_upload_id:
+        message += " Upload the dataset file first to get a `fileUploadId`."
+    return message
+
+
+def _validate_final_submission_fields(
+    submission: DatasetSubmission, *, require_file_upload_id: bool
+) -> None:
+    missing_items: list[str] = []
+
+    for field_name in FINAL_SUBMISSION_REQUIRED_FIELDS:
+        if getattr(submission, field_name) is None:
+            missing_items.append(f"`{field_name}`")
+
+    if not submission.licenseAbbreviation and not submission.license:
+        missing_items.append("either `licenseAbbreviation` or `license`")
+
+    if submission.agreeToSubmit is not True:
+        missing_items.append("`agreeToSubmit=True`")
+
+    missing_file_upload_id = require_file_upload_id and submission.fileUploadId is None
+    if missing_file_upload_id:
+        missing_items.append("`fileUploadId`")
+
+    if missing_items:
+        raise ValueError(
+            _build_final_submission_error(
+                missing_items,
+                missing_file_upload_id=missing_file_upload_id,
+            )
+        )
+
+
+def _should_validate_local_final_submission(
+    submission: DatasetSubmission,
+) -> bool:
+    return bool(submission.model_fields_set & FINAL_SUBMISSION_LOCAL_FIELDS)
 
 
 def _payload_for_fields(
@@ -135,7 +197,9 @@ def submit_submission(
     """
     submission = _ensure_submission_model(submission)
 
-    if submission.agreeToSubmit is not True:
+    if _should_validate_local_final_submission(submission):
+        _validate_final_submission_fields(submission, require_file_upload_id=True)
+    elif submission.agreeToSubmit is not True:
         raise ValueError("`agreeToSubmit` must be True to submit a dataset")
 
     payload = _payload_for_fields(submission, SUBMIT_FIELDS)
@@ -173,8 +237,7 @@ def create_submission_with_upload(
 
     submission = _ensure_submission_model(submission)
 
-    if submission.agreeToSubmit is not True:
-        raise ValueError("`agreeToSubmit` must be True to submit a dataset")
+    _validate_final_submission_fields(submission, require_file_upload_id=False)
 
     state_file, existing_upload_state = _resolve_upload_state(file_path, state_path)
 
@@ -206,6 +269,7 @@ def create_submission_with_upload(
     )
 
     submission.fileUploadId = upload_state.fileUploadId
+    _validate_final_submission_fields(submission, require_file_upload_id=True)
 
     logger.info("Updating submission metadata...")
 
