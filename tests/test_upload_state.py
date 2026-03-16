@@ -40,7 +40,7 @@ def test_load_upload_state_returns_none_for_invalid_payload(tmp_path: Path) -> N
     state_path = tmp_path / "upload-state.json"
     state_path.write_text(
         """{
-  \"submissionId\": \"submission\",
+  \"submissionId\": \"id\",
   \"fileUploadId\": \"file-upload\",
   \"uploadId\": \"\",
   \"fileSize\": 1024,
@@ -58,7 +58,7 @@ def test_upload_dataset_file_rejects_missing_file(tmp_path: Path) -> None:
     missing_file = tmp_path / "missing.tar.gz"
 
     with pytest.raises(FileNotFoundError, match="File not found"):
-        upload_dataset_file(str(missing_file), submission_id="submission")
+        upload_dataset_file(str(missing_file), dataset_id_or_slug="id")
 
 
 def test_upload_dataset_file_rejects_empty_file(tmp_path: Path) -> None:
@@ -66,7 +66,25 @@ def test_upload_dataset_file_rejects_empty_file(tmp_path: Path) -> None:
     empty_file.write_bytes(bytearray())
 
     with pytest.raises(ValueError, match="non-empty file"):
-        upload_dataset_file(str(empty_file), submission_id="submission")
+        upload_dataset_file(str(empty_file), dataset_id_or_slug="id")
+
+
+def test_resolve_submission_id_for_upload_requires_submission_id_from_dataset_details(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        upload_module,
+        "get_dataset_details",
+        lambda dataset_id: {"id": dataset_id},
+    )
+
+    with pytest.raises(
+        RuntimeError,
+        match="Dataset details did not return a `submission_id`",
+    ):
+        upload_module._resolve_submission_id(
+            dataset_id_or_slug="sample-dataset-slug",
+        )
 
 
 def test_initiate_upload_posts_submission_id_without_stdout(
@@ -188,7 +206,7 @@ def test_upload_dataset_file_uses_existing_submission_id_for_version_upload(
 
     result = upload_dataset_file(
         file_path=str(archive_path),
-        submission_id="cmmns07oe001onn07aeidopab",
+        dataset_id_or_slug="cmmns07oe001onn07aeidopab",
         show_progress=False,
     )
 

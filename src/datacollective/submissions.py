@@ -201,7 +201,7 @@ def create_submission_with_upload(
 
     upload_state = upload_dataset_file(
         file_path=file_path,
-        submission_id=submission_id,
+        dataset_id_or_slug=submission_id,
         state_path=state_path,
     )
 

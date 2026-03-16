@@ -94,23 +94,20 @@ For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `l
 
 Use `upload_dataset_file` when the dataset already exists on the platform and is already in the **Published / Approved** state.
 
-1. Go to **Profile → Uploads** on the platform.
-2. Click on the dataset submission you want to upload a new version for (must be in an Approved state).
-3. Copy the ID from the URL, for example:
-   `https://datacollective.mozillafoundation.org/profile/submissions/<ID>`
-4. Pass that value to `upload_dataset_file` as `submission_id`.
+1. Open the dataset page on the platform.
+2. Copy either the dataset ID or the dataset slug from the URL, for example:
+   `https://datacollective.mozillafoundation.org/datasets/<DATASET-ID-OR-SLUG>`
+3. Pass that value to `upload_dataset_file` as `dataset_id_or_slug`.
 
-> [!IMPORTANT]
-> The value after `/profile/submissions/` is the **submission ID**, not the dataset ID.
 
 ```python
 from datacollective import upload_dataset_file
 
-approved_submission_id = "XXXXXXXXXXXXXXXXX"  # submission ID, not dataset ID
+dataset_id_or_slug = "my-approved-dataset"
 
 upload_state = upload_dataset_file(
     file_path="/path/to/new-dataset-version.tar.gz",
-    submission_id=approved_submission_id,
+    dataset_id_or_slug=dataset_id_or_slug,
 )
 
 print(f"Version upload complete! File Upload ID: {upload_state.fileUploadId}")
@@ -165,8 +162,6 @@ upload_state = upload_dataset_file(
 print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 ```
 
-> [!TIP]
-> You can also find your submission ID by going to your [Uploads](https://datacollective.mozillafoundation.org/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://datacollective.mozillafoundation.org/submissions/cmmjpewijXXXXXXXXX`).
 
 ### Step 3: Update Submission Metadata
 

@@ -147,7 +147,7 @@ print(response)
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
 > [!TIP]
-> To upload a new `.tar.gz` version to an already approved and published dataset, call `upload_dataset_file(file_path=..., submission_id=...)` directly. Get the submission ID from **Profile → Uploads** by opening the approved dataset and copying the value after `/profile/submissions/` in the URL. This submission ID is different from the dataset ID.
+> To upload a new `.tar.gz` version to an already approved and published dataset, call `upload_dataset_file(file_path=..., dataset_id_or_slug=...)` directly. 
 
 > [!TIP]
 > If a file upload is interrupted, simply rerun the same function above and the upload will resume from where it left off.
@@ -183,7 +183,6 @@ You can retrieve info from the datasheet of a dataset without downloading it:
 from datacollective import get_dataset_details
 
 info = get_dataset_details("your-dataset-id")
-print(info)
 ```
 
 ### Automatic Download Resume

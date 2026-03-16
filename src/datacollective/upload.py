@@ -18,6 +18,7 @@ from datacollective.api_utils import (
     _format_bytes,
     _enable_verbose,
 )
+from datacollective.datasets import get_dataset_details
 from datacollective.models import NonEmptyStrModel, UploadPart
 
 logger = logging.getLogger(__name__)
@@ -156,9 +157,22 @@ def _complete_upload(
     return dict(resp.json())
 
 
+def _resolve_submission_id(dataset_id_or_slug: str) -> str:
+    dataset_details = get_dataset_details(dataset_id_or_slug)
+    resolved_submission_id = dataset_details.get("submission_id")
+    if resolved_submission_id is None or resolved_submission_id == "":
+        raise ValueError(
+            f"Could not resolve dataset '{dataset_id_or_slug}' to a valid submission ID."
+        )
+    logger.debug(
+        f"Resolved dataset {dataset_id_or_slug} to submission {resolved_submission_id} for upload."
+    )
+    return resolved_submission_id
+
+
 def upload_dataset_file(
     file_path: str,
-    submission_id: str,
+    dataset_id_or_slug: str,
     state_path: str | None = None,
     verbose: bool = False,
     show_progress: bool = True,
@@ -167,13 +181,13 @@ def upload_dataset_file(
     Upload a dataset file using multipart uploads with resumable state.
 
     Uploads are limited to 80GB and use the `application/gzip` MIME type.
-    Pass the submission ID of the target dataset submission. This works for
+    Pass the dataset ID or slug of the target dataset submission. This works for
     both draft submissions and for uploading a new `.tar.gz` version to an
     already approved dataset submission.
 
     Args:
         file_path: Path to the dataset archive on disk.
-        submission_id: Dataset submission ID (not the dataset ID).
+        dataset_id_or_slug: Dataset ID or slug.
         state_path: Optional path to persist upload state. Defaults to
             `<filename>.mdc-upload.json` alongside the archive.
         verbose: Whether to enable detailed logging during the upload.
@@ -192,12 +206,15 @@ def upload_dataset_file(
         raise ValueError("`file_path` exceeds the 80GB upload limit")
 
     final_filename = path.name
+    resolved_submission_id = _resolve_submission_id(
+        dataset_id_or_slug=dataset_id_or_slug,
+    )
 
     state_file = Path(state_path) if state_path else _default_state_path(path)
 
     state = _load_or_create_state(
         state_file=state_file,
-        submission_id=submission_id,
+        submission_id=resolved_submission_id,
         final_filename=final_filename,
         file_size=file_size,
     )
