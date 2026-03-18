@@ -1,5 +1,4 @@
 import pytest
-
 from pathlib import Path
 
 from datacollective.upload import (
@@ -16,7 +15,7 @@ def test_upload_dataset_file_rejects_missing_file(tmp_path: Path) -> None:
 
 def test_upload_dataset_file_rejects_empty_file(tmp_path: Path) -> None:
     empty_file = tmp_path / "empty.tar.gz"
-    empty_file.write_bytes(b"")
+    empty_file.write_bytes(bytearray())
 
     with pytest.raises(ValueError, match="non-empty file"):
         upload_dataset_file(str(empty_file), submission_id="submission")

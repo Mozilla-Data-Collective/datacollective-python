@@ -20,8 +20,8 @@ from datacollective.models import NonEmptyStrModel, UploadPart
 
 logger = logging.getLogger(__name__)
 
-# Longer read timeout for uploading potentially large chunks
-UPLOAD_TIMEOUT = (10, 300)
+# Longer read timeout for uploading potentially large chunks on slow connections
+UPLOAD_TIMEOUT = (20, 600)  # (20s connect timeout, 10min read timeout)
 # Retry configuration for part uploads
 MAX_UPLOAD_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2

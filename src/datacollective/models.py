@@ -6,6 +6,15 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
+class UploadPart(BaseModel):
+    """A single multipart upload part."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    partNumber: int = Field(..., ge=1)
+    etag: str
+
+
 class Task(str, Enum):
     """Valid ML task types for a dataset submission."""
 
@@ -204,6 +213,54 @@ class DatasetSubmission(NonEmptyStrModel):
         return self
 
 
+FINAL_SUBMISSION_REQUIRED_FIELDS = (
+    "name",
+    "longDescription",
+    "task",
+    "locale",
+    "format",
+    "restrictions",
+    "forbiddenUsage",
+    "pointOfContactFullName",
+    "pointOfContactEmail",
+)
+FINAL_SUBMISSION_LOCAL_FIELDS = set(FINAL_SUBMISSION_REQUIRED_FIELDS) | {
+    "licenseAbbreviation",
+    "license",
+    "fileUploadId",
+}
+DRAFT_FIELDS = {"name"}
+UPDATE_FIELDS = {
+    "name",
+    "shortDescription",
+    "longDescription",
+    "locale",
+    "task",
+    "format",
+    "licenseAbbreviation",
+    "license",
+    "licenseUrl",
+    "other",
+    "restrictions",
+    "forbiddenUsage",
+    "additionalConditions",
+    "pointOfContactFullName",
+    "pointOfContactEmail",
+    "fundedByFullName",
+    "fundedByEmail",
+    "legalContactFullName",
+    "legalContactEmail",
+    "createdByFullName",
+    "createdByEmail",
+    "intendedUsage",
+    "ethicalReviewProcess",
+    "exclusivityOptOut",
+    "fileUploadId",
+    "agreeToSubmit",
+}
+SUBMIT_FIELDS = {"agreeToSubmit"}
+
+
 def _ensure_submission_model(submission: DatasetSubmission) -> DatasetSubmission:
     if not isinstance(submission, DatasetSubmission):
         raise TypeError("`submission` must be a DatasetSubmission model")
@@ -227,10 +284,47 @@ def _payload_for_fields(
     return payload
 
 
-class UploadPart(BaseModel):
-    """A single multipart upload part."""
+def _build_final_submission_error(
+    missing_items: list[str], *, missing_file_upload_id: bool
+) -> str:
+    message = (
+        "Cannot submit dataset. Missing required fields for final submission: "
+        f"{', '.join(missing_items)}."
+    )
+    if missing_file_upload_id:
+        message += " Upload the dataset file first to get a `fileUploadId`."
+    return message
 
-    model_config = ConfigDict(extra="forbid")
 
-    partNumber: int = Field(..., ge=1)
-    etag: str
+def _validate_final_submission_fields(
+    submission: DatasetSubmission, *, require_file_upload_id: bool
+) -> None:
+    missing_items: list[str] = []
+
+    for field_name in FINAL_SUBMISSION_REQUIRED_FIELDS:
+        if getattr(submission, field_name) is None:
+            missing_items.append(f"`{field_name}`")
+
+    if not submission.licenseAbbreviation and not submission.license:
+        missing_items.append("either `licenseAbbreviation` or `license`")
+
+    if submission.agreeToSubmit is not True:
+        missing_items.append("`agreeToSubmit=True`")
+
+    missing_file_upload_id = require_file_upload_id and submission.fileUploadId is None
+    if missing_file_upload_id:
+        missing_items.append("`fileUploadId`")
+
+    if missing_items:
+        raise ValueError(
+            _build_final_submission_error(
+                missing_items,
+                missing_file_upload_id=missing_file_upload_id,
+            )
+        )
+
+
+def _should_validate_local_final_submission(
+    submission: DatasetSubmission,
+) -> bool:
+    return bool(submission.model_fields_set & FINAL_SUBMISSION_LOCAL_FIELDS)

@@ -36,10 +36,13 @@ def upload_dataset_file(
     Upload a dataset file using multipart uploads with resumable state.
 
     Uploads are limited to 80GB and use the `application/gzip` MIME type.
+    Pass the submission ID of the target dataset submission. This works for
+    both draft submissions and for uploading a new `.tar.gz` version to an
+    already approved dataset submission.
 
     Args:
         file_path: Path to the dataset archive on disk.
-        submission_id: Dataset submission ID.
+        submission_id: Dataset submission ID (not the dataset ID).
         state_path: Optional path to persist upload state. Defaults to
             `<filename>.mdc-upload.json` alongside the archive.
         verbose: Whether to enable detailed logging during the upload.

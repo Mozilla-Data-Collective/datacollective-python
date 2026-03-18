@@ -11,6 +11,8 @@ The SDK provides a complete workflow for uploading datasets:
 3. **Update submission metadata** - Add required metadata fields to the submission
 4. **Submit for review** - Finalize the submission for review
 
+Additionally, the functionality of uploading a dataset file can be used independently to upload a new archive version to an already approved and published dataset submission. Check the [Upload a New File Version to an Approved Dataset](#upload-a-new-file-version-to-an-approved-dataset) section for more details.
+
 The SDK also supports **resumable uploads**, meaning if an upload is interrupted (network error, system shutdown, etc.), you can resume from where it left off.
 
 ## Prerequisites
@@ -88,11 +90,54 @@ print(response)
 
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
+## Upload a New File Version to an Approved Dataset
+
+Use `upload_dataset_file` when the dataset already exists on the platform and is already in the **Published / Approved** state.
+
+1. Go to **Profile → Uploads** on the platform.
+2. Click on the dataset submission you want to upload a new version for (must be in an Approved state).
+3. Copy the ID from the URL, for example:
+   `https://datacollective.mozillafoundation.org/profile/submissions/<ID>`
+4. Pass that value to `upload_dataset_file` as `submission_id`.
+
+> [!IMPORTANT]
+> The value after `/profile/submissions/` is the **submission ID**, not the dataset ID.
+
+```python
+from datacollective import upload_dataset_file
+
+approved_submission_id = "XXXXXXXXXXXXXXXXX"  # submission ID, not dataset ID
+
+upload_state = upload_dataset_file(
+    file_path="/path/to/new-dataset-version.tar.gz",
+    submission_id=approved_submission_id,
+)
+
+print(f"Version upload complete! File Upload ID: {upload_state.fileUploadId}")
+```
+
+If the upload is interrupted, rerun the same call and the SDK will resume from the saved state file.
+
 ## Required Submission Fields
 
 For a detailed explanation of the required fields in the `DatasetSubmission` model, see the [API Reference](api.md#datacollective.models.DatasetSubmission) section.
 
-Note that to complete the submission process, you must set `agreeToSubmit=True` in the `DatasetSubmission` model, which confirms that you have the right to submit the dataset and that all information provided is accurate.
+To complete the submission process, the submission **must** include at least all of the following fields:
+
+- `name`
+- `longDescription`
+- `task`
+- `locale`
+- `format`
+- `licenseAbbreviation` or `license`
+- `restrictions`
+- `forbiddenUsage`
+- `pointOfContactFullName`
+- `pointOfContactEmail`
+- `agreeToSubmit=True`
+- `fileUploadId`
+
+The `fileUploadId` is only available after a successful file upload and is required to link the uploaded archive to the submission. 
 
 ## Step-by-Step Upload
 

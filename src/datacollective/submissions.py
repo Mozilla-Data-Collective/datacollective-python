@@ -9,43 +9,16 @@ from datacollective.models import (
     DatasetSubmission,
     _ensure_submission_model,
     _payload_for_fields,
+    DRAFT_FIELDS,
+    UPDATE_FIELDS,
+    _should_validate_local_final_submission,
+    _validate_final_submission_fields,
+    SUBMIT_FIELDS,
 )
 from datacollective.upload import upload_dataset_file
 from datacollective.upload_utils import _resolve_upload_state
 
 logger = logging.getLogger(__name__)
-
-
-DRAFT_FIELDS = {"name"}
-UPDATE_FIELDS = {
-    "name",
-    "shortDescription",
-    "longDescription",
-    "locale",
-    "task",
-    "format",
-    "licenseAbbreviation",
-    "license",
-    "licenseUrl",
-    "other",
-    "restrictions",
-    "forbiddenUsage",
-    "additionalConditions",
-    "pointOfContactFullName",
-    "pointOfContactEmail",
-    "fundedByFullName",
-    "fundedByEmail",
-    "legalContactFullName",
-    "legalContactEmail",
-    "createdByFullName",
-    "createdByEmail",
-    "intendedUsage",
-    "ethicalReviewProcess",
-    "exclusivityOptOut",
-    "fileUploadId",
-    "agreeToSubmit",
-}
-SUBMIT_FIELDS = {"agreeToSubmit"}
 
 
 def create_submission_draft(submission: DatasetSubmission) -> dict[str, Any]:
@@ -112,7 +85,9 @@ def submit_submission(
     """
     submission = _ensure_submission_model(submission)
 
-    if submission.agreeToSubmit is not True:
+    if _should_validate_local_final_submission(submission):
+        _validate_final_submission_fields(submission, require_file_upload_id=True)
+    elif submission.agreeToSubmit is not True:
         raise ValueError("`agreeToSubmit` must be True to submit a dataset")
 
     payload = _payload_for_fields(submission, SUBMIT_FIELDS)
@@ -141,8 +116,7 @@ def create_submission_with_upload(
 
     submission = _ensure_submission_model(submission)
 
-    if submission.agreeToSubmit is not True:
-        raise ValueError("`agreeToSubmit` must be True to submit a dataset")
+    _validate_final_submission_fields(submission, require_file_upload_id=False)
 
     state_file, existing_upload_state = _resolve_upload_state(file_path, state_path)
 
@@ -174,6 +148,7 @@ def create_submission_with_upload(
     )
 
     submission.fileUploadId = upload_state.fileUploadId
+    _validate_final_submission_fields(submission, require_file_upload_id=True)
 
     logger.info("Updating submission metadata...")
 

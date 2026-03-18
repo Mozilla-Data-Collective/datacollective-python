@@ -147,6 +147,9 @@ print(response)
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
 > [!TIP]
+> To upload a new `.tar.gz` version to an already approved and published dataset, call `upload_dataset_file(file_path=..., submission_id=...)` directly. Get the submission ID from **Profile → Uploads** by opening the approved dataset and copying the value after `/profile/submissions/` in the URL. This submission ID is different from the dataset ID.
+
+> [!TIP]
 > If a file upload is interrupted, simply rerun the same function above and the upload will resume from where it left off.
 
 ## Loading and Querying Datasets
