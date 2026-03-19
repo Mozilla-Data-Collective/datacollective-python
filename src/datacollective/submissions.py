@@ -141,9 +141,9 @@ def create_submission_with_upload(
 
         logger.info(f"Draft created. Submission ID: {submission_id}")
 
-        logger.info("Updating submission metadata...")
+    logger.info("Updating submission metadata...")
 
-        update_submission(submission_id, submission)
+    update_submission(submission_id, submission)
 
     upload_state = upload_dataset_file(
         file_path=file_path,
