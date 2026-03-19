@@ -47,7 +47,7 @@ def test_submit_submission_allows_minimal_payload_for_existing_remote_draft(
     monkeypatch.setattr(
         submissions_module, "_get_api_url", lambda: "https://api.example.test"
     )
-    monkeypatch.setattr(submissions_module, "send_api_request", fake_send_api_request)
+    monkeypatch.setattr(submissions_module, "_send_api_request", fake_send_api_request)
 
     response = submissions_module.submit_submission(
         "submission-id",
@@ -67,7 +67,7 @@ def test_submit_submission_requires_file_upload_id_for_local_final_submission(
 ) -> None:
     monkeypatch.setattr(
         submissions_module,
-        "send_api_request",
+        "_send_api_request",
         lambda *args, **kwargs: pytest.fail(
             "submit_submission should fail validation before calling the API"
         ),

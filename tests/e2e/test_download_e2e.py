@@ -105,7 +105,7 @@ def interrupt_first_download(monkeypatch: pytest.MonkeyPatch) -> dict[str, bool]
 
         return response
 
-    monkeypatch.setattr(download_module, "send_api_request", flaky_send_api_request)
+    monkeypatch.setattr(download_module, "_send_api_request", flaky_send_api_request)
     return interrupted
 
 
