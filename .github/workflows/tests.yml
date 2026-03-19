@@ -36,7 +36,7 @@ jobs:
           version: "latest"
 
       - name: Install test dependencies
-        run: uv pip install -e . --group dev
+        run: uv pip install --system -e . --group dev
 
       - name: Run unit & integration tests (exclude e2e)
         run: pytest -v --ignore=tests/e2e tests
@@ -66,7 +66,7 @@ jobs:
           version: "latest"
 
       - name: Install test dependencies
-        run: uv pip install -e . --group dev
+        run: uv pip install --system -e . --group dev
 
       - name: Run e2e tests
         run: pytest -q tests/e2e

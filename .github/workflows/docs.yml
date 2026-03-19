@@ -41,7 +41,7 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
       - name: Install requirements
-        run: uv pip install -e . --group docs
+        run: uv pip install --system -e . --group docs
 
       - name: Build docs
         if: github.event_name == 'pull_request'
