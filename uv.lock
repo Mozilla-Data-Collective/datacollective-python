@@ -265,7 +265,7 @@ dependencies = [
     { name = "requests" },
 ]
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "bump-my-version" },
     { name = "pre-commit" },
@@ -280,21 +280,26 @@ docs = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bump-my-version", marker = "extra == 'dev'", specifier = ">=1.2.6" },
     { name = "fox-progress-bar", specifier = ">=0.1.1" },
-    { name = "mkdocs", marker = "extra == 'docs'" },
-    { name = "mkdocs-material", marker = "extra == 'docs'" },
-    { name = "mkdocstrings-python", marker = "extra == 'docs'" },
     { name = "pandas", specifier = ">=2.0.0" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.0.0" },
     { name = "pydantic", specifier = ">=2.7.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "requests", specifier = ">=2.32.5" },
 ]
-provides-extras = ["dev", "docs"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "bump-my-version", specifier = ">=1.2.6" },
+    { name = "pre-commit", specifier = ">=3.0.0" },
+    { name = "pytest", specifier = ">=7.0.0" },
+    { name = "pytest-cov", specifier = ">=4.0.0" },
+]
+docs = [
+    { name = "mkdocs" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings-python" },
+]
 
 [[package]]
 name = "distlib"

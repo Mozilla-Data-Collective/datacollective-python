@@ -9,7 +9,7 @@ import yaml
 from datacollective.schema import (
     ColumnMapping,
     DatasetSchema,
-    parse_schema,
+    _parse_schema,
 )
 
 
@@ -100,7 +100,7 @@ class TestDatasetSchema:
             checksum="abc",
         )
         yaml_str = yaml.dump(original.to_yaml_dict())
-        restored = parse_schema(yaml_str)
+        restored = _parse_schema(yaml_str)
         assert restored.dataset_id == original.dataset_id
         assert restored.task == original.task
         assert restored.format == original.format
@@ -113,31 +113,31 @@ class TestDatasetSchema:
 class TestParseSchema:
     def test_from_yaml_string(self) -> None:
         raw = "dataset_id: ds1\ntask: asr\n"
-        s = parse_schema(raw)
+        s = _parse_schema(raw)
         assert s.dataset_id == "ds1"
         assert s.task == "ASR"  # upper-cased
 
     def test_from_dict(self) -> None:
-        s = parse_schema({"dataset_id": "ds1", "task": "tts"})
+        s = _parse_schema({"dataset_id": "ds1", "task": "tts"})
         assert s.task == "TTS"
 
     def test_from_file(self, tmp_path: Path) -> None:
         p = tmp_path / "schema.yaml"
         p.write_text(yaml.dump({"dataset_id": "ds1", "task": "ASR"}))
-        s = parse_schema(p)
+        s = _parse_schema(p)
         assert s.dataset_id == "ds1"
 
     def test_missing_dataset_id_raises(self) -> None:
         with pytest.raises(ValueError, match="dataset_id"):
-            parse_schema({"task": "ASR"})
+            _parse_schema({"task": "ASR"})
 
     def test_missing_task_raises(self) -> None:
         with pytest.raises(ValueError, match="dataset_id.*task"):
-            parse_schema({"dataset_id": "ds1"})
+            _parse_schema({"dataset_id": "ds1"})
 
     def test_invalid_yaml_type_raises(self) -> None:
         with pytest.raises(ValueError, match="Expected a dict"):
-            parse_schema("just a string value")
+            _parse_schema("just a string value")
 
     def test_columns_parsed(self) -> None:
         raw: dict[str, Any] = {
@@ -148,7 +148,7 @@ class TestParseSchema:
                 "text": {"source_column": "sentence"},
             },
         }
-        s = parse_schema(raw)
+        s = _parse_schema(raw)
         assert "audio_path" in s.columns
         assert s.columns["audio_path"].dtype == "file_path"
         assert s.columns["text"].dtype == "string"  # default
@@ -163,7 +163,7 @@ class TestParseSchema:
                 "text": {"source_column": 1},
             },
         }
-        s = parse_schema(raw)
+        s = _parse_schema(raw)
         assert s.columns["audio"].source_column == 0
         assert s.has_header is False
 
@@ -173,7 +173,7 @@ class TestParseSchema:
             "task": "LM",
             "content_mapping": {"text": "file_content", "meta_source": "file_name"},
         }
-        s = parse_schema(raw)
+        s = _parse_schema(raw)
         assert s.content_mapping is not None
         assert s.content_mapping.text == "file_content"
 
@@ -184,7 +184,7 @@ class TestParseSchema:
             "my_custom_field": "hello",
             "another": 42,
         }
-        s = parse_schema(raw)
+        s = _parse_schema(raw)
         assert s.extra == {"my_custom_field": "hello", "another": 42}
 
     def test_root_strategy_parsed(self) -> None:
@@ -194,7 +194,7 @@ class TestParseSchema:
             "root_strategy": "multi_split",
             "splits": ["train", "dev"],
         }
-        s = parse_schema(raw)
+        s = _parse_schema(raw)
         assert s.root_strategy == "multi_split"
 
     def test_all_fields(self) -> None:
@@ -219,7 +219,7 @@ class TestParseSchema:
                 "a": {"source_column": 0, "dtype": "file_path", "optional": True},
             },
         }
-        s = parse_schema(raw)
+        s = _parse_schema(raw)
         assert s.format == "pipe"
         assert s.separator == "|"
         assert s.has_header is False
@@ -234,6 +234,6 @@ class TestParseSchema:
             "task": "ASR",
             "columns": {"good": {"source_column": "x"}, "bad": "not_a_dict"},
         }
-        s = parse_schema(raw)
+        s = _parse_schema(raw)
         assert "good" in s.columns
         assert "bad" not in s.columns

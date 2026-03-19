@@ -1,136 +1,24 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any
 
 
-from datacollective.api_utils import _get_api_url, send_api_request, _enable_verbose
-from datacollective.models import DatasetSubmission, License
-from datacollective.upload import (
-    _default_state_path,
-    load_upload_state,
-    upload_dataset_file,
+from datacollective.api_utils import _get_api_url, _send_api_request, _enable_verbose
+from datacollective.models import (
+    DatasetSubmission,
+    _ensure_submission_model,
+    _payload_for_fields,
+    DRAFT_FIELDS,
+    UPDATE_FIELDS,
+    _should_validate_local_final_submission,
+    _validate_final_submission_fields,
+    SUBMIT_FIELDS,
 )
+from datacollective.upload import upload_dataset_file
+from datacollective.upload_utils import _resolve_upload_state
 
 logger = logging.getLogger(__name__)
-
-
-def _ensure_submission_model(submission: DatasetSubmission) -> DatasetSubmission:
-    if not isinstance(submission, DatasetSubmission):
-        raise TypeError("`submission` must be a DatasetSubmission model")
-    return submission
-
-
-FINAL_SUBMISSION_REQUIRED_FIELDS = (
-    "name",
-    "longDescription",
-    "task",
-    "locale",
-    "format",
-    "restrictions",
-    "forbiddenUsage",
-    "pointOfContactFullName",
-    "pointOfContactEmail",
-)
-FINAL_SUBMISSION_LOCAL_FIELDS = set(FINAL_SUBMISSION_REQUIRED_FIELDS) | {
-    "licenseAbbreviation",
-    "license",
-    "fileUploadId",
-}
-DRAFT_FIELDS = {"name"}
-UPDATE_FIELDS = {
-    "name",
-    "shortDescription",
-    "longDescription",
-    "locale",
-    "task",
-    "format",
-    "licenseAbbreviation",
-    "license",
-    "licenseUrl",
-    "other",
-    "restrictions",
-    "forbiddenUsage",
-    "additionalConditions",
-    "pointOfContactFullName",
-    "pointOfContactEmail",
-    "fundedByFullName",
-    "fundedByEmail",
-    "legalContactFullName",
-    "legalContactEmail",
-    "createdByFullName",
-    "createdByEmail",
-    "intendedUsage",
-    "ethicalReviewProcess",
-    "exclusivityOptOut",
-    "fileUploadId",
-    "agreeToSubmit",
-}
-SUBMIT_FIELDS = {"agreeToSubmit"}
-
-
-def _build_final_submission_error(
-    missing_items: list[str], *, missing_file_upload_id: bool
-) -> str:
-    message = (
-        "Cannot submit dataset. Missing required fields for final submission: "
-        f"{', '.join(missing_items)}."
-    )
-    if missing_file_upload_id:
-        message += " Upload the dataset file first to get a `fileUploadId`."
-    return message
-
-
-def _validate_final_submission_fields(
-    submission: DatasetSubmission, *, require_file_upload_id: bool
-) -> None:
-    missing_items: list[str] = []
-
-    for field_name in FINAL_SUBMISSION_REQUIRED_FIELDS:
-        if getattr(submission, field_name) is None:
-            missing_items.append(f"`{field_name}`")
-
-    if not submission.licenseAbbreviation and not submission.license:
-        missing_items.append("either `licenseAbbreviation` or `license`")
-
-    if submission.agreeToSubmit is not True:
-        missing_items.append("`agreeToSubmit=True`")
-
-    missing_file_upload_id = require_file_upload_id and submission.fileUploadId is None
-    if missing_file_upload_id:
-        missing_items.append("`fileUploadId`")
-
-    if missing_items:
-        raise ValueError(
-            _build_final_submission_error(
-                missing_items,
-                missing_file_upload_id=missing_file_upload_id,
-            )
-        )
-
-
-def _should_validate_local_final_submission(
-    submission: DatasetSubmission,
-) -> bool:
-    return bool(submission.model_fields_set & FINAL_SUBMISSION_LOCAL_FIELDS)
-
-
-def _payload_for_fields(
-    submission: DatasetSubmission, allowed_fields: set[str]
-) -> dict[str, Any]:
-    data = submission.model_dump(mode="json", exclude_none=True)
-    payload = {key: value for key, value in data.items() if key in allowed_fields}
-
-    if "licenseAbbreviation" in allowed_fields and isinstance(
-        submission.licenseAbbreviation, License
-    ):
-        payload["licenseAbbreviation"] = submission.licenseAbbreviation.value
-        # Remove custom license fields if a predefined license is used
-        payload.pop("license", None)
-        payload.pop("licenseUrl", None)
-
-    return payload
 
 
 def create_submission_draft(submission: DatasetSubmission) -> dict[str, Any]:
@@ -151,7 +39,7 @@ def create_submission_draft(submission: DatasetSubmission) -> dict[str, Any]:
         raise ValueError("`submission` must include `name`")
 
     url = f"{_get_api_url()}/submissions"
-    resp = send_api_request("POST", url, json_body=payload)
+    resp = _send_api_request("POST", url, json_body=payload)
     return dict(resp.json())
 
 
@@ -176,7 +64,7 @@ def update_submission(
         raise ValueError("`submission` must include at least one updatable field")
 
     url = f"{_get_api_url()}/submissions/{submission_id}"
-    resp = send_api_request("PATCH", url, json_body=payload)
+    resp = _send_api_request("PATCH", url, json_body=payload)
     return dict(resp.json())
 
 
@@ -204,17 +92,8 @@ def submit_submission(
 
     payload = _payload_for_fields(submission, SUBMIT_FIELDS)
     url = f"{_get_api_url()}/submissions/{submission_id}"
-    resp = send_api_request("POST", url, json_body=payload)
+    resp = _send_api_request("POST", url, json_body=payload)
     return dict(resp.json())
-
-
-def _resolve_upload_state(
-    file_path: str, state_path: str | None
-) -> tuple[Path, Any | None]:
-    state_file = (
-        Path(state_path) if state_path else _default_state_path(Path(file_path))
-    )
-    return state_file, load_upload_state(state_file)
 
 
 def create_submission_with_upload(

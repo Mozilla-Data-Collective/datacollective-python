@@ -2,10 +2,8 @@ from pathlib import Path
 
 from _pytest.monkeypatch import MonkeyPatch
 
-from datacollective.datasets import (
-    _resolve_dataset_id,
-    resolve_download_dir,
-)
+from datacollective.datasets import resolve_dataset_id
+from datacollective.download import _resolve_download_dir
 
 
 def test_resolve_dataset_id_returns_canonical_id(monkeypatch: MonkeyPatch) -> None:
@@ -18,7 +16,7 @@ def test_resolve_dataset_id_returns_canonical_id(monkeypatch: MonkeyPatch) -> No
         fake_get_dataset_details,
     )
 
-    assert _resolve_dataset_id("dataset-slug") == "dataset-id"
+    assert resolve_dataset_id("dataset-slug") == "dataset-id"
 
 
 def test_resolve_download_dir_prefers_argument(
@@ -26,7 +24,7 @@ def test_resolve_download_dir_prefers_argument(
 ) -> None:
     monkeypatch.delenv("MDC_DOWNLOAD_PATH", raising=False)
     custom_dir = tmp_path / "custom"
-    resolved = resolve_download_dir(str(custom_dir))
+    resolved = _resolve_download_dir(str(custom_dir))
 
     assert resolved == custom_dir
     assert custom_dir.exists()
@@ -37,7 +35,7 @@ def test_resolve_download_dir_uses_env_default(
 ) -> None:
     env_dir = tmp_path / "env"
     monkeypatch.setenv("MDC_DOWNLOAD_PATH", str(env_dir))
-    resolved = resolve_download_dir(None)
+    resolved = _resolve_download_dir(None)
 
     assert resolved == env_dir
     assert env_dir.exists()

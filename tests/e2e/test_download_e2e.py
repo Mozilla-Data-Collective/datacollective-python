@@ -5,10 +5,10 @@ from typing import Any
 
 import pytest
 import requests
+from datacollective.errors import DownloadError
 
 import datacollective.download as download_module
 from datacollective import download_dataset, get_dataset_details
-from datacollective.errors import DownloadError
 from tests.e2e.conftest import skip_if_rate_limited
 
 
@@ -80,7 +80,7 @@ def test_download_dataset_live_api(
 @pytest.fixture
 def interrupt_first_download(monkeypatch: pytest.MonkeyPatch) -> dict[str, bool]:
     interrupted = {"value": False}
-    real_send_api_request = download_module.send_api_request
+    real_send_api_request = download_module._send_api_request
 
     def flaky_send_api_request(*args: Any, **kwargs: Any) -> Any:
         method = args[0] if args else kwargs.get("method")
@@ -105,7 +105,7 @@ def interrupt_first_download(monkeypatch: pytest.MonkeyPatch) -> dict[str, bool]
 
         return response
 
-    monkeypatch.setattr(download_module, "send_api_request", flaky_send_api_request)
+    monkeypatch.setattr(download_module, "_send_api_request", flaky_send_api_request)
     return interrupted
 
 
