@@ -11,6 +11,9 @@ from dotenv import find_dotenv, load_dotenv
 logger = logging.getLogger(__name__)
 
 _PKG_LOGGER = logging.getLogger("datacollective")
+DEFAULT_LOG_FILENAME = "datacollective.log"
+_CONSOLE_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+_FILE_LOG_FORMAT = "%(asctime)s [%(levelname)s] %(name)s:%(lineno)d: %(message)s"
 
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
@@ -197,12 +200,28 @@ def _format_bytes(bytes_val: int) -> str:
     return ""
 
 
-def _enable_verbose(verbose: bool) -> None:
-    if not verbose:
+def _enable_logging(enable_logging: bool) -> None:
+    if not enable_logging:
         return
-    handler = logging.StreamHandler()
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    )
-    _PKG_LOGGER.handlers = [handler]
-    _PKG_LOGGER.setLevel(logging.INFO)
+
+    log_path = Path("~/.mozdata").expanduser() / DEFAULT_LOG_FILENAME
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+
+    if not any(type(handler) is logging.StreamHandler for handler in _PKG_LOGGER.handlers):
+        console_handler = logging.StreamHandler()
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(logging.Formatter(_CONSOLE_LOG_FORMAT))
+        _PKG_LOGGER.addHandler(console_handler)
+
+    if not any(
+        isinstance(handler, logging.FileHandler)
+        and Path(handler.baseFilename) == log_path
+        for handler in _PKG_LOGGER.handlers
+    ):
+        file_handler = logging.FileHandler(log_path, encoding="utf-8")
+        file_handler.setLevel(logging.DEBUG)
+        file_handler.setFormatter(logging.Formatter(_FILE_LOG_FORMAT))
+        _PKG_LOGGER.addHandler(file_handler)
+
+    _PKG_LOGGER.setLevel(logging.DEBUG)
+    logger.debug(f"Detailed local logging enabled at `{log_path}`")
