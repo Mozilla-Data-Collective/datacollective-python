@@ -67,6 +67,13 @@ MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 !!! warning "Security note"
     Do not commit `.env` files to version control, as they contain secrets.
 
+!!! tip
+    **Local download logs:** The SDK writes a detailed `datacollective.log`
+    file into the download directory. By default, that means
+    `~/.mozdata/datasets/datacollective.log`, or your custom `MDC_DOWNLOAD_PATH`
+    if you configured one.
+
+
 ## Basic Usage
 
 
