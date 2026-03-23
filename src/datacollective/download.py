@@ -195,6 +195,9 @@ def _resolve_and_execute_download_plan(
 
     # If overwriting, clean up any existing complete or partial download files
     if overwrite_existing:
+        logger.info(
+            f"Overwriting existing file. Cleaning up any existing files at `{str(download_plan.target_filepath)}`"
+        )
         _cleanup_partial_download(
             download_plan.tmp_filepath, download_plan.checksum_filepath
         )
@@ -307,7 +310,7 @@ def _resolve_download_dir(download_directory: str | None) -> Path:
     p.mkdir(parents=True, exist_ok=True)
     if not os.access(p, os.W_OK):
         raise PermissionError(f"Directory `{str(p)}` is not writable")
-    logger.debug(f"Resolved download directory: {p}")
+    logger.debug(f"Download directory set: {p}")
     return p
 
 
