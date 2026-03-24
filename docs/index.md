@@ -70,15 +70,14 @@ MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 
 ### Logging configuration
 
-By default, the library writes logs through the `enable_logging=True` argument passed to the main functions. 
-These logs are stored in a `.log` file into the download directory. 
-You can change the log file location by setting the `MDC_LOG_PATH` environment variable to your desired path, 
+By default, the library does not write logs (`enable_logging=False`). To enable logging, pass `enable_logging=True` to the main functions.
+When enabled, logs are stored in a `.log` file in the download directory.
+You can change the log file location by setting the `MDC_LOG_PATH` environment variable to your desired path,
 either through the `.env` file or by executing on your terminal:
 
 ```bash
 export MDC_LOG_PATH=/path/to/your/logfile.log
 ```
-
 
 ## Basic Usage
 
