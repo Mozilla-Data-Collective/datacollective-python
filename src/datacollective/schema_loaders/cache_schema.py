@@ -1,10 +1,10 @@
-import logging
 from pathlib import Path
 import yaml
 
+from datacollective.logging_utils import get_logger
 from datacollective.schema import DatasetSchema, _parse_schema, _get_dataset_schema
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def _resolve_schema(

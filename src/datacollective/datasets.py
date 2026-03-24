@@ -1,4 +1,3 @@
-import logging
 import warnings
 from pathlib import Path
 from typing import Any
@@ -6,7 +5,6 @@ from typing import Any
 import pandas as pd
 
 from datacollective.api_utils import (
-    _enable_logging,
     _get_api_url,
     _send_api_request,
 )
@@ -18,11 +16,12 @@ from datacollective.download import (
     _resolve_download_dir,
     _resolve_and_execute_download_plan,
 )
+from datacollective.logging_utils import _enable_logging, get_logger
 from datacollective.schema_loaders.cache_schema import _resolve_schema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
 from datacollective.schema import _get_dataset_schema
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:

@@ -1,4 +1,3 @@
-import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -14,9 +13,10 @@ from datacollective.api_utils import (
     _send_api_request,
 )
 from datacollective.errors import DownloadError
+from datacollective.logging_utils import get_logger
 from datacollective.models import NonEmptyStrModel
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 DOWNLOAD_SOURCE_SAVE = "save_dataset_to_disk"
 DOWNLOAD_SOURCE_LOAD = "load_dataset"

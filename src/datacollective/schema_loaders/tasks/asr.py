@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 import pandas as pd
 
+from datacollective.logging_utils import get_logger
 from datacollective.schema import DatasetSchema
 from datacollective.schema_loaders.base import (
     BaseSchemaLoader,
@@ -12,7 +12,7 @@ from datacollective.schema_loaders.base import (
     Strategy,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ASRLoader(BaseSchemaLoader):

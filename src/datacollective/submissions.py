@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-import logging
 from typing import Any
 
-
-from datacollective.api_utils import _enable_logging, _get_api_url, _send_api_request
+from datacollective.api_utils import _get_api_url, _send_api_request
+from datacollective.logging_utils import _enable_logging, get_logger
 from datacollective.models import (
     DatasetSubmission,
     _ensure_submission_model,
@@ -18,7 +17,7 @@ from datacollective.models import (
 from datacollective.upload import upload_dataset_file
 from datacollective.upload_utils import _resolve_upload_state
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def create_submission_draft(submission: DatasetSubmission) -> dict[str, Any]:

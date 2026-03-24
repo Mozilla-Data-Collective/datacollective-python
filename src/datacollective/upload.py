@@ -1,12 +1,8 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
-
-from datacollective.api_utils import (
-    _enable_logging,
-)
+from datacollective.logging_utils import _enable_logging, get_logger
 from datacollective.upload_utils import (
     UploadState,
     MAX_UPLOAD_BYTES,
@@ -22,7 +18,7 @@ from datacollective.upload_utils import (
     _cleanup_state_file,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def upload_dataset_file(
