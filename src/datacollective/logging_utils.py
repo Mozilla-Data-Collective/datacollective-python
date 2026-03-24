@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+import warnings
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -43,9 +44,28 @@ def configure_package_logging() -> None:
         _PKG_LOGGER.addHandler(logging.NullHandler())
 
 
-def _enable_logging(enable_logging: bool) -> None:
+def _enable_logging(
+    enable_logging: bool,
+    *,
+    verbose: bool | None = None,
+) -> bool:
+    if verbose is not None:
+        if enable_logging is True and verbose is not True:
+            raise ValueError(
+                "`verbose` and `enable_logging` cannot be used together "
+                "with different values. Use only `enable_logging`."
+            )
+
+        warnings.warn(
+            "`verbose` is deprecated and will be removed in a future release. "
+            "Use `enable_logging` instead.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        enable_logging = verbose
+
     if not enable_logging:
-        return
+        return False
 
     log_path = Path("~/.mozdata").expanduser() / DEFAULT_LOG_FILENAME
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -83,6 +103,7 @@ def _enable_logging(enable_logging: bool) -> None:
         DEFAULT_LOG_MAX_BYTES,
         DEFAULT_LOG_BACKUP_COUNT,
     )
+    return True
 
 
 configure_package_logging()
