@@ -29,7 +29,7 @@ def _write_schema_yaml(
 class TestCacheHit:
     """When cached schema checksum matches the archive checksum, no remote fetch should happen."""
 
-    @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_cache_hit_skips_remote_fetch(self, mock_get, tmp_path: Path) -> None:
         _write_schema_yaml(tmp_path / "schema.yaml", checksum="abc123")
 
@@ -39,7 +39,7 @@ class TestCacheHit:
         assert result.dataset_id == "ds1"
         assert result.checksum == "abc123"
 
-    @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_cache_hit_returns_all_fields(self, mock_get, tmp_path: Path) -> None:
         schema_path = tmp_path / "schema.yaml"
         data = {
@@ -63,7 +63,7 @@ class TestCacheHit:
 class TestCacheMiss:
     """When cache doesn't match (or doesn't exist), a remote fetch should happen."""
 
-    @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_no_cache_fetches_remote_and_stamps_checksum(
         self, mock_get, tmp_path: Path
     ) -> None:
@@ -78,7 +78,7 @@ class TestCacheMiss:
         saved = yaml.safe_load((tmp_path / "schema.yaml").read_text())
         assert saved["checksum"] == "new_checksum"
 
-    @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_checksum_mismatch_fetches_remote(self, mock_get, tmp_path: Path) -> None:
         _write_schema_yaml(tmp_path / "schema.yaml", checksum="old_checksum")
         remote = _make_schema(checksum=None)
@@ -89,7 +89,7 @@ class TestCacheMiss:
         mock_get.assert_called_once_with("ds1")
         assert result.checksum == "new_checksum"
 
-    @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_cached_without_checksum_fetches_remote(
         self, mock_get, tmp_path: Path
     ) -> None:
@@ -106,7 +106,7 @@ class TestCacheMiss:
 class TestFallbacks:
     """Edge cases: remote not found, no cache, etc."""
 
-    @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_remote_not_found_falls_back_to_cache(
         self, mock_get, tmp_path: Path
     ) -> None:
@@ -118,14 +118,14 @@ class TestFallbacks:
         assert result.dataset_id == "ds1"
         assert result.checksum == "old"
 
-    @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_remote_not_found_no_cache_raises(self, mock_get, tmp_path: Path) -> None:
         mock_get.return_value = None
 
         with pytest.raises(ValueError, match="not found in the schema registry"):
             _resolve_schema("ds1", tmp_path, archive_checksum="some_checksum")
 
-    @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_no_cache_no_archive_checksum_fetches_remote(
         self, mock_get, tmp_path: Path
     ) -> None:
@@ -138,7 +138,7 @@ class TestFallbacks:
         # No archive checksum to stamp
         assert result.checksum is None
 
-    @patch("datacollective.schema_loaders.cache_schema.get_dataset_schema")
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_default_archive_checksum_is_none(self, mock_get, tmp_path: Path) -> None:
         """Calling _resolve_schema without archive_checksum should work (backward compat)."""
         remote = _make_schema(checksum=None)

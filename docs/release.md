@@ -1,11 +1,11 @@
-## Release Workflow
+# Release Workflow
 
 This project uses:
 
 - `bump-my-version` as the single source of truth for the version and updating it.
 - GitHub Releases to trigger automatic publishing to PyPI via GitHub Actions.
 
-Publishing to PyPI happens **only** when a GitHub Release is created for a version tag (for example, `v0.1.0`).
+Publishing to PyPI happens **only** when a GitHub Release is created for a version tag (for example, `0.1.0`).
 
 ---
 
@@ -82,11 +82,19 @@ bump-my-version bump minor -vv
 bump-my-version bump major -vv
 ```
 
-This will update the version in `pyproject.toml` and `__init__.py`.
+This will update the version in `pyproject.toml` and `src/datacollective/__init__.py`.
 
 ---
 
-## 4. Push the changes and tag
+## 4. Update uv.lock
+
+After bumping the version, you need to update the `uv.lock` file to reflect the new version:
+
+```bash
+uv lock
+```
+
+## 5. Push the changes and tag
 
 Commit the version bump and push to the `main` branch:
 
@@ -96,17 +104,17 @@ git commit -m "Bump version to X.Y.Z"
 git push origin main
 ```
 
-Replace `vX.Y.Z` with the tag created in the previous step (for example, `v0.0.35`).
+Replace `X.Y.Z` with the tag created in the previous step (for example, `0.0.35`).
 
 ---
 
-## 5. Create a GitHub Release
+## 6. Create a GitHub Release
 
 1. Go to the repository page on GitHub.
 2. Open the `Releases` section.
 3. Click `Draft a new release`.
-4. Select the tag you just pushed (for example, `v0.0.35`).
-5. Set the release title to the same value (e.g. `v0.0.35`).
+4. Select the tag you just pushed (for example, `0.0.35`).
+5. Set the release title to the same value (e.g. `0.0.35`).
 6. Add release notes (high-level changes).
 7. Click `Publish release`.
 
@@ -114,7 +122,7 @@ This will trigger the `Publish to PyPI` GitHub Actions workflow.
 
 ---
 
-## 6. Automatic publish to PyPI
+## 7. Automatic publish to PyPI
 
 Once the GitHub Release is published:
 
@@ -131,7 +139,7 @@ You can monitor the progress:
 
 ---
 
-## 7. Verify the release on PyPI
+## 8. Verify the release on PyPI
 
 After the workflow succeeds:
 
@@ -149,6 +157,6 @@ pip install --upgrade datacollective==X.Y.Z
 
 - **Single source of truth**: The version is managed only by bump-my-version. Do **not** manually edit the version in any file.
 
-- **Tag format**: Always use `vX.Y.Z` tags (for example, `v0.0.35`). The `bump-my-version` configuration enforces this.
+- **Tag format**: Always use `X.Y.Z` tags (for example, `0.0.35`). The `bump-my-version` configuration enforces this.
 
 - **Manual workflow dispatch (advanced)**: In rare cases, you can re-run the publish job from the `Actions` tab using `workflow_dispatch`, but normally you should always go through a GitHub Release.

@@ -14,8 +14,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from datacollective.schema import DatasetSchema, parse_schema
-from datacollective.schema_loaders.registry import load_dataset_from_schema
+from datacollective.schema import DatasetSchema, _parse_schema
+from datacollective.schema_loaders.registry import _load_dataset_from_schema
 
 
 def _write(path: Path, content: str, encoding: str = "utf-8") -> None:
@@ -24,7 +24,7 @@ def _write(path: Path, content: str, encoding: str = "utf-8") -> None:
 
 
 def _schema_from_dict(d: dict) -> DatasetSchema:
-    return parse_schema(d)
+    return _parse_schema(d)
 
 
 class TestASRIndexE2E:
@@ -51,7 +51,7 @@ class TestASRIndexE2E:
                 },
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
 
         assert len(df) == 2
         assert set(df.columns) == {"audio_path", "transcription", "speaker"}
@@ -79,7 +79,7 @@ class TestASRIndexE2E:
                 },
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert "missing" not in df.columns
         assert len(df) == 1
 
@@ -101,7 +101,7 @@ class TestASRIndexE2E:
                 },
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 1
 
     def test_int_and_float_columns(self, tmp_path: Path) -> None:
@@ -123,7 +123,7 @@ class TestASRIndexE2E:
                 },
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert df["age"].iloc[0] == 30
         assert pd.isna(df["age"].iloc[1])  # "bad" → coerced to NaN
         assert df["score"].iloc[1] == pytest.approx(1.5)
@@ -151,7 +151,7 @@ class TestASRMultiSplitE2E:
                 },
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 3
         assert set(df["split"]) == {"train", "dev", "test"}
 
@@ -168,7 +168,7 @@ class TestASRMultiSplitE2E:
                 "splits": ["train", "dev"],
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert set(df["split"]) == {"train", "dev"}
 
     def test_custom_file_pattern(self, tmp_path: Path) -> None:
@@ -184,7 +184,7 @@ class TestASRMultiSplitE2E:
                 "format": "csv",
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 1
         assert df["split"].iloc[0] == "train"
 
@@ -210,7 +210,7 @@ class TestTTSIndexE2E:
                 },
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 2
         assert df["transcription"].tolist() == ["Hello world", "Goodbye"]
         assert all("wavs" in p for p in df["audio_path"])
@@ -230,7 +230,7 @@ class TestTTSIndexE2E:
                 },
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 2
 
     def test_no_column_mappings_returns_raw(self, tmp_path: Path) -> None:
@@ -244,7 +244,7 @@ class TestTTSIndexE2E:
                 "index_file": "meta.csv",
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert list(df.columns) == ["a", "b", "c"]
 
     def test_custom_encoding(self, tmp_path: Path) -> None:
@@ -265,7 +265,7 @@ class TestTTSIndexE2E:
                 },
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert df["text"].iloc[0] == "grüezi"
 
 
@@ -296,7 +296,7 @@ class TestTTSPairedGlobE2E:
                 "audio_extension": ".webm",
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 6
         assert set(df["split"]) == {"General", "Chat"}
         assert all(p.endswith(".webm") for p in df["audio_path"])
@@ -317,7 +317,7 @@ class TestTTSPairedGlobE2E:
                 "audio_extension": ".webm",
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 1
         assert df["transcription"].iloc[0] == "has audio"
 
@@ -336,7 +336,7 @@ class TestTTSPairedGlobE2E:
                 "audio_extension": ".wav",
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert df["transcription"].iloc[0] == "whitespace padded"
 
     def test_audio_path_absolute(self, tmp_path: Path) -> None:
@@ -354,7 +354,7 @@ class TestTTSPairedGlobE2E:
                 "audio_extension": ".ogg",
             }
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert Path(df["audio_path"].iloc[0]).is_absolute()
 
 
@@ -362,7 +362,7 @@ class TestErrorPaths:
     def test_unknown_task_raises(self, tmp_path: Path) -> None:
         schema = DatasetSchema(dataset_id="ds", task="UNKNOWN_TASK")
         with pytest.raises(ValueError, match="No schema loader registered"):
-            load_dataset_from_schema(schema, tmp_path)
+            _load_dataset_from_schema(schema, tmp_path)
 
     def test_asr_missing_index_file_raises(self, tmp_path: Path) -> None:
         schema = _schema_from_dict(
@@ -375,7 +375,7 @@ class TestErrorPaths:
             }
         )
         with pytest.raises(FileNotFoundError, match="missing.tsv"):
-            load_dataset_from_schema(schema, tmp_path)
+            _load_dataset_from_schema(schema, tmp_path)
 
     def test_asr_missing_required_column_raises(self, tmp_path: Path) -> None:
         _write(tmp_path / "d.tsv", "path\tsentence\nc.mp3\thi\n")
@@ -389,7 +389,7 @@ class TestErrorPaths:
             }
         )
         with pytest.raises(KeyError, match="nonexistent"):
-            load_dataset_from_schema(schema, tmp_path)
+            _load_dataset_from_schema(schema, tmp_path)
 
     def test_tts_paired_glob_no_text_files_raises(self, tmp_path: Path) -> None:
         schema = _schema_from_dict(
@@ -402,7 +402,7 @@ class TestErrorPaths:
             }
         )
         with pytest.raises(FileNotFoundError):
-            load_dataset_from_schema(schema, tmp_path)
+            _load_dataset_from_schema(schema, tmp_path)
 
     def test_tts_index_no_format_raises(self, tmp_path: Path) -> None:
         _write(tmp_path / "meta.csv", "a,b\n1,2\n")
@@ -414,7 +414,7 @@ class TestErrorPaths:
             }
         )
         with pytest.raises(ValueError, match="format.*separator"):
-            load_dataset_from_schema(schema, tmp_path)
+            _load_dataset_from_schema(schema, tmp_path)
 
     def test_asr_multi_split_no_files_raises(self, tmp_path: Path) -> None:
         schema = _schema_from_dict(
@@ -426,4 +426,4 @@ class TestErrorPaths:
             }
         )
         with pytest.raises(RuntimeError, match="No split files"):
-            load_dataset_from_schema(schema, tmp_path)
+            _load_dataset_from_schema(schema, tmp_path)

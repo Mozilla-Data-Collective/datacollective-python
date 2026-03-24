@@ -20,7 +20,7 @@ _TASK_REGISTRY: dict[str, Type[BaseSchemaLoader]] = {
 }
 
 
-def get_task_loader(task: str) -> Type[BaseSchemaLoader]:
+def _get_task_loader(task: str) -> Type[BaseSchemaLoader]:
     """
     Return the loader class for *task*.
 
@@ -37,7 +37,7 @@ def get_task_loader(task: str) -> Type[BaseSchemaLoader]:
     return _TASK_REGISTRY[key]
 
 
-def load_dataset_from_schema(schema: DatasetSchema, extract_dir: Path) -> pd.DataFrame:
+def _load_dataset_from_schema(schema: DatasetSchema, extract_dir: Path) -> pd.DataFrame:
     """
     Instantiate the appropriate loader for *schema.task* and return the
     loaded `~pandas.DataFrame`.
@@ -49,7 +49,7 @@ def load_dataset_from_schema(schema: DatasetSchema, extract_dir: Path) -> pd.Dat
     Returns:
         A pandas DataFrame with the loaded dataset.
     """
-    loader_cls = get_task_loader(schema.task)
+    loader_cls = _get_task_loader(schema.task)
     loader = loader_cls(schema=schema, extract_dir=extract_dir)
     logger.info(f"Loading dataset '{schema.dataset_id}' with {loader_cls.__name__}")
     return loader.load()

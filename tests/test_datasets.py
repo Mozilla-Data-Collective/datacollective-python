@@ -2,15 +2,21 @@ from pathlib import Path
 
 from _pytest.monkeypatch import MonkeyPatch
 
-from datacollective.datasets import _strip_archive_suffix, resolve_download_dir
+from datacollective.datasets import resolve_dataset_id
+from datacollective.download import _resolve_download_dir
 
 
-def test_strip_archive_suffix_removes_known_extensions(tmp_path: Path) -> None:
-    tar_path = tmp_path / "sample.tar.gz"
-    zip_path = tmp_path / "sample.zip"
+def test_resolve_dataset_id_returns_canonical_id(monkeypatch: MonkeyPatch) -> None:
+    def fake_get_dataset_details(dataset_id: str) -> dict[str, str]:
+        assert dataset_id == "dataset-slug"
+        return {"id": "dataset-id"}
 
-    assert _strip_archive_suffix(tar_path).name == "sample"
-    assert _strip_archive_suffix(zip_path).name == "sample"
+    monkeypatch.setattr(
+        "datacollective.datasets.get_dataset_details",
+        fake_get_dataset_details,
+    )
+
+    assert resolve_dataset_id("dataset-slug") == "dataset-id"
 
 
 def test_resolve_download_dir_prefers_argument(
@@ -18,7 +24,7 @@ def test_resolve_download_dir_prefers_argument(
 ) -> None:
     monkeypatch.delenv("MDC_DOWNLOAD_PATH", raising=False)
     custom_dir = tmp_path / "custom"
-    resolved = resolve_download_dir(str(custom_dir))
+    resolved = _resolve_download_dir(str(custom_dir))
 
     assert resolved == custom_dir
     assert custom_dir.exists()
@@ -29,7 +35,7 @@ def test_resolve_download_dir_uses_env_default(
 ) -> None:
     env_dir = tmp_path / "env"
     monkeypatch.setenv("MDC_DOWNLOAD_PATH", str(env_dir))
-    resolved = resolve_download_dir(None)
+    resolved = _resolve_download_dir(None)
 
     assert resolved == env_dir
     assert env_dir.exists()
