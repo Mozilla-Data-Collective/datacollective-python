@@ -41,6 +41,7 @@ Optional:
 - `MDC_API_URL` - API endpoint (defaults to the production URL).
 - `MDC_DOWNLOAD_PATH` - Local directory where datasets will be downloaded
   (defaults to `~/.mozdata/datasets`).
+- `MDC_LOG_PATH` - File path for logs (defaults to a `.log` file in the download directory).
 
 Example using environment variables directly:
 
@@ -66,6 +67,19 @@ MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 
 !!! warning "Security note"
     Do not commit `.env` files to version control, as they contain secrets.
+
+### Logging configuration
+
+The library has the ability to emit detailed logs for debugging and monitoring purposes, 
+on both the console and a local log file. This is disabled by default.
+To enable logging, pass `enable_logging=True` to the main functions.
+When enabled, logs are stored in a `.log` file in the download directory.
+You can change the log file location by setting the `MDC_LOG_PATH` environment variable to your desired path,
+either through the `.env` file or by executing on your terminal:
+
+```bash
+export MDC_LOG_PATH=/path/to/your/logfile.log
+```
 
 ## Basic Usage
 

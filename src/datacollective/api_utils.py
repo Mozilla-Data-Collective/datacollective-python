@@ -1,4 +1,3 @@
-import logging
 import os
 import platform
 from pathlib import Path
@@ -7,10 +6,9 @@ from typing import Any
 import requests
 from dotenv import find_dotenv, load_dotenv
 
+from datacollective.logging_utils import get_logger
 
-logger = logging.getLogger(__name__)
-
-_PKG_LOGGER = logging.getLogger("datacollective")
+logger = get_logger(__name__)
 
 
 DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
@@ -67,7 +65,9 @@ def _send_api_request(
     if extra_headers:
         headers.update(extra_headers)
 
-    logger.debug(f"API request: {method.upper()} {url} (stream={stream})")
+    logger.debug(f"API request: {method.upper()} {url} (stream={stream})\n"
+                 f"json_body: {json_body}"
+                 f"params: {params}")
 
     resp = requests.request(
         method=method.upper(),
@@ -78,6 +78,8 @@ def _send_api_request(
         json=json_body,
         params=params,
     )
+
+    logger.debug(f"API response: {_response_body_for_logging(resp, stream=stream)}")
 
     if resp.status_code == 404:
         detail = _extract_error_detail(resp)
@@ -112,6 +114,17 @@ def _extract_error_detail(resp: requests.Response) -> str:
         return str(body.get("message") or body.get("error") or "")
     except Exception:
         return ""
+
+
+def _response_body_for_logging(resp: requests.Response, stream: bool = False) -> str:
+    """Return the response body for logging without consuming streamed payloads."""
+    if stream:
+        return "<streamed response body omitted>"
+    try:
+        status, body = resp.status_code, resp.text
+    except Exception:
+        return "<unavailable>"
+    return f"{status}: {body}"
 
 
 def _get_api_key() -> str:
@@ -180,14 +193,3 @@ def _format_bytes(bytes_val: int) -> str:
             return f"{value:.1f} {unit}"
         value /= 1024.0
     return ""
-
-
-def _enable_verbose(verbose: bool) -> None:
-    if not verbose:
-        return
-    handler = logging.StreamHandler()
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    )
-    _PKG_LOGGER.handlers = [handler]
-    _PKG_LOGGER.setLevel(logging.INFO)

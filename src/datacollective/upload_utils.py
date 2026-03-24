@@ -1,6 +1,5 @@
 import hashlib
 import json
-import logging
 import math
 import time
 from pathlib import Path
@@ -15,10 +14,11 @@ from datacollective.api_utils import (
     _send_api_request,
     _format_bytes,
 )
+from datacollective.logging_utils import get_logger
 from datacollective.models import NonEmptyStrModel, UploadPart
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Longer read timeout for uploading potentially large chunks on slow connections
 UPLOAD_TIMEOUT = (20, 600)  # (20s connect timeout, 10min read timeout)
