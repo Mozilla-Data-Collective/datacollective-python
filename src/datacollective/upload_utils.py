@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,7 @@ RETRY_BACKOFF_SECONDS = 2
 DEFAULT_PART_SIZE = 5 * 1024 * 1024  # 5 MB default part size to upload chunk by chunk
 DEFAULT_MIME_TYPE = "application/gzip"
 MAX_UPLOAD_BYTES = 80 * 1000 * 1000 * 1000  # 80 GB
+N_UPLOAD_PARALLEL_CHUNK = 4
 
 
 class UploadSession(NonEmptyStrModel):
@@ -240,7 +242,58 @@ def _init_progress_bar(
     return progress_bar
 
 
-def _upload_missing_parts(
+def _upload_single_pending_part(
+    file_upload_id: str, part_number: int, chunk: bytes
+) -> tuple[int, str, int]:
+    presigned = _get_presigned_part_url(file_upload_id, part_number)
+    response = _upload_part_with_retry(presigned.url, chunk)
+    return part_number, _extract_etag(response), len(chunk)
+
+
+def _record_uploaded_part(
+    state: UploadState,
+    parts_by_number: dict[int, str],
+    part_number: int,
+    etag: str,
+    state_file: Path,
+) -> None:
+    parts_by_number[part_number] = etag
+    state.parts = _parts_from_mapping(parts_by_number)
+    _save_upload_state(state_file, state)
+
+
+def _upload_part_batch(
+    state: UploadState,
+    pending_parts: list[tuple[int, bytes]],
+    parts_by_number: dict[int, str],
+    progress_bar: ProgressBar | None,
+    state_file: Path,
+) -> None:
+    max_workers = min(N_UPLOAD_PARALLEL_CHUNK, len(pending_parts))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        futures = [
+            executor.submit(
+                _upload_single_pending_part,
+                state.fileUploadId,
+                part_number,
+                chunk,
+            )
+            for part_number, chunk in pending_parts
+        ]
+        for future in as_completed(futures):
+            part_number, etag, chunk_size = future.result()
+            _record_uploaded_part(
+                state=state,
+                parts_by_number=parts_by_number,
+                part_number=part_number,
+                etag=etag,
+                state_file=state_file,
+            )
+            if progress_bar:
+                progress_bar.update(chunk_size)
+
+
+def _upload_pending_parts_in_parallel(
     path: Path,
     state: UploadState,
     parts_by_number: dict[int, str],
@@ -250,6 +303,7 @@ def _upload_missing_parts(
 ) -> tuple[int, str]:
     hasher = hashlib.sha256()
     bytes_read = 0
+    pending_parts: list[tuple[int, bytes]] = []
     with open(path, "rb") as file_handle:
         for part_index in range(expected_parts):
             part_number = part_index + 1
@@ -262,15 +316,25 @@ def _upload_missing_parts(
             if part_number in parts_by_number:
                 continue
 
-            presigned = _get_presigned_part_url(state.fileUploadId, part_number)
-            response = _upload_part_with_retry(presigned.url, chunk)
-            etag = _extract_etag(response)
-            parts_by_number[part_number] = etag
-            state.parts = _parts_from_mapping(parts_by_number)
-            _save_upload_state(state_file, state)
+            pending_parts.append((part_number, chunk))
+            if len(pending_parts) >= N_UPLOAD_PARALLEL_CHUNK:
+                _upload_part_batch(
+                    state=state,
+                    pending_parts=pending_parts,
+                    parts_by_number=parts_by_number,
+                    progress_bar=progress_bar,
+                    state_file=state_file,
+                )
+                pending_parts = []
 
-            if progress_bar:
-                progress_bar.update(len(chunk))
+    if pending_parts:
+        _upload_part_batch(
+            state=state,
+            pending_parts=pending_parts,
+            parts_by_number=parts_by_number,
+            progress_bar=progress_bar,
+            state_file=state_file,
+        )
 
     return bytes_read, hasher.hexdigest()
 
