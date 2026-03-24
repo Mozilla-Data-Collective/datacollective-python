@@ -32,4 +32,4 @@ __all__ = [
 ]
 
 # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
-__version__ = "0.4.4"
+__version__ = "0.4.5"
