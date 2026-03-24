@@ -6,6 +6,7 @@ from typing import Any
 import pandas as pd
 
 from datacollective.api_utils import (
+    _enable_logging,
     _get_api_url,
     _send_api_request,
 )
@@ -54,6 +55,7 @@ def download_dataset(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
+    enable_logging: bool = True,
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
@@ -71,6 +73,7 @@ def download_dataset(
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite the existing archive file.
+        enable_logging: Whether to enable SDK logging to console and a local log file.
 
     Returns:
         Path to the downloaded dataset archive.
@@ -82,6 +85,9 @@ def download_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
+    _enable_logging(enable_logging)
+    logger.info(f"Downloading dataset {dataset_id}")
+
     _id = resolve_dataset_id(dataset_id)
     download_plan = _get_download_plan(
         _id,
@@ -102,6 +108,7 @@ def load_dataset(
     show_progress: bool = True,
     overwrite_existing: bool = False,
     overwrite_extracted: bool = False,
+    enable_logging: bool = False,
 ) -> pd.DataFrame:
     """
     Download (if needed), extract (if not already extracted), and load the dataset into a pandas DataFrame.
@@ -126,6 +133,7 @@ def load_dataset(
         overwrite_extracted: Whether to overwrite existing extracted files by re-extracting the archive file.
             Only makes sense when overwrite_existing is False.
             Will check in the download directory for existing extracted files with the default naming of the folder.
+        enable_logging: Whether to enable SDK logging to console and a local log file.
     Returns:
         A pandas DataFrame with the loaded dataset.
 
@@ -136,6 +144,9 @@ def load_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
+    _enable_logging(enable_logging)
+    logger.info("Loading dataset `%s`", dataset_id)
+
     _id = resolve_dataset_id(dataset_id)
     schema = _get_dataset_schema(_id)
     if schema is None:
@@ -196,6 +207,7 @@ def save_dataset_to_disk(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
+    enable_logging: bool = False,
 ) -> Path:
     """
     Deprecated alias for `download_dataset`.
@@ -213,4 +225,5 @@ def save_dataset_to_disk(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        enable_logging=enable_logging,
     )
