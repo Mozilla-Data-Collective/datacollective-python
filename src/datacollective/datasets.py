@@ -222,7 +222,6 @@ def save_dataset_to_disk(
         DeprecationWarning,
         stacklevel=2,
     )
-    enable_logging = _enable_logging(enable_logging)
     return download_dataset(
         dataset_id=dataset_id,
         download_directory=download_directory,

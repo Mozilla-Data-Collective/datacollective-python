@@ -30,8 +30,6 @@ def upload_dataset_file(
     state_path: str | None = None,
     show_progress: bool = True,
     enable_logging: bool = False,
-    *,
-    verbose: bool | None = None,
 ) -> UploadState:
     """
     Upload a dataset file using multipart uploads with resumable state.
@@ -48,10 +46,9 @@ def upload_dataset_file(
             `<filename>.mdc-upload.json` alongside the archive.
         enable_logging: Whether to enable detailed logging during the upload.
         show_progress: Whether to show a progress bar during upload.
-        verbose: Deprecated alias for `enable_logging`.
     """
     path = Path(file_path)
-    _enable_logging(enable_logging, verbose=verbose)
+    _enable_logging(enable_logging)
 
     if not path.exists():
         raise FileNotFoundError(f"File not found: `{file_path}`")

@@ -103,8 +103,6 @@ def create_submission_with_upload(
     submission: DatasetSubmission,
     state_path: str | None = None,
     enable_logging: bool = False,
-    *,
-    verbose: bool | None = None,
 ) -> dict[str, Any]:
     """
     Single point function to create a submission, upload a file, update metadata, and submit for review.
@@ -115,9 +113,8 @@ def create_submission_with_upload(
         submission: Dataset submission model with metadata fields.
         state_path: Optional path to persist upload state.
         enable_logging: Whether to enable detailed logging during the process.
-        verbose: Deprecated alias for `enable_logging`.
     """
-    enable_logging = _enable_logging(enable_logging, verbose=verbose)
+    _enable_logging(enable_logging)
 
     submission = _ensure_submission_model(submission)
 

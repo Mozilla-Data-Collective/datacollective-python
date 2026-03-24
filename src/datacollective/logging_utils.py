@@ -44,28 +44,9 @@ def configure_package_logging() -> None:
         _PKG_LOGGER.addHandler(logging.NullHandler())
 
 
-def _enable_logging(
-    enable_logging: bool,
-    *,
-    verbose: bool | None = None,
-) -> bool:
-    if verbose is not None:
-        if enable_logging is True and verbose is not True:
-            raise ValueError(
-                "`verbose` and `enable_logging` cannot be used together "
-                "with different values. Use only `enable_logging`."
-            )
-
-        warnings.warn(
-            "`verbose` is deprecated and will be removed in a future release. "
-            "Use `enable_logging` instead.",
-            DeprecationWarning,
-            stacklevel=3,
-        )
-        enable_logging = verbose
-
+def _enable_logging(enable_logging: bool) -> None:
     if not enable_logging:
-        return False
+        return None
 
     log_path = Path("~/.mozdata").expanduser() / DEFAULT_LOG_FILENAME
     log_path.parent.mkdir(parents=True, exist_ok=True)
