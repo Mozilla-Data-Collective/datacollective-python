@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 
-from datacollective.api_utils import _get_api_url, _send_api_request, _enable_verbose
+from datacollective.api_utils import _enable_logging, _get_api_url, _send_api_request
 from datacollective.models import (
     DatasetSubmission,
     _ensure_submission_model,
@@ -100,7 +100,7 @@ def create_submission_with_upload(
     file_path: str,
     submission: DatasetSubmission,
     state_path: str | None = None,
-    verbose: bool = True,
+    enable_logging: bool = True,
 ) -> dict[str, Any]:
     """
     Single point function to create a submission, upload a file, update metadata, and submit for review.
@@ -110,9 +110,9 @@ def create_submission_with_upload(
         file_path: Path to dataset archive.
         submission: Dataset submission model with metadata fields.
         state_path: Optional path to persist upload state.
-        verbose: Whether to enable detailed logging during the process.
+        enable_logging: Whether to enable detailed logging during the process.
     """
-    _enable_verbose(verbose)
+    _enable_logging(enable_logging)
 
     submission = _ensure_submission_model(submission)
 
@@ -145,6 +145,7 @@ def create_submission_with_upload(
         file_path=file_path,
         submission_id=submission_id,
         state_path=state_path,
+        enable_logging=enable_logging,
     )
 
     submission.fileUploadId = upload_state.fileUploadId
