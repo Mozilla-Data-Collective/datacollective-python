@@ -1,7 +1,6 @@
 import logging
 import os
 import uuid
-import warnings
 from datetime import datetime, timezone
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -84,7 +83,7 @@ def _enable_logging(enable_logging: bool) -> None:
         DEFAULT_LOG_MAX_BYTES,
         DEFAULT_LOG_BACKUP_COUNT,
     )
-    return True
+    return None
 
 
 configure_package_logging()

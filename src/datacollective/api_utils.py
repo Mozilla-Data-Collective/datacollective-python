@@ -65,9 +65,11 @@ def _send_api_request(
     if extra_headers:
         headers.update(extra_headers)
 
-    logger.debug(f"API request: {method.upper()} {url} (stream={stream})\n"
-                 f"json_body: {json_body}"
-                 f"params: {params}")
+    logger.debug(
+        f"API request: {method.upper()} {url} (stream={stream})\n"
+        f"json_body: {json_body}"
+        f"params: {params}"
+    )
 
     resp = requests.request(
         method=method.upper(),
