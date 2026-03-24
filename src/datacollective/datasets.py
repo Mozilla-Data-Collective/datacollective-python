@@ -58,8 +58,6 @@ def download_dataset(
     show_progress: bool = True,
     overwrite_existing: bool = False,
     enable_logging: bool = False,
-    *,
-    verbose: bool | None = None,
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
@@ -78,7 +76,6 @@ def download_dataset(
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite the existing archive file.
         enable_logging: Whether to enable SDK logging to console and a local log file.
-        verbose: Deprecated alias for `enable_logging`.
 
     Returns:
         Path to the downloaded dataset archive.
@@ -90,7 +87,7 @@ def download_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    _enable_logging(enable_logging, verbose=verbose)
+    _enable_logging(enable_logging)
     logger.info(f"Downloading dataset {dataset_id}")
 
     _id = resolve_dataset_id(dataset_id)
@@ -114,8 +111,6 @@ def load_dataset(
     overwrite_existing: bool = False,
     overwrite_extracted: bool = False,
     enable_logging: bool = False,
-    *,
-    verbose: bool | None = None,
 ) -> pd.DataFrame:
     """
     Download (if needed), extract (if not already extracted), and load the dataset into a pandas DataFrame.
@@ -141,7 +136,6 @@ def load_dataset(
             Only makes sense when overwrite_existing is False.
             Will check in the download directory for existing extracted files with the default naming of the folder.
         enable_logging: Whether to enable SDK logging to console and a local log file.
-        verbose: Deprecated alias for `enable_logging`.
     Returns:
         A pandas DataFrame with the loaded dataset.
 
@@ -152,7 +146,7 @@ def load_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    _enable_logging(enable_logging, verbose=verbose)
+    _enable_logging(enable_logging)
     logger.info("Loading dataset `%s`", dataset_id)
 
     _id = resolve_dataset_id(dataset_id)
@@ -216,8 +210,6 @@ def save_dataset_to_disk(
     show_progress: bool = True,
     overwrite_existing: bool = False,
     enable_logging: bool = False,
-    *,
-    verbose: bool | None = None,
 ) -> Path:
     """
     Deprecated alias for `download_dataset`.
@@ -230,7 +222,7 @@ def save_dataset_to_disk(
         DeprecationWarning,
         stacklevel=2,
     )
-    enable_logging = _enable_logging(enable_logging, verbose=verbose)
+    enable_logging = _enable_logging(enable_logging)
     return download_dataset(
         dataset_id=dataset_id,
         download_directory=download_directory,
