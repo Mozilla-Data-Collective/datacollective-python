@@ -55,7 +55,7 @@ def download_dataset(
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
-    enable_logging: bool = True,
+    enable_logging: bool = False,
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.

@@ -100,7 +100,7 @@ def create_submission_with_upload(
     file_path: str,
     submission: DatasetSubmission,
     state_path: str | None = None,
-    enable_logging: bool = True,
+    enable_logging: bool = False,
 ) -> dict[str, Any]:
     """
     Single point function to create a submission, upload a file, update metadata, and submit for review.

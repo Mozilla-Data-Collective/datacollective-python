@@ -29,8 +29,8 @@ def upload_dataset_file(
     file_path: str,
     submission_id: str,
     state_path: str | None = None,
-    enable_logging: bool = True,
     show_progress: bool = True,
+    enable_logging: bool = False,
 ) -> UploadState:
     """
     Upload a dataset file using multipart uploads with resumable state.
