@@ -65,6 +65,9 @@ dataset_path = download_dataset("your-dataset-id")
 > [!TIP]
 > **Automatic Resume:** If a download is interrupted (e.g., due to a network error or it gets stopped it manually), the next time you try download the same dataset at the same folder location, we will automatically resume from where the download left off!
 
+> [!TIP]
+> Set `enable_logging=True` to emit detailed SDK logs to the console and a local log file.
+
 
 5. **Get information & metadata about a dataset**:
 

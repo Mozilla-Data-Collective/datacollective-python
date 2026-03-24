@@ -41,6 +41,7 @@ Optional:
 - `MDC_API_URL` - API endpoint (defaults to the production URL).
 - `MDC_DOWNLOAD_PATH` - Local directory where datasets will be downloaded
   (defaults to `~/.mozdata/datasets`).
+- `MDC_LOG_PATH` - File path for logs (defaults to a `.log` file in the download directory).
 
 Example using environment variables directly:
 
@@ -67,11 +68,16 @@ MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 !!! warning "Security note"
     Do not commit `.env` files to version control, as they contain secrets.
 
-!!! tip
-    **Local download logs:** The SDK writes a detailed `datacollective.log`
-    file into the download directory. By default, that means
-    `~/.mozdata/datasets/datacollective.log`, or your custom `MDC_DOWNLOAD_PATH`
-    if you configured one.
+### Logging configuration
+
+By default, the library writes logs through the `enable_logging=True` argument passed to the main functions. 
+These logs are stored in a `.log` file into the download directory. 
+You can change the log file location by setting the `MDC_LOG_PATH` environment variable to your desired path, 
+either through the `.env` file or by executing on your terminal:
+
+```bash
+export MDC_LOG_PATH=/path/to/your/logfile.log
+```
 
 
 ## Basic Usage
