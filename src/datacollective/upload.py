@@ -15,7 +15,7 @@ from datacollective.upload_utils import (
     _expected_parts,
     _normalize_parts,
     _init_progress_bar,
-    _upload_missing_parts,
+    _upload_pending_parts_in_parallel,
     _parts_from_mapping,
     _save_upload_state,
     _complete_upload,
@@ -88,7 +88,7 @@ def upload_dataset_file(
         already_uploaded=len(parts_by_number),
     )
 
-    bytes_read, checksum = _upload_missing_parts(
+    bytes_read, checksum = _upload_pending_parts_in_parallel(
         path=path,
         state=state,
         parts_by_number=parts_by_number,
