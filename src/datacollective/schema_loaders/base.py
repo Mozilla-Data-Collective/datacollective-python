@@ -90,7 +90,10 @@ class BaseSchemaLoader(abc.ABC):
         return candidates[0]
 
     def _load_multi_sections(self) -> pd.DataFrame:
-        """ """
+        """
+        Parsing logic for archives with multiple directories, and each directory
+        has its own index file. The section name is inferred from the parent directory of the index file.
+        """
         sections = self._resolve_sections()
         sep = self.schema.separator or FORMAT_SEP.get(self.schema.format or "", ",")
         header = "infer" if self.schema.has_header else None
@@ -108,7 +111,7 @@ class BaseSchemaLoader(abc.ABC):
 
     def _resolve_sections(self) -> list:
         """
-        Get a list of valid sections
+        Get a list of valid sections, i.e. subdirectories that include an index file.
         """
 
         assert self.schema.sections is not None
