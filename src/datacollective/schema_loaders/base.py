@@ -23,7 +23,7 @@ class Strategy(StrEnum):
     """Loading strategies recognised by schema loaders."""
 
     MULTI_SPLIT = "multi_split"
-    MULTI_SELECTION = "multi_selection"
+    MULTI_SECTIONS = "multi_sections"
     PAIRED_GLOB = "paired_glob"
     GLOB = "glob"
 
