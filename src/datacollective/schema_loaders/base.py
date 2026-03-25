@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 import abc
-import logging
 from enum import StrEnum
 from pathlib import Path
 
 import pandas as pd
 
+from datacollective.logging_utils import get_logger
 from datacollective.schema import DatasetSchema
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 #: Separator lookup used by index-based loaders.
 FORMAT_SEP: dict[str, str] = {

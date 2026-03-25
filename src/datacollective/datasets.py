@@ -1,9 +1,4 @@
-from __future__ import annotations
-
-import logging
-import shutil
-import tarfile
-import zipfile
+import warnings
 from pathlib import Path
 from typing import Any
 
@@ -11,21 +6,25 @@ import pandas as pd
 
 from datacollective.api_utils import (
     _get_api_url,
-    send_api_request,
+    _send_api_request,
 )
+from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
-    cleanup_partial_download,
-    determine_resume_state,
-    execute_download_plan,
-    get_download_plan,
-    resolve_download_dir,
-    write_checksum_file,
+    DOWNLOAD_SOURCE_SAVE,
+    DOWNLOAD_SOURCE_LOAD,
+    _get_download_plan,
+    _resolve_download_dir,
+    _resolve_and_execute_download_plan,
+)
+from datacollective.logging_utils import (
+    _enable_logging,
+    get_logger,
 )
 from datacollective.schema_loaders.cache_schema import _resolve_schema
-from datacollective.schema_loaders.registry import load_dataset_from_schema
-from datacollective.schema import get_dataset_schema
+from datacollective.schema_loaders.registry import _load_dataset_from_schema
+from datacollective.schema import _get_dataset_schema
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def get_dataset_details(dataset_id: str) -> dict[str, Any]:
@@ -33,7 +32,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
     Return dataset details from the MDC API as a dictionary.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
 
     Returns:
         A dict with dataset details as returned by the API.
@@ -49,15 +48,16 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
         raise ValueError("`dataset_id` must be a non-empty string")
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
-    resp = send_api_request(method="GET", url=url)
+    resp = _send_api_request(method="GET", url=url)
     return dict(resp.json())
 
 
-def save_dataset_to_disk(
+def download_dataset(
     dataset_id: str,
     download_directory: str | None = None,
     show_progress: bool = True,
     overwrite_existing: bool = False,
+    enable_logging: bool = False,
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
@@ -66,12 +66,16 @@ def save_dataset_to_disk(
     Automatically resumes interrupted downloads if a matching .checksum file exists from a
     previous attempt.
 
+    Note: Previously called `save_dataset_to_disk`, which remains available as a
+    deprecated alias for backward compatibility.
+
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
         download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: Whether to overwrite the existing archive file.
+        enable_logging: Whether to enable SDK logging to console and a local log file.
 
     Returns:
         Path to the downloaded dataset archive.
@@ -83,40 +87,21 @@ def save_dataset_to_disk(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    download_plan = get_download_plan(dataset_id, download_directory)
+    _enable_logging(enable_logging)
+    logger.info(f"Downloading dataset {dataset_id}")
 
-    # Case 1: Skip download if complete dataset archive already exists
-    if download_plan.target_filepath.exists() and not overwrite_existing:
-        logger.info(
-            f"File already exists. "
-            f"Skipping download: `{str(download_plan.target_filepath)}`"
-        )
-        return Path(download_plan.target_filepath)
-
-    # If overwriting, clean up any existing complete or partial download files
-    if overwrite_existing:
-        cleanup_partial_download(
-            download_plan.tmp_filepath, download_plan.checksum_filepath
-        )
-        if download_plan.target_filepath.exists():
-            download_plan.target_filepath.unlink()
-
-    # Determine whether to resume download based on existing .checksum and .part files
-    resume_checksum = determine_resume_state(download_plan)
-
-    # Write checksum file before starting download (for potential resume later)
-    if download_plan.checksum and not resume_checksum:
-        write_checksum_file(download_plan.checksum_filepath, download_plan.checksum)
-
-    execute_download_plan(download_plan, resume_checksum, show_progress)
-
-    # Download complete. Rename temp file to target and remove checksum file
-    download_plan.tmp_filepath.replace(download_plan.target_filepath)
-    if download_plan.checksum_filepath.exists():
-        download_plan.checksum_filepath.unlink()
-
-    logger.info(f"Saved dataset to `{str(download_plan.target_filepath)}`")
-    return Path(download_plan.target_filepath)
+    _id = resolve_dataset_id(dataset_id)
+    download_plan = _get_download_plan(
+        _id,
+        download_directory,
+        download_source=DOWNLOAD_SOURCE_SAVE,
+    )
+    return _resolve_and_execute_download_plan(
+        download_plan=download_plan,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+        download_source=DOWNLOAD_SOURCE_SAVE,
+    )
 
 
 def load_dataset(
@@ -125,6 +110,7 @@ def load_dataset(
     show_progress: bool = True,
     overwrite_existing: bool = False,
     overwrite_extracted: bool = False,
+    enable_logging: bool = False,
 ) -> pd.DataFrame:
     """
     Download (if needed), extract (if not already extracted), and load the dataset into a pandas DataFrame.
@@ -141,7 +127,7 @@ def load_dataset(
     previous attempt.
 
     Args:
-        dataset_id: The dataset ID (as shown in MDC platform).
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
         download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
@@ -149,6 +135,7 @@ def load_dataset(
         overwrite_extracted: Whether to overwrite existing extracted files by re-extracting the archive file.
             Only makes sense when overwrite_existing is False.
             Will check in the download directory for existing extracted files with the default naming of the folder.
+        enable_logging: Whether to enable SDK logging to console and a local log file.
     Returns:
         A pandas DataFrame with the loaded dataset.
 
@@ -159,101 +146,86 @@ def load_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    schema = get_dataset_schema(dataset_id)
+    _enable_logging(enable_logging)
+    logger.info("Loading dataset `%s`", dataset_id)
+
+    _id = resolve_dataset_id(dataset_id)
+    schema = _get_dataset_schema(_id)
     if schema is None:
-        try:
-            get_dataset_details(dataset_id)
-        except FileNotFoundError:
-            raise RuntimeError(
-                f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped. "
-            )
         raise RuntimeError(
-            f"Dataset '{dataset_id}' exists but is not supported by load_dataset yet. "
-            f"You can download the raw archive with: save_dataset_to_disk('{dataset_id}'). "
+            f"Dataset '{_id}' exists but is not supported by load_dataset yet. "
+            f"You can download the raw archive with: download_dataset('{_id}'). "
             f"If you are the data owner consider submitting a schema for your dataset via the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
         )
 
-    download_plan = get_download_plan(dataset_id, download_directory)
+    download_plan = _get_download_plan(
+        _id,
+        download_directory,
+        download_source=DOWNLOAD_SOURCE_LOAD,
+    )
     archive_checksum = download_plan.checksum
 
-    archive_path = save_dataset_to_disk(
-        dataset_id=dataset_id,
-        download_directory=download_directory,
+    archive_path = _resolve_and_execute_download_plan(
+        download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        download_source=DOWNLOAD_SOURCE_LOAD,
     )
-    base_dir = resolve_download_dir(download_directory)
+    base_dir = _resolve_download_dir(download_directory)
     extract_dir = _extract_archive(
         archive_path=archive_path,
         dest_dir=base_dir,
         overwrite_extracted=overwrite_extracted,
     )
 
-    schema = _resolve_schema(dataset_id, extract_dir, archive_checksum)
-    return load_dataset_from_schema(schema, extract_dir)
+    schema = _resolve_schema(_id, extract_dir, archive_checksum)
+    return _load_dataset_from_schema(schema, extract_dir)
 
 
-def _extract_archive(
-    archive_path: Path, dest_dir: Path, overwrite_extracted: bool
-) -> Path:
+def resolve_dataset_id(dataset_id: str) -> str:
     """
-    Extract the given archive (.tar.gz, .zip) into `dest_dir`. If the extracted
-    directory already exists (check if the default extracted folder exists) and overwrite_extracted is False,
-    skip extraction.
+    Resolves a dataset ID or slug to its canonical MDC ID.
 
     Args:
-        archive_path: Path to the archive file.
-        dest_dir: Directory where to extract the contents.
-        overwrite_extracted: Whether to overwrite existing extracted files.
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
+
     Returns:
-        Path to the extracted root directory.
+        The canonical dataset ID.
 
     Raises:
-        ValueError: If the archive type is unsupported.
+        RuntimeError: If the dataset does not exist.
     """
-    extract_root = _strip_archive_suffix(archive_path)
-    # Extract into a dedicated directory under `dest_dir` using stripped name
-    target = dest_dir / extract_root.name
-    if target.exists():
-        if not overwrite_extracted:
-            logger.info(
-                f"Extracted directory already exists. "
-                f"Skipping extraction: `{str(target)}`"
-            )
-            return target
-
-        logger.info(f"Overwriting existing extracted directory: `{str(target)}`")
-        shutil.rmtree(target)
-
-    target.mkdir(parents=True, exist_ok=True)
-
-    if archive_path.suffix == ".zip":
-        with zipfile.ZipFile(archive_path, "r") as zf:
-            zf.extractall(target)
-    elif archive_path.name.endswith(".tar.gz") or archive_path.suffix == ".tgz":
-        with tarfile.open(archive_path, "r:gz") as tf:
-            tf.extractall(path=target, filter="fully_trusted")
-    else:
-        raise ValueError(
-            f"Unsupported archive type for `{archive_path.name}`. Expected .tar.gz, .tgz, or .zip."
+    try:
+        dataset_details = get_dataset_details(dataset_id)
+        return dataset_details.get("id", "")
+    except FileNotFoundError:
+        raise RuntimeError(
+            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
         )
-    return target
 
 
-def _strip_archive_suffix(path: Path) -> Path:
+def save_dataset_to_disk(
+    dataset_id: str,
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
+    enable_logging: bool = False,
+) -> Path:
     """
-    Strip known archive suffixes from the filename.
-    Args:
-        path: Path to the archive file.
-    Returns:
-        Path with the archive suffix removed.
+    Deprecated alias for `download_dataset`.
+
+    Use `download_dataset` instead. This name is kept for backward compatibility.
     """
-    name = path.name
-    if name.endswith(".tar.gz"):
-        return path.with_name(name[: -len(".tar.gz")])
-    if name.endswith(".tgz"):
-        return path.with_name(name[: -len(".tgz")])
-    if name.endswith(".zip"):
-        return path.with_name(name[: -len(".zip")])
-    # Unknown; drop one suffix if present
-    return path.with_suffix("")
+    warnings.warn(
+        "`save_dataset_to_disk` is deprecated and will be removed in a future "
+        "release. Use `download_dataset` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return download_dataset(
+        dataset_id=dataset_id,
+        download_directory=download_directory,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+        enable_logging=enable_logging,
+    )
