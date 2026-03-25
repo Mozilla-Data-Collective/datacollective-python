@@ -85,7 +85,7 @@ Strategies are defined in the `Strategy` enum in `src/datacollective/schema_load
 
 When a user calls `load_dataset("id")`:
 
-1. **`save_dataset_to_disk()`**: Downloads the archive. (Skipped if already downloaded)
+1. **`download_dataset()`**: Downloads the archive. (Skipped if already downloaded; previously called `save_dataset_to_disk()`)
 2. **`_extract_archive()`**: Extracts it to a local directory. (Skipped if already extracted)
 3. **`_resolve_schema()`**: Locates or downloads `schema.yaml`.
 4. **`parse_schema()`**: Validates YAML into a `DatasetSchema` object.
@@ -103,4 +103,3 @@ When a user calls `load_dataset("id")`:
 | `datacollective.schema_loaders.registry` | Task-to-loader mapping. |
 | `datacollective.schema_loaders.cache_schema` | Local schema caching and checksum validation. |
 | `datacollective.schema_loaders.tasks.*` | Implementation of task-specific logic (ASR, TTS). |
-

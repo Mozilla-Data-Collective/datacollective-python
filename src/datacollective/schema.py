@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-import logging
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
-import urllib.error
-import urllib.request
 import yaml
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from datacollective.api_utils import SCHEMA_REGISTRY_RAW_BASE_URL
+from datacollective.logging_utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ColumnMapping(BaseModel):
@@ -135,7 +135,7 @@ class DatasetSchema(BaseModel):
         return data
 
 
-def get_dataset_schema(dataset_id: str) -> DatasetSchema | None:
+def _get_dataset_schema(dataset_id: str) -> DatasetSchema | None:
     """
     Download and return the schema.yaml content for *dataset_id*.
 
@@ -155,7 +155,7 @@ def get_dataset_schema(dataset_id: str) -> DatasetSchema | None:
     try:
         with urllib.request.urlopen(url) as response:
             raw = response.read().decode("utf-8")
-        return parse_schema(raw)
+        return _parse_schema(raw)
     except urllib.error.HTTPError as exc:
         if exc.code == 404:
             return None
@@ -164,7 +164,7 @@ def get_dataset_schema(dataset_id: str) -> DatasetSchema | None:
         raise RuntimeError(f"Network error while fetching {url}: {exc.reason}") from exc
 
 
-def parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
+def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
     """
     Parse a schema from a YAML string, a dict, or a file path.
 

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from datacollective.schema import ColumnMapping, DatasetSchema
-from datacollective.schema_loaders.registry import load_dataset_from_schema
+from datacollective.schema_loaders.registry import _load_dataset_from_schema
 
 
 def _write(path: Path, content: str) -> None:
@@ -33,7 +33,7 @@ class TestLoadDatasetFromSchema:
                 ),
             },
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 2
         assert list(df.columns) == ["audio_path", "transcription"]
 
@@ -51,7 +51,7 @@ class TestLoadDatasetFromSchema:
                 "text": ColumnMapping(source_column="text"),
             },
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 1
         assert "audio" in df.columns
 
@@ -69,7 +69,7 @@ class TestLoadDatasetFromSchema:
             file_pattern="**/*.txt",
             audio_extension=".wav",
         )
-        df = load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
         assert len(df) == 1
         assert "audio_path" in df.columns
         assert "transcription" in df.columns
@@ -77,4 +77,4 @@ class TestLoadDatasetFromSchema:
     def test_unknown_task_raises(self, tmp_path: Path) -> None:
         schema = DatasetSchema(dataset_id="ds", task="UNKNOWN_TASK")
         with pytest.raises(ValueError, match="No schema loader registered"):
-            load_dataset_from_schema(schema, tmp_path)
+            _load_dataset_from_schema(schema, tmp_path)
