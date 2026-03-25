@@ -23,6 +23,8 @@ class TTSLoader(BaseSchemaLoader):
     def load(self) -> pd.DataFrame:
         if self.schema.root_strategy == Strategy.PAIRED_GLOB:
             return self._load_paired_glob()
+        elif self.schema.root_strategy == Strategy.MULTI_SECTIONS:
+            return self._load_multi_sections()
         return self._load_based_on_index()
 
     def _load_based_on_index(self) -> pd.DataFrame:
