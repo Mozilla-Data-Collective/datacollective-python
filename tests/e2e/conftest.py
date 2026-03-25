@@ -8,6 +8,7 @@ from tests.e2e.helpers import (
     DEFAULT_LIVE_DATASET_ID,
     EXAMPLE_DATASET_ARCHIVE_PATH,
     LIVE_TEST_SKIP_REASON,
+    DEFAULT_LIVE_DATASET_SLUG,
 )
 
 
@@ -43,6 +44,11 @@ def live_download_dir(
 @pytest.fixture(scope="session")
 def dataset_id() -> str:
     return DEFAULT_LIVE_DATASET_ID
+
+
+@pytest.fixture(scope="session")
+def dataset_slug() -> str:
+    return DEFAULT_LIVE_DATASET_SLUG
 
 
 @pytest.fixture(scope="session")

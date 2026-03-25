@@ -11,6 +11,7 @@ LIVE_TEST_SKIP_REASON = (
     "Set MDC_TEST_API_KEY and MDC_TEST_API_URL to run live API tests."
 )
 DEFAULT_LIVE_DATASET_ID = "cmiq2s3q5000fo207k9g6g7ou"
+DEFAULT_LIVE_DATASET_SLUG = "dataset-for-api-python-sdk-tests-do-not-6529c8c3"
 EXAMPLE_DATASET_ARCHIVE_PATH = (
     Path(__file__).resolve().parents[2] / "docs/example_dataset.tar.gz"
 )

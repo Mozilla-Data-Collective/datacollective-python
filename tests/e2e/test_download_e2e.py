@@ -18,6 +18,7 @@ from tests.e2e.helpers import skip_if_rate_limited
 def test_get_dataset_details_live_api(
     live_api_env: None,
     dataset_id: str,
+    dataset_slug: str,
 ) -> None:
     """NOTE: This test calls a live MDC API endpoint (dev)."""
 
@@ -30,9 +31,29 @@ def test_get_dataset_details_live_api(
     assert details is not None
     assert isinstance(details, dict)
     assert details.get("id") == dataset_id
+    assert details.get("slug") == dataset_slug
     dataset_name = details.get("name")
     assert isinstance(dataset_name, str)
     assert dataset_name.strip()
+
+
+def test_download_dataset_by_slug(
+    live_api_env: None,
+    dataset_slug: str,
+) -> None:
+    result_path = None
+    try:
+        result_path = download_dataset(
+            dataset_slug,
+            show_progress=False,
+            overwrite_existing=True,
+        )
+    except Exception as exc:
+        skip_if_rate_limited(exc)
+
+    assert result_path is not None
+    assert result_path.exists(), "Downloaded file should exist"
+    assert result_path.stat().st_size > 0, "Downloaded file should not be empty"
 
 
 def test_resume_download(

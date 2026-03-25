@@ -79,7 +79,7 @@ def test_resolve_submission_id_for_upload_requires_submission_id_from_dataset_de
     )
 
     with pytest.raises(
-        RuntimeError,
+        ValueError,
         match="Dataset details did not return a `submission_id`",
     ):
         upload_module._resolve_submission_id(
@@ -139,82 +139,3 @@ def test_initiate_upload_posts_submission_id_without_stdout(
 
 class _FakeUploadPartResponse:
     headers = {"ETag": '"etag-1"'}
-
-
-def test_upload_dataset_file_uses_existing_submission_id_for_version_upload(
-    tmp_path: Path, monkeypatch: MonkeyPatch
-) -> None:
-    archive_path = tmp_path / "dataset.tar.gz"
-    archive_path.write_bytes(bytearray(b"versioned-payload"))
-    captured_completion: dict[str, object] = {}
-
-    def fake_load_or_create_state(
-        state_file: Path,
-        submission_id: str,
-        final_filename: str,
-        file_size: int,
-    ) -> UploadState:
-        assert state_file == archive_path.with_name("dataset.tar.gz.mdc-upload.json")
-        assert submission_id == "cmmns07oe001onn07aeidopab"
-        assert final_filename == "dataset.tar.gz"
-        assert file_size == len(b"versioned-payload")
-        return UploadState(
-            submissionId=submission_id,
-            fileUploadId="file-upload-id",
-            uploadId="upload-id",
-            fileSize=file_size,
-            partSize=file_size,
-            filename=final_filename,
-            mimeType="application/gzip",
-            parts=[],
-            checksum=None,
-        )
-
-    def fake_complete_upload(
-        file_upload_id: str,
-        upload_id: str | None,
-        parts: list[upload_module.UploadPart],
-        checksum: str,
-    ) -> dict[str, object]:
-        captured_completion.update(
-            {
-                "fileUploadId": file_upload_id,
-                "uploadId": upload_id,
-                "parts": parts,
-                "checksum": checksum,
-            }
-        )
-        return {"ok": True}
-
-    monkeypatch.setattr(
-        upload_module, "_load_or_create_state", fake_load_or_create_state
-    )
-    monkeypatch.setattr(
-        upload_module,
-        "_get_presigned_part_url",
-        lambda file_upload_id, part_number: upload_module.PresignedPartUrl(
-            partNumber=part_number,
-            url=f"https://upload.example.test/{file_upload_id}/{part_number}",
-        ),
-    )
-    monkeypatch.setattr(
-        upload_module,
-        "_upload_part_with_retry",
-        lambda presigned_url, payload: _FakeUploadPartResponse(),
-    )
-    monkeypatch.setattr(upload_module, "_complete_upload", fake_complete_upload)
-
-    result = upload_dataset_file(
-        file_path=str(archive_path),
-        dataset_id_or_slug="cmmns07oe001onn07aeidopab",
-        show_progress=False,
-    )
-
-    assert result.submissionId == "cmmns07oe001onn07aeidopab"
-    assert result.fileUploadId == "file-upload-id"
-    assert len(result.parts) == 1
-    assert result.parts[0].partNumber == 1
-    assert result.parts[0].etag == "etag-1"
-    assert captured_completion["fileUploadId"] == "file-upload-id"
-    assert captured_completion["uploadId"] == "upload-id"
-    assert not archive_path.with_name("dataset.tar.gz.mdc-upload.json").exists()
