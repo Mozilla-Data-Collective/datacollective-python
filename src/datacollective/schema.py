@@ -106,9 +106,9 @@ class DatasetSchema(BaseModel):
     splits_file_pattern: str | None = Field(
         default=None, description='glob pattern for split files, e.g. "**/*.tsv"'
     )
-    # --- Multi-section strategy (e.g. AIDH TTS datasets)
-    sections: list[str] | None = None  # subdirectories to load
-    section_root: str | None = None  # e.g. "Lingala_TTS_Dataset/"
+    # --- Multi-section strategy
+    sections: list[str] | None = None
+    section_root: str | None = None
 
     # --- Schema versioning ---
     checksum: str | None = Field(
