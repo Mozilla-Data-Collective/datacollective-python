@@ -1,8 +1,4 @@
-"""
-Mozilla Data Collective Python Client Library
-"""
-
-import logging
+"""Mozilla Data Collective Python Client Library."""
 
 from datacollective.datasets import (
     download_dataset,
@@ -36,8 +32,4 @@ __all__ = [
 ]
 
 # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
-__version__ = "0.4.3"
-
-# Configure a package-level logger with a NullHandler so that library users
-# can opt-in to logging without seeing unexpected output by default.
-logging.getLogger(__name__).addHandler(logging.NullHandler())
+__version__ = "0.4.5"

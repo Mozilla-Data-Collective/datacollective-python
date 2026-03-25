@@ -1,6 +1,5 @@
 import hashlib
 import json
-import logging
 import math
 import time
 from pathlib import Path
@@ -15,10 +14,11 @@ from datacollective.api_utils import (
     _send_api_request,
     _format_bytes,
 )
+from datacollective.logging_utils import get_logger
 from datacollective.models import NonEmptyStrModel, UploadPart
 
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Longer read timeout for uploading potentially large chunks on slow connections
 UPLOAD_TIMEOUT = (20, 600)  # (20s connect timeout, 10min read timeout)
@@ -28,7 +28,7 @@ RETRY_BACKOFF_SECONDS = 2
 
 DEFAULT_PART_SIZE = 5 * 1024 * 1024  # 5 MB default part size to upload chunk by chunk
 DEFAULT_MIME_TYPE = "application/gzip"
-MAX_UPLOAD_BYTES = 80 * 1000 * 1000 * 1000  # 80 GB
+MAX_UPLOAD_BYTES = 150 * 1000 * 1000 * 1000  # 150 GB
 
 
 class UploadSession(NonEmptyStrModel):

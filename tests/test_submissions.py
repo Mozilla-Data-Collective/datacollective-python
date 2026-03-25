@@ -110,7 +110,7 @@ def test_create_submission_with_upload_rejects_missing_required_metadata_before_
         submissions_module.create_submission_with_upload(
             file_path=str(archive_path),
             submission=DatasetSubmission(name="Dataset Name", agreeToSubmit=True),
-            verbose=False,
+            enable_logging=False,
         )
 
     message = str(exc_info.value)

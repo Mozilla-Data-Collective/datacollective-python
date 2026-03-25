@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-import logging
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any
 
-import urllib.error
-import urllib.request
 import yaml
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from datacollective.api_utils import SCHEMA_REGISTRY_RAW_BASE_URL
+from datacollective.logging_utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ColumnMapping(BaseModel):
