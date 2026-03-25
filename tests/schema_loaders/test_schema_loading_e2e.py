@@ -358,6 +358,52 @@ class TestTTSPairedGlobE2E:
         assert Path(df["audio_path"].iloc[0]).is_absolute()
 
 
+class TestTTSMultiSectionsE2E:
+    def _create_multi_sections_dataset(self, root: Path, sections: list[str]) -> None:
+        for section in sections:
+            _write(
+                root / "dataset" / section / "metadata.tsv",
+                f"audio\ttext\n{section.lower()}.wav\tText {section}\n",
+            )
+
+    def test_basic(self, tmp_path: Path) -> None:
+        self._create_multi_sections_dataset(tmp_path, ["General", "Chat"])
+
+        schema = _schema_from_dict(
+            {
+                "dataset_id": "tts-ms",
+                "task": "TTS",
+                "root_strategy": "multi_sections",
+                "section_root": "dataset",
+                "sections": ["General", "Chat"],
+                "index_file": "metadata.tsv",
+                "format": "tsv",
+            }
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert len(df) == 2
+        assert set(df["section"]) == {"General", "Chat"}
+        assert df["text"].tolist() == ["Text General", "Text Chat"]
+
+    def test_ignores_unlisted_sections(self, tmp_path: Path) -> None:
+        self._create_multi_sections_dataset(tmp_path, ["General", "Chat", "Other"])
+
+        schema = _schema_from_dict(
+            {
+                "dataset_id": "tts-ms-subset",
+                "task": "TTS",
+                "root_strategy": "multi_sections",
+                "section_root": "dataset",
+                "sections": ["General", "Chat"],
+                "index_file": "metadata.tsv",
+                "format": "tsv",
+            }
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert len(df) == 2
+        assert set(df["section"]) == {"General", "Chat"}
+
+
 class TestErrorPaths:
     def test_unknown_task_raises(self, tmp_path: Path) -> None:
         schema = DatasetSchema(dataset_id="ds", task="UNKNOWN_TASK")
@@ -426,4 +472,23 @@ class TestErrorPaths:
             }
         )
         with pytest.raises(RuntimeError, match="No split files"):
+            _load_dataset_from_schema(schema, tmp_path)
+
+    def test_tts_multi_sections_missing_index_file_raises(self, tmp_path: Path) -> None:
+        _write(
+            tmp_path / "dataset" / "General" / "metadata.tsv",
+            "audio\ttext\ngeneral.wav\tHello from General\n",
+        )
+        schema = _schema_from_dict(
+            {
+                "dataset_id": "tts-ms-err",
+                "task": "TTS",
+                "root_strategy": "multi_sections",
+                "section_root": "dataset",
+                "sections": ["General", "Chat"],
+                "index_file": "metadata.tsv",
+                "format": "tsv",
+            }
+        )
+        with pytest.raises(FileNotFoundError, match="Chat"):
             _load_dataset_from_schema(schema, tmp_path)

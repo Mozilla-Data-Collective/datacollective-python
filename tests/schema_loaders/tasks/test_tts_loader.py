@@ -219,3 +219,65 @@ class TestTTSPairedGlob:
         )
         df = TTSLoader(schema, tmp_path).load()
         assert Path(df["audio_path"].iloc[0]).is_absolute()
+
+
+class TestTTSMultiSections:
+    def _setup_sections(self, root: Path, sections: list[str]) -> None:
+        """Create a multi-sections dataset structure under root."""
+        for section in sections:
+            _write(
+                root / "dataset" / section / "metadata.tsv",
+                f"audio\ttext\n{section.lower()}.wav\tHello from {section}\n",
+            )
+
+    def test_load_multiple_sections(self, tmp_path: Path) -> None:
+        self._setup_sections(tmp_path, ["General", "Chat"])
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="TTS",
+            root_strategy="multi_sections",
+            section_root="dataset",
+            sections=["General", "Chat"],
+            index_file="metadata.tsv",
+            format="tsv",
+        )
+        df = TTSLoader(schema, tmp_path).load()
+        assert len(df) == 2
+        assert "section" in df.columns
+        assert set(df["section"]) == {"General", "Chat"}
+        assert set(df["text"]) == {"Hello from General", "Hello from Chat"}
+
+    def test_multi_sections_ignores_unlisted_sections(self, tmp_path: Path) -> None:
+        self._setup_sections(tmp_path, ["General", "Chat", "Other"])
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="TTS",
+            root_strategy="multi_sections",
+            section_root="dataset",
+            sections=["General", "Chat"],
+            index_file="metadata.tsv",
+            format="tsv",
+        )
+        df = TTSLoader(schema, tmp_path).load()
+        assert len(df) == 2
+        assert set(df["section"]) == {"General", "Chat"}
+
+    def test_multi_sections_missing_index_file_raises(self, tmp_path: Path) -> None:
+        _write(
+            tmp_path / "dataset" / "General" / "metadata.tsv",
+            "audio\ttext\ngeneral.wav\tHello from General\n",
+        )
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="TTS",
+            root_strategy="multi_sections",
+            section_root="dataset",
+            sections=["General", "Chat"],
+            index_file="metadata.tsv",
+            format="tsv",
+        )
+        with pytest.raises(FileNotFoundError, match="Chat"):
+            TTSLoader(schema, tmp_path).load()
