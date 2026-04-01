@@ -38,7 +38,6 @@ Required:
 
 Optional:
 
-- `MDC_API_URL` - API endpoint (defaults to the production URL).
 - `MDC_DOWNLOAD_PATH` - Local directory where datasets will be downloaded
   (defaults to `~/.mozdata/datasets`).
 - `MDC_LOG_PATH` - File path for logs (defaults to a `.log` file in the download directory).
@@ -47,8 +46,8 @@ Example using environment variables directly:
 
 ```bash
 export MDC_API_KEY=your-api-key-here
-export MDC_API_URL=https://mozilladatacollective.com/api
 export MDC_DOWNLOAD_PATH=~/.mozdata/datasets
+export MDC_LOG_PATH=~/.mozdata
 ```
 
 ### `.env` file
@@ -61,8 +60,8 @@ Create a file named `.env`:
 ```bash
 # MDC API Configuration
 MDC_API_KEY=your-api-key-here
-MDC_API_URL=https://mozilladatacollective.com/api
 MDC_DOWNLOAD_PATH=~/.mozdata/datasets
+MDC_LOG_PATH=~/.mozdata
 ```
 
 !!! warning "Security note"
@@ -250,7 +249,8 @@ Run the full test suite:
 pytest -v
 ```
 
-Note that the e2e tests require a valid `MDC_TEST_API_KEY` and a `MDC_TEST_API_URL` key set in your environment. Pytest will skip the live e2e tests automatically if either is missing.
+Internal SDK development workflows, including live E2E configuration and API
+endpoint overrides, are documented in [Internal Development](internal_development.md).
 
 
 ## Release Workflow
