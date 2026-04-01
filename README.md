@@ -19,7 +19,7 @@
 
 # Mozilla Data Collective Python Client Library
 
-The official Python SDK for accessing and contributing to the [Mozilla Data Collective](https://datacollective.mozillafoundation.org/) platform.
+The official Python SDK for accessing and contributing to the [Mozilla Data Collective](https://mozilladatacollective.com/) platform.
 
 ## Installation
 
@@ -31,7 +31,7 @@ pip install datacollective
 
 **IMPORTANT NOTE:** Before trying to access any dataset, make sure you have thoroughly **read and agreed** to the specific dataset's conditions & licensing terms.
 
-1. **Get your API key** from the Mozilla Data Collective [dashboard](https://datacollective.mozillafoundation.org/api-reference)
+1. **Get your API key** from the Mozilla Data Collective [dashboard](https://mozilladatacollective.com/api-reference)
 
 2. **Set the API key in your environment variable**:
 
@@ -50,7 +50,7 @@ MDC_API_KEY=your-api-key-here
 3. **Get your dataset ID from the last section of the dataset URL at the MDC website**. 
 
 > [!TIP]
-> You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://datacollective.mozillafoundation.org/datasets/cminc35no007no707hql26lzk` dataset id will be `cminc35no007no707hql26lzk`.
+> You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://mozilladatacollective.com/datasets/cminc35no007no707hql26lzk` dataset id will be `cminc35no007no707hql26lzk`.
 
 4. **Save a dataset locally**:
 ```

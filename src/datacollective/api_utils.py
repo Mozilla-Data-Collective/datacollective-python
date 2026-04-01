@@ -11,7 +11,7 @@ from datacollective.logging_utils import get_logger
 logger = get_logger(__name__)
 
 
-DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
+DEFAULT_API_URL = "https://mozilladatacollective.com/api"
 SCHEMA_REGISTRY_RAW_BASE_URL = (
     "https://raw.githubusercontent.com/Mozilla-Data-Collective/dataset-schema-registry"
 )

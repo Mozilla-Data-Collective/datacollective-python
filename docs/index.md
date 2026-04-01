@@ -1,7 +1,7 @@
 # Mozilla Data Collective Python SDK Library
 
 Welcome to the documentation for the `datacollective` Python client for the
-[Mozilla Data Collective](https://datacollective.mozillafoundation.org/) REST API.
+[Mozilla Data Collective](https://mozilladatacollective.com) REST API.
 
 This library helps you:
 
@@ -22,7 +22,7 @@ pip install datacollective
 
 To use the Mozilla Data Collective API, you need an API key:
 
-1. Sign up to the [Mozilla Data Collective](https://datacollective.mozillafoundation.org/) platform.
+1. Sign up to the [Mozilla Data Collective](https://mozilladatacollective.com) platform.
 2. Create or retrieve an API key from your Account -> Credentials page.
 3. Store your key secret in a `.env` file and do not commit it to version control (git).
 
@@ -47,7 +47,7 @@ Example using environment variables directly:
 
 ```bash
 export MDC_API_KEY=your-api-key-here
-export MDC_API_URL=https://datacollective.mozillafoundation.org/api
+export MDC_API_URL=https://mozilladatacollective.com/api
 export MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 ```
 
@@ -61,7 +61,7 @@ Create a file named `.env`:
 ```bash
 # MDC API Configuration
 MDC_API_KEY=your-api-key-here
-MDC_API_URL=https://datacollective.mozillafoundation.org/api
+MDC_API_URL=https://mozilladatacollective.com/api
 MDC_DOWNLOAD_PATH=~/.mozdata/datasets
 ```
 
@@ -87,7 +87,7 @@ export MDC_LOG_PATH=/path/to/your/logfile.log
 **IMPORTANT NOTE:** Before trying to access any dataset, make sure you have thoroughly **read and agreed** to the specific dataset's conditions & licensing terms.
 
 !!! tip
-    You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn` dataset id will be `cmflnuzw6lrt9e6ui4kwcshvn`.
+    You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://mozilladatacollective.com/datasets/cmflnuzw6lrt9e6ui4kwcshvn` dataset id will be `cmflnuzw6lrt9e6ui4kwcshvn`.
 
 ### Download a dataset
 
