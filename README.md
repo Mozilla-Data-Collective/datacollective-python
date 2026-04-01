@@ -21,6 +21,11 @@
 
 The official Python SDK for accessing and contributing to the [Mozilla Data Collective](https://mozilladatacollective.com/) platform.
 
+
+> [!WARNING]
+> Our platform is evolving rapidly. Expect breaking changes while the Python SDK is on 0.X.X versions. 
+> Please ensure you are always on the latest version available.
+
 ## Installation
 
 ```bash
