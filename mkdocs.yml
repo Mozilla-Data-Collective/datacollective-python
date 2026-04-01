@@ -14,7 +14,7 @@ nav:
       - TTS: loaders/tts.md
   - API Reference: api.md
   - Internal Development:
-    - Library Development: internal_development.md
+    - Library Development: library_development.md
     - Release Workflow: release.md
 
 theme:

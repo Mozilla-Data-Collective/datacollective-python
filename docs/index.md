@@ -250,7 +250,7 @@ pytest -v
 ```
 
 Internal SDK development workflows, including live E2E configuration and API
-endpoint overrides, are documented in [Internal Development](internal_development.md).
+endpoint overrides, are documented in [Internal Development](library_development.md).
 
 
 ## Release Workflow
