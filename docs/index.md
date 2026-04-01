@@ -24,7 +24,7 @@ To use the Mozilla Data Collective API, you need an API key:
 
 1. Sign up to the [Mozilla Data Collective](https://mozilladatacollective.com) platform.
 2. Create or retrieve an API key from your Account -> Credentials page.
-3. Store your key secret in a `.env` file and do not commit it to version control (git).
+3. Store your API key secrete in a `.env` file, while excluding it from being committed to version control.
 
 ## Configuration
 
