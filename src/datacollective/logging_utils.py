@@ -43,11 +43,34 @@ def configure_package_logging() -> None:
         _PKG_LOGGER.addHandler(logging.NullHandler())
 
 
+def _resolve_log_path() -> Path:
+    """
+    Resolve the log file path based on environment variable or default.
+
+    If MDC_LOG_PATH is set:
+    - If it's a directory, use it as the parent directory with DEFAULT_LOG_FILENAME
+    - If it's a file path, use it directly
+
+    If MDC_LOG_PATH is not set, use the default ~/.mozdata/datacollective.log
+    """
+    mdc_log_path = os.getenv("MDC_LOG_PATH")
+
+    if mdc_log_path:
+        path = Path(mdc_log_path).expanduser()
+        # If the path has no suffix or ends with /, treat it as a directory
+        if path.suffix == "" or str(path).endswith("/"):
+            return path / DEFAULT_LOG_FILENAME
+        # Otherwise, treat it as a file path
+        return path
+
+    return Path("~/.mozdata").expanduser() / DEFAULT_LOG_FILENAME
+
+
 def _enable_logging(enable_logging: bool) -> None:
     if not enable_logging:
         return None
 
-    log_path = Path("~/.mozdata").expanduser() / DEFAULT_LOG_FILENAME
+    log_path = _resolve_log_path()
     log_path.parent.mkdir(parents=True, exist_ok=True)
 
     if not any(
