@@ -200,6 +200,68 @@ class TestASRIndexBased:
         df = ASRLoader(schema, tmp_path).load()
         assert df["audio"].iloc[0] == str(audio_path)
 
+    def test_file_path_template_builds_name_from_multiple_columns(
+        self, tmp_path: Path
+    ) -> None:
+        _write_tsv(
+            tmp_path / "dataset" / "data" / "metadata.csv",
+            "Speaker ID,Sentence ID,Sentences\n"
+            "f-adt1-0001,recipes_01_0001_0001,hello\n",
+        )
+        audio_path = (
+            tmp_path
+            / "dataset"
+            / "data"
+            / "recipes"
+            / "f-adt1-0001_khm_recipes_01_0001_0001.wav"
+        )
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            index_file="data/metadata.csv",
+            base_audio_path=["data/recipes/", "data/giving_gift/"],
+            columns={
+                "audio": ColumnMapping(
+                    source_column="Sentence ID",
+                    dtype="file_path",
+                    file_extension=".wav",
+                    path_template="${Speaker ID}_khm_${Sentence ID}.wav",
+                ),
+                "text": ColumnMapping(source_column="Sentences"),
+            },
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert df["audio"].iloc[0] == str(audio_path)
+
+    def test_contains_search_raises_on_ambiguous_matches(self, tmp_path: Path) -> None:
+        _write_tsv(tmp_path / "index.tsv", "clip_fragment\nclip_001\n")
+        audio_path_1 = tmp_path / "audio" / "nested" / "speaker_clip_001_take1.wav"
+        audio_path_2 = tmp_path / "audio" / "nested" / "speaker_clip_001_take2.wav"
+        audio_path_1.parent.mkdir(parents=True, exist_ok=True)
+        audio_path_1.write_bytes(b"\x00")
+        audio_path_2.write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            format="tsv",
+            index_file="index.tsv",
+            base_audio_path="audio/",
+            columns={
+                "audio": ColumnMapping(
+                    source_column="clip_fragment",
+                    dtype="file_path",
+                    path_match_strategy="contains",
+                    file_extension=".wav",
+                )
+            },
+        )
+        with pytest.raises(ValueError, match="Ambiguous file_path value"):
+            ASRLoader(schema, tmp_path).load()
+
     def test_category_dtype(self, tmp_path: Path) -> None:
         _write_tsv(
             tmp_path / "i.tsv", "path\tsentence\tspk\nc.mp3\thi\tA\nc2.mp3\tbye\tA\n"

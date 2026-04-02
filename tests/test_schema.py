@@ -77,6 +77,7 @@ class TestDatasetSchema:
                     dtype="file_path",
                     path_match_strategy="contains",
                     file_extension=".wav",
+                    path_template="${Speaker ID}_khm_${value}.wav",
                 ),
                 "text": ColumnMapping(
                     source_column="sentence", dtype="string", optional=True
@@ -89,6 +90,9 @@ class TestDatasetSchema:
         assert d["columns"]["audio"]["dtype"] == "file_path"
         assert d["columns"]["audio"]["path_match_strategy"] == "contains"
         assert d["columns"]["audio"]["file_extension"] == ".wav"
+        assert (
+            d["columns"]["audio"]["path_template"] == "${Speaker ID}_khm_${value}.wav"
+        )
         assert d["columns"]["text"]["optional"] is True
 
     def test_to_yaml_dict_round_trip(self) -> None:
@@ -105,6 +109,7 @@ class TestDatasetSchema:
                     dtype="file_path",
                     path_match_strategy="exact",
                     file_extension=".wav",
+                    path_template="${Speaker ID}_khm_${path}.wav",
                 ),
             },
             root_strategy="paired_glob",
@@ -124,6 +129,9 @@ class TestDatasetSchema:
         assert restored.columns["audio"].dtype == "file_path"
         assert restored.columns["audio"].path_match_strategy == "exact"
         assert restored.columns["audio"].file_extension == ".wav"
+        assert (
+            restored.columns["audio"].path_template == "${Speaker ID}_khm_${path}.wav"
+        )
 
 
 class TestParseSchema:
@@ -165,6 +173,7 @@ class TestParseSchema:
                     "dtype": "file_path",
                     "path_match_strategy": "contains",
                     "file_extension": ".wav",
+                    "path_template": "${Speaker ID}_khm_${value}.wav",
                 },
                 "text": {"source_column": "sentence"},
             },
@@ -174,6 +183,7 @@ class TestParseSchema:
         assert s.columns["audio_path"].dtype == "file_path"
         assert s.columns["audio_path"].path_match_strategy == "contains"
         assert s.columns["audio_path"].file_extension == ".wav"
+        assert s.columns["audio_path"].path_template == "${Speaker ID}_khm_${value}.wav"
         assert s.columns["text"].dtype == "string"  # default
 
     def test_columns_with_int_source(self) -> None:
@@ -255,6 +265,7 @@ class TestParseSchema:
                     "optional": True,
                     "path_match_strategy": "exact",
                     "file_extension": ".wav",
+                    "path_template": "${Speaker ID}_khm_${value}.wav",
                 },
             },
         }
@@ -269,6 +280,7 @@ class TestParseSchema:
         assert s.columns["a"].optional is True
         assert s.columns["a"].path_match_strategy == "exact"
         assert s.columns["a"].file_extension == ".wav"
+        assert s.columns["a"].path_template == "${Speaker ID}_khm_${value}.wav"
 
     def test_non_dict_column_entries_ignored(self) -> None:
         raw: dict[str, Any] = {

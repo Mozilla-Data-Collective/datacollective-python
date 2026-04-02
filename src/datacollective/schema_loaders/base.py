@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import csv
+import re
 from enum import StrEnum
 from pathlib import Path
 
@@ -49,6 +50,8 @@ class BaseSchemaLoader(abc.ABC):
     def __init__(self, schema: DatasetSchema, extract_dir: Path) -> None:
         self.schema = schema
         self.extract_dir = extract_dir
+        self._resolved_index_file: Path | None = None
+        self._dataset_root: Path | None = None
         self._audio_file_cache: dict[
             tuple[tuple[str, ...], str | None], list[Path]
         ] = {}
@@ -84,6 +87,9 @@ class BaseSchemaLoader(abc.ABC):
         Raises:
             FileNotFoundError: If no matching file is found.
         """
+        if self._resolved_index_file is not None:
+            return self._resolved_index_file
+
         assert self.schema.index_file is not None
         candidates = list(self.extract_dir.rglob(self.schema.index_file))
         if not candidates:
@@ -93,7 +99,11 @@ class BaseSchemaLoader(abc.ABC):
             )
         # Prefer the shallowest match
         candidates.sort(key=lambda p: len(p.parts))
-        return candidates[0]
+        self._resolved_index_file = candidates[0]
+        self._dataset_root = self._derive_dataset_root(
+            self._resolved_index_file, self.schema.index_file
+        )
+        return self._resolved_index_file
 
     def _load_multi_sections(self) -> pd.DataFrame:
         """
@@ -158,8 +168,11 @@ class BaseSchemaLoader(abc.ABC):
             series = raw_df[resolved_source]
 
             if col_map.dtype == "file_path":
-                series = series.apply(
-                    lambda v, _col_map=col_map: self._resolve_file_path(v, _col_map)
+                series = raw_df.apply(
+                    lambda row, _col_map=col_map, _source=resolved_source: (
+                        self._resolve_file_path(row[_source], _col_map, row)
+                    ),
+                    axis=1,
                 )
             elif col_map.dtype == "category":
                 series = series.astype("category")
@@ -310,11 +323,17 @@ class BaseSchemaLoader(abc.ABC):
         cleaned = column.replace("\ufeff", "").strip()
         return " ".join(cleaned.split()).casefold()
 
-    def _resolve_file_path(self, value: object, col_map: ColumnMapping) -> str:
+    def _resolve_file_path(
+        self, value: object, col_map: ColumnMapping, row: pd.Series | None = None
+    ) -> str:
         if pd.isna(value):
             return str(value)
 
         raw_value = str(value).strip()
+        if row is not None and col_map.path_template:
+            raw_value = self._render_path_template(
+                raw_value, row, col_map.path_template
+            )
         if not raw_value:
             return raw_value
 
@@ -358,7 +377,10 @@ class BaseSchemaLoader(abc.ABC):
                 path_candidates = list(
                     root / relative_candidate for root in self._get_audio_search_roots()
                 )
-                path_candidates.append(self.extract_dir / relative_candidate)
+                dataset_root = self._get_dataset_root()
+                path_candidates.append(dataset_root / relative_candidate)
+                if dataset_root != self.extract_dir:
+                    path_candidates.append(self.extract_dir / relative_candidate)
 
             for candidate in path_candidates:
                 key = str(candidate)
@@ -371,18 +393,19 @@ class BaseSchemaLoader(abc.ABC):
 
     def _get_audio_search_roots(self) -> list[Path]:
         raw_paths = self.schema.base_audio_path
+        dataset_root = self._get_dataset_root()
         if raw_paths is None or raw_paths == "":
-            return [self.extract_dir]
+            return [dataset_root]
 
         path_values = raw_paths if isinstance(raw_paths, list) else [raw_paths]
         roots: list[Path] = []
         seen: set[str] = set()
         for raw_path in path_values:
             if raw_path in (None, ""):
-                root = self.extract_dir
+                root = dataset_root
             else:
                 path = Path(raw_path)
-                root = path if path.is_absolute() else self.extract_dir / path
+                root = path if path.is_absolute() else dataset_root / path
 
             key = str(root)
             if key in seen:
@@ -390,7 +413,7 @@ class BaseSchemaLoader(abc.ABC):
             seen.add(key)
             roots.append(root)
 
-        return roots or [self.extract_dir]
+        return roots or [dataset_root]
 
     def _search_audio_file(self, raw_value: str, col_map: ColumnMapping) -> Path | None:
         search_roots = self._get_audio_search_roots()
@@ -402,20 +425,22 @@ class BaseSchemaLoader(abc.ABC):
         expected_name = raw_path.name
         expected_stem = raw_path.stem if raw_path.suffix else raw_path.name
         normalized_value = raw_value.casefold()
+        matches: list[Path] = []
+        seen_matches: set[str] = set()
 
         for candidate in search_files:
+            is_match = False
             if col_map.path_match_strategy == "exact":
                 if candidate.name == expected_name:
-                    return candidate
-                if raw_path.suffix:
-                    continue
-                if candidate.stem == expected_stem:
-                    return candidate
-                if (
-                    normalized_extension is not None
+                    is_match = True
+                elif not raw_path.suffix and candidate.stem == expected_stem:
+                    is_match = True
+                elif (
+                    not raw_path.suffix
+                    and normalized_extension is not None
                     and candidate.name == f"{expected_name}{normalized_extension}"
                 ):
-                    return candidate
+                    is_match = True
             elif col_map.path_match_strategy == "contains":
                 relative_strings = [
                     candidate.name.casefold(),
@@ -428,9 +453,24 @@ class BaseSchemaLoader(abc.ABC):
                     normalized_value in relative_string
                     for relative_string in relative_strings
                 ):
-                    return candidate
+                    is_match = True
 
-        return None
+            if not is_match:
+                continue
+
+            candidate_key = str(candidate)
+            if candidate_key in seen_matches:
+                continue
+            seen_matches.add(candidate_key)
+            matches.append(candidate)
+
+        if len(matches) > 1:
+            raise ValueError(
+                f"Ambiguous file_path value '{raw_value}' using "
+                f"path_match_strategy='{col_map.path_match_strategy}'. "
+                f"Matches: {[str(match) for match in matches[:5]]}"
+            )
+        return matches[0] if matches else None
 
     def _candidate_relative_paths(
         self, candidate: Path, search_roots: list[Path]
@@ -455,7 +495,7 @@ class BaseSchemaLoader(abc.ABC):
         files: list[Path] = []
         for root in search_roots:
             if root.is_file():
-                if self._matches_extension(root, normalized_extension):
+                if self._is_searchable_audio_file(root, normalized_extension):
                     files.append(root)
                 continue
             if not root.exists():
@@ -464,8 +504,7 @@ class BaseSchemaLoader(abc.ABC):
             root_files = [
                 path
                 for path in root.rglob("*")
-                if path.is_file()
-                and self._matches_extension(path, normalized_extension)
+                if self._is_searchable_audio_file(path, normalized_extension)
             ]
             root_files.sort(
                 key=lambda path: (len(path.relative_to(root).parts), str(path))
@@ -480,7 +519,82 @@ class BaseSchemaLoader(abc.ABC):
             return True
         return path.suffix.casefold() == extension.casefold()
 
+    def _is_searchable_audio_file(self, path: Path, extension: str | None) -> bool:
+        return (
+            path.is_file()
+            and not path.name.startswith("._")
+            and self._matches_extension(path, extension)
+        )
+
     def _normalize_extension(self, extension: str | None) -> str | None:
         if extension is None or extension == "":
             return None
         return extension if extension.startswith(".") else f".{extension}"
+
+    def _get_dataset_root(self) -> Path:
+        return self._dataset_root or self.extract_dir
+
+    def _derive_dataset_root(
+        self, resolved_path: Path, relative_path: str | None
+    ) -> Path:
+        if not relative_path:
+            return resolved_path.parent
+
+        relative = Path(relative_path)
+        if relative.is_absolute():
+            return relative.parent
+
+        num_parts = len(relative.parts)
+        if num_parts <= 1:
+            return resolved_path.parent
+
+        return resolved_path.parents[num_parts - 1]
+
+    def _render_path_template(
+        self, raw_value: str, row: pd.Series, template: str
+    ) -> str:
+        def replace(match: re.Match[str]) -> str:
+            placeholder = match.group(1).strip()
+            if placeholder == "value":
+                return raw_value
+
+            row_key = self._resolve_row_column(row, placeholder)
+            if row_key is None:
+                raise KeyError(
+                    f"Could not render path_template placeholder '{placeholder}'. "
+                    f"Available columns: {list(row.index)}"
+                )
+
+            cell_value = row[row_key]
+            if pd.isna(cell_value):
+                return ""
+            return str(cell_value).strip()
+
+        return re.sub(r"\$\{([^}]+)\}", replace, template)
+
+    def _resolve_row_column(
+        self, row: pd.Series, source: str | int
+    ) -> str | int | None:
+        if source in row.index:
+            return source
+        if isinstance(source, int):
+            return source if source in row.index else None
+
+        stripped_source = source.strip()
+        if stripped_source in row.index:
+            return stripped_source
+
+        normalized_source = self._normalize_column_key(stripped_source)
+        matches = [
+            column
+            for column in row.index
+            if isinstance(column, str)
+            and self._normalize_column_key(column) == normalized_source
+        ]
+        if len(matches) == 1:
+            return matches[0]
+        if len(matches) > 1:
+            raise KeyError(
+                f"Column '{source}' matched multiple row columns after normalization: {matches}"
+            )
+        return None

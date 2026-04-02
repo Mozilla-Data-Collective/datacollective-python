@@ -139,7 +139,25 @@ columns:
 With `path_match_strategy: "exact"`, the loader searches the configured
 `base_audio_path` directories for a matching filename or stem. With
 `"contains"`, it searches for a filename or relative path containing the
-source value.
+source value. If that source value is not unique enough on its own, use
+`path_template` to build the real filename from multiple metadata columns:
+
+```yaml
+base_audio_path:
+  - "data/recipes/"
+  - "data/giving_gift/"
+
+columns:
+  audio_path:
+    source_column: "Sentence ID"
+    dtype: "file_path"
+    file_extension: ".wav"
+    path_template: "${Speaker ID}_khm_${Sentence ID}.wav"
+```
+
+`path_template` placeholders reference raw index-file columns exactly as they
+appear in the metadata, and `${value}` refers to the current column's source
+value.
 
 For **headerless** files (`has_header: false`), use a positional integer
 instead of a column name:
@@ -159,7 +177,7 @@ columns:
 | dtype | Behaviour |
 |---|---|
 | `string` | Cast to `str` (default). |
-| `file_path` | Resolve to an absolute path. By default this is `extract_dir / base_audio_path / value`, but the loader can also search one or more `base_audio_path` roots when `path_match_strategy` is set. |
+| `file_path` | Resolve to an absolute path. By default this is `dataset_root / base_audio_path / value`, but the loader can also search one or more `base_audio_path` roots when `path_match_strategy` is set, or render a filename from multiple metadata columns with `path_template`. |
 | `category` | Cast to pandas `Categorical`. |
 | `int` | Numeric coercion → nullable `Int64`. |
 | `float` | Numeric coercion → `float64`. |

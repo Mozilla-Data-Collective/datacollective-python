@@ -37,6 +37,13 @@ class ColumnMapping(BaseModel):
             'optional extension used when resolving file_path columns (e.g. ".wav")'
         ),
     )
+    path_template: str | None = Field(
+        default=None,
+        description=(
+            "optional template used to construct file_path values from one or more "
+            'metadata columns, e.g. "${Speaker ID}_khm_${Sentence ID}.wav"'
+        ),
+    )
 
 
 class ContentMapping(BaseModel):
@@ -219,6 +226,7 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
                 optional=col_def.get("optional", False),
                 path_match_strategy=col_def.get("path_match_strategy", "direct"),
                 file_extension=col_def.get("file_extension"),
+                path_template=col_def.get("path_template"),
             )
 
     # Content mapping (glob-based)

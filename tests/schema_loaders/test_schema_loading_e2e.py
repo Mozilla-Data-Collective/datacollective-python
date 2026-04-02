@@ -130,10 +130,17 @@ class TestASRIndexE2E:
 
     def test_file_path_search_with_multiple_roots(self, tmp_path: Path) -> None:
         _write(
-            tmp_path / "data" / "metadata.csv",
-            "Sentence ID,Sentences\nclip_001,hello\n",
+            tmp_path / "dataset" / "data" / "metadata.csv",
+            "Speaker ID,Sentence ID,Sentences\n"
+            "f-adt1-0001,recipes_01_0001_0001,hello\n",
         )
-        audio_path = tmp_path / "data" / "recipes" / "nested" / "clip_001.wav"
+        audio_path = (
+            tmp_path
+            / "dataset"
+            / "data"
+            / "recipes"
+            / "f-adt1-0001_khm_recipes_01_0001_0001.wav"
+        )
         audio_path.parent.mkdir(parents=True, exist_ok=True)
         audio_path.write_bytes(b"\x00")
 
@@ -147,8 +154,8 @@ class TestASRIndexE2E:
                     "audio_path": {
                         "source_column": "Sentence ID",
                         "dtype": "file_path",
-                        "path_match_strategy": "exact",
                         "file_extension": ".wav",
+                        "path_template": "${Speaker ID}_khm_${Sentence ID}.wav",
                     },
                     "transcription": {
                         "source_column": "Sentences",
