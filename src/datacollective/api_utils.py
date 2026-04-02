@@ -109,7 +109,7 @@ def _send_api_request(
 
 
 def _get_api_url() -> str:
-    configured_url = os.getenv(ENV_API_URL, DEFAULT_API_URL)
+    configured_url = os.getenv(ENV_API_URL, DEFAULT_API_URL).rstrip("/")
     # Overwrite legacy URL during runtime
     if configured_url == LEGACY_API_URL:
         _warn_legacy_api_url_once()
