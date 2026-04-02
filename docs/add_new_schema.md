@@ -37,7 +37,6 @@ If your dataset has a `metadata.tsv` file:
 ```yaml
 dataset_id: "your-dataset-id"
 task: "ASR"
-format: "tsv"
 index_file: "metadata.tsv"
 base_audio_path: "clips/"      # Folder where audio files are located
 columns:
@@ -48,6 +47,10 @@ columns:
     source_column: "sentence"
     dtype: "string"
 ```
+
+`format` is optional when the loader can infer the separator from
+`index_file`. `base_audio_path` can also be a list when audio files may live in
+more than one directory.
 
 ### Step 4: Test locally
 
@@ -78,4 +81,3 @@ Place it under `registry/<your-dataset-id>/schema.yaml`.
 
 - For a full list of available fields and data types, see the [Schema-Based Loading](schema_documentation.md) reference.
 - If your dataset requires a custom loading logic not covered by existing strategies, see [Extending Schema Loading Logic](extend_schema_loading_logic.md).
-

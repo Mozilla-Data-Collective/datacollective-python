@@ -70,11 +70,11 @@ class TestTTSIndexBased:
         with pytest.raises(ValueError, match="index_file"):
             TTSLoader(schema, tmp_path).load()
 
-    def test_missing_format_and_separator_raises(self, tmp_path: Path) -> None:
+    def test_missing_format_uses_index_file_extension(self, tmp_path: Path) -> None:
         _write(tmp_path / "meta.csv", "a,b\n1,2\n")
         schema = DatasetSchema(dataset_id="ds", task="TTS", index_file="meta.csv")
-        with pytest.raises(ValueError, match="format.*separator"):
-            TTSLoader(schema, tmp_path).load()
+        df = TTSLoader(schema, tmp_path).load()
+        assert list(df.columns) == ["a", "b"]
 
     def test_custom_encoding(self, tmp_path: Path) -> None:
         content = "audio\ttext\nc1.wav\tgrüezi\n"

@@ -24,16 +24,6 @@ class TestASRLoaderValidation:
         with pytest.raises(ValueError, match="index_file"):
             ASRLoader(schema, tmp_path)
 
-    def test_index_requires_format(self, tmp_path: Path) -> None:
-        schema = DatasetSchema(
-            dataset_id="ds",
-            task="ASR",
-            index_file="f.tsv",
-            columns={"a": ColumnMapping(source_column="x")},
-        )
-        with pytest.raises(ValueError, match="format"):
-            ASRLoader(schema, tmp_path)
-
     def test_index_requires_columns(self, tmp_path: Path) -> None:
         schema = DatasetSchema(
             dataset_id="ds", task="ASR", format="tsv", index_file="f.tsv"
@@ -48,6 +38,27 @@ class TestASRLoaderValidation:
 
 
 class TestASRIndexBased:
+    def test_load_tsv_without_format(self, tmp_path: Path) -> None:
+        _write_tsv(
+            tmp_path / "train.tsv",
+            "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n",
+        )
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            index_file="train.tsv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
+                "transcription": ColumnMapping(
+                    source_column="sentence", dtype="string"
+                ),
+            },
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert len(df) == 2
+        assert list(df.columns) == ["audio_path", "transcription"]
+
     def test_load_tsv(self, tmp_path: Path) -> None:
         _write_tsv(
             tmp_path / "train.tsv",
@@ -102,6 +113,92 @@ class TestASRIndexBased:
         df = ASRLoader(schema, tmp_path).load()
         expected = str(tmp_path / "clips" / "clip.mp3")
         assert df["audio"].iloc[0] == expected
+
+    def test_file_path_uses_first_existing_base_audio_path(
+        self, tmp_path: Path
+    ) -> None:
+        _write_tsv(tmp_path / "index.tsv", "path\nclip.wav\n")
+        audio_path = tmp_path / "secondary" / "clip.wav"
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            format="tsv",
+            index_file="index.tsv",
+            base_audio_path=["primary/", "secondary/"],
+            columns={"audio": ColumnMapping(source_column="path", dtype="file_path")},
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert df["audio"].iloc[0] == str(audio_path)
+
+    def test_file_path_exact_search_uses_extension_and_recurses(
+        self, tmp_path: Path
+    ) -> None:
+        _write_tsv(tmp_path / "index.tsv", "clip_id\nclip_001\n")
+        audio_path = tmp_path / "audio" / "nested" / "clip_001.wav"
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            format="tsv",
+            index_file="index.tsv",
+            base_audio_path="audio/",
+            columns={
+                "audio": ColumnMapping(
+                    source_column="clip_id",
+                    dtype="file_path",
+                    path_match_strategy="exact",
+                    file_extension=".wav",
+                )
+            },
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert df["audio"].iloc[0] == str(audio_path)
+
+    def test_file_path_contains_search_matches_substring(self, tmp_path: Path) -> None:
+        _write_tsv(tmp_path / "index.tsv", "clip_fragment\nclip_001\n")
+        audio_path = tmp_path / "audio" / "nested" / "speaker_clip_001_take2.wav"
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            format="tsv",
+            index_file="index.tsv",
+            base_audio_path="audio/",
+            columns={
+                "audio": ColumnMapping(
+                    source_column="clip_fragment",
+                    dtype="file_path",
+                    path_match_strategy="contains",
+                    file_extension=".wav",
+                )
+            },
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert df["audio"].iloc[0] == str(audio_path)
+
+    def test_file_path_value_already_includes_base_path(self, tmp_path: Path) -> None:
+        _write_tsv(tmp_path / "index.tsv", "path\ndata/recipes/clip.wav\n")
+        audio_path = tmp_path / "data" / "recipes" / "clip.wav"
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            format="tsv",
+            index_file="index.tsv",
+            base_audio_path="data/recipes/",
+            columns={"audio": ColumnMapping(source_column="path", dtype="file_path")},
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert df["audio"].iloc[0] == str(audio_path)
 
     def test_category_dtype(self, tmp_path: Path) -> None:
         _write_tsv(
@@ -206,6 +303,27 @@ class TestASRIndexBased:
         df = ASRLoader(schema, tmp_path).load()
         assert len(df) == 1
         assert df["text"].iloc[0] == "hi"
+
+    def test_sniffed_separator_and_trimmed_headers(self, tmp_path: Path) -> None:
+        _write_tsv(
+            tmp_path / "metadata.csv",
+            "Topic; Sentence ID ; Sentences \nFood; clip.wav; hello\n",
+        )
+        (tmp_path / "clip.wav").write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            format="csv",
+            index_file="metadata.csv",
+            columns={
+                "audio": ColumnMapping(source_column="Sentence ID", dtype="file_path"),
+                "text": ColumnMapping(source_column="Sentences"),
+            },
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert df["audio"].iloc[0] == str(tmp_path / "clip.wav")
+        assert df["text"].iloc[0] == "hello"
 
     def test_nested_index_file_found(self, tmp_path: Path) -> None:
         """Index file inside a subdirectory should be located via rglob."""

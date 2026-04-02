@@ -128,6 +128,39 @@ class TestASRIndexE2E:
         assert pd.isna(df["age"].iloc[1])  # "bad" → coerced to NaN
         assert df["score"].iloc[1] == pytest.approx(1.5)
 
+    def test_file_path_search_with_multiple_roots(self, tmp_path: Path) -> None:
+        _write(
+            tmp_path / "data" / "metadata.csv",
+            "Sentence ID,Sentences\nclip_001,hello\n",
+        )
+        audio_path = tmp_path / "data" / "recipes" / "nested" / "clip_001.wav"
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = _schema_from_dict(
+            {
+                "dataset_id": "asr-audio-search",
+                "task": "ASR",
+                "index_file": "data/metadata.csv",
+                "base_audio_path": ["data/recipes/", "data/giving_gift/"],
+                "columns": {
+                    "audio_path": {
+                        "source_column": "Sentence ID",
+                        "dtype": "file_path",
+                        "path_match_strategy": "exact",
+                        "file_extension": ".wav",
+                    },
+                    "transcription": {
+                        "source_column": "Sentences",
+                        "dtype": "string",
+                    },
+                },
+            }
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert df["audio_path"].iloc[0] == str(audio_path)
+        assert df["transcription"].iloc[0] == "hello"
+
 
 # ===========================================================================
 # ASR — multi-split
@@ -450,7 +483,7 @@ class TestErrorPaths:
         with pytest.raises(FileNotFoundError):
             _load_dataset_from_schema(schema, tmp_path)
 
-    def test_tts_index_no_format_raises(self, tmp_path: Path) -> None:
+    def test_tts_index_no_format_uses_index_extension(self, tmp_path: Path) -> None:
         _write(tmp_path / "meta.csv", "a,b\n1,2\n")
         schema = _schema_from_dict(
             {
@@ -459,8 +492,8 @@ class TestErrorPaths:
                 "index_file": "meta.csv",
             }
         )
-        with pytest.raises(ValueError, match="format.*separator"):
-            _load_dataset_from_schema(schema, tmp_path)
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["a", "b"]
 
     def test_asr_multi_split_no_files_raises(self, tmp_path: Path) -> None:
         schema = _schema_from_dict(
