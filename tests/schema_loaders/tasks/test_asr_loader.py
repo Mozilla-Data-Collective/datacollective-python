@@ -114,6 +114,27 @@ class TestASRIndexBased:
         expected = str(tmp_path / "clips" / "clip.mp3")
         assert df["audio"].iloc[0] == expected
 
+    def test_file_path_dtype_resolves_absolute_from_relative_extract_dir(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        dataset_dir = tmp_path / "dataset"
+        _write_tsv(dataset_dir / "index.tsv", "path\nclip.mp3\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            format="tsv",
+            index_file="index.tsv",
+            base_audio_path="clips/",
+            columns={"audio": ColumnMapping(source_column="path", dtype="file_path")},
+        )
+
+        monkeypatch.chdir(tmp_path)
+        df = ASRLoader(schema, Path("dataset")).load()
+
+        assert Path(df["audio"].iloc[0]).is_absolute()
+        assert df["audio"].iloc[0] == str(dataset_dir / "clips" / "clip.mp3")
+
     def test_file_path_uses_first_existing_base_audio_path(
         self, tmp_path: Path
     ) -> None:

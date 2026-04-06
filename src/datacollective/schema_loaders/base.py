@@ -49,7 +49,7 @@ class BaseSchemaLoader(abc.ABC):
 
     def __init__(self, schema: DatasetSchema, extract_dir: Path) -> None:
         self.schema = schema
-        self.extract_dir = extract_dir
+        self.extract_dir = extract_dir.expanduser().resolve()
         self._resolved_index_file: Path | None = None
         self._dataset_root: Path | None = None
         self._audio_file_cache: dict[
