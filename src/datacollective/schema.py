@@ -41,7 +41,8 @@ class ColumnMapping(BaseModel):
         default=None,
         description=(
             "optional template used to construct file_path values from one or more "
-            'metadata columns, e.g. "${Speaker ID}_khm_${Sentence ID}.wav"'
+            "metadata columns. Supports relative paths and ${value}, e.g. "
+            '"${Speaker ID}_khm_${Sentence ID}.wav" or "${Split}/${value}.wav"'
         ),
     )
 
@@ -94,7 +95,11 @@ class DatasetSchema(BaseModel):
     )
     index_file: str | None = Field(default=None, description='e.g. "train.csv"')
     base_audio_path: str | list[str] | None = Field(
-        default=None, description='e.g. "clips/" or ["clips/", "wavs/"]'
+        default=None,
+        description=(
+            'e.g. "clips/" or ["clips/", "wavs/"]". Entries may also use '
+            'metadata placeholders such as "${Split}/clips/".'
+        ),
     )
     columns: dict[str, ColumnMapping] = Field(
         default_factory=dict, description="Mapping of index columns to logical fields"

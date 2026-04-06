@@ -329,23 +329,32 @@ class BaseSchemaLoader(abc.ABC):
         if pd.isna(value):
             return str(value)
 
-        raw_value = str(value).strip()
+        source_value = str(value).strip()
+        raw_value = source_value
         if row is not None and col_map.path_template:
             raw_value = self._render_path_template(
-                raw_value, row, col_map.path_template
+                source_value, row, col_map.path_template
             )
         if not raw_value:
             return raw_value
 
         direct_candidates = self._build_direct_file_candidates(
-            raw_value, col_map.file_extension
+            raw_value,
+            col_map.file_extension,
+            row=row,
+            template_value=source_value,
         )
         for candidate in direct_candidates:
             if candidate.exists():
                 return str(candidate)
 
         if col_map.path_match_strategy != "direct":
-            matched_path = self._search_audio_file(raw_value, col_map)
+            matched_path = self._search_audio_file(
+                raw_value,
+                col_map,
+                row=row,
+                template_value=source_value,
+            )
             if matched_path is not None:
                 return str(matched_path)
             raise FileNotFoundError(
@@ -359,7 +368,11 @@ class BaseSchemaLoader(abc.ABC):
         return raw_value
 
     def _build_direct_file_candidates(
-        self, raw_value: str, file_extension: str | None
+        self,
+        raw_value: str,
+        file_extension: str | None,
+        row: pd.Series | None = None,
+        template_value: str | None = None,
     ) -> list[Path]:
         relative_candidates = [Path(raw_value)]
         normalized_extension = self._normalize_extension(file_extension)
@@ -375,7 +388,10 @@ class BaseSchemaLoader(abc.ABC):
                 path_candidates = [relative_candidate]
             else:
                 path_candidates = list(
-                    root / relative_candidate for root in self._get_audio_search_roots()
+                    root / relative_candidate
+                    for root in self._get_audio_search_roots(
+                        row=row, template_value=template_value or raw_value
+                    )
                 )
                 dataset_root = self._get_dataset_root()
                 path_candidates.append(dataset_root / relative_candidate)
@@ -391,7 +407,11 @@ class BaseSchemaLoader(abc.ABC):
 
         return candidates
 
-    def _get_audio_search_roots(self) -> list[Path]:
+    def _get_audio_search_roots(
+        self,
+        row: pd.Series | None = None,
+        template_value: str | None = None,
+    ) -> list[Path]:
         raw_paths = self.schema.base_audio_path
         dataset_root = self._get_dataset_root()
         if raw_paths is None or raw_paths == "":
@@ -404,8 +424,20 @@ class BaseSchemaLoader(abc.ABC):
             if raw_path in (None, ""):
                 root = dataset_root
             else:
-                path = Path(raw_path)
-                root = path if path.is_absolute() else dataset_root / path
+                rendered_path = raw_path
+                if row is not None and "${" in raw_path:
+                    rendered_path = self._render_path_template(
+                        template_value or "",
+                        row,
+                        raw_path,
+                        template_name="base_audio_path",
+                    )
+
+                if rendered_path in (None, ""):
+                    root = dataset_root
+                else:
+                    path = Path(rendered_path)
+                    root = path if path.is_absolute() else dataset_root / path
 
             key = str(root)
             if key in seen:
@@ -415,8 +447,16 @@ class BaseSchemaLoader(abc.ABC):
 
         return roots or [dataset_root]
 
-    def _search_audio_file(self, raw_value: str, col_map: ColumnMapping) -> Path | None:
-        search_roots = self._get_audio_search_roots()
+    def _search_audio_file(
+        self,
+        raw_value: str,
+        col_map: ColumnMapping,
+        row: pd.Series | None = None,
+        template_value: str | None = None,
+    ) -> Path | None:
+        search_roots = self._get_audio_search_roots(
+            row=row, template_value=template_value or raw_value
+        )
         search_files = self._get_searchable_audio_files(
             search_roots, col_map.file_extension
         )
@@ -425,11 +465,18 @@ class BaseSchemaLoader(abc.ABC):
         expected_name = raw_path.name
         expected_stem = raw_path.stem if raw_path.suffix else raw_path.name
         normalized_value = raw_value.casefold()
+        normalized_relative_value = raw_path.as_posix().casefold()
+        normalized_relative_with_extension = None
+        if not raw_path.suffix and normalized_extension is not None:
+            normalized_relative_with_extension = (
+                f"{normalized_relative_value}{normalized_extension.casefold()}"
+            )
         matches: list[Path] = []
         seen_matches: set[str] = set()
 
         for candidate in search_files:
             is_match = False
+            relative_paths = self._candidate_relative_paths(candidate, search_roots)
             if col_map.path_match_strategy == "exact":
                 if candidate.name == expected_name:
                     is_match = True
@@ -441,14 +488,19 @@ class BaseSchemaLoader(abc.ABC):
                     and candidate.name == f"{expected_name}{normalized_extension}"
                 ):
                     is_match = True
+                elif normalized_relative_value in relative_paths:
+                    is_match = True
+                elif (
+                    normalized_relative_with_extension is not None
+                    and normalized_relative_with_extension in relative_paths
+                ):
+                    is_match = True
             elif col_map.path_match_strategy == "contains":
                 relative_strings = [
                     candidate.name.casefold(),
                     candidate.stem.casefold(),
                 ]
-                relative_strings.extend(
-                    self._candidate_relative_paths(candidate, search_roots)
-                )
+                relative_strings.extend(relative_paths)
                 if any(
                     normalized_value in relative_string
                     for relative_string in relative_strings
@@ -551,7 +603,11 @@ class BaseSchemaLoader(abc.ABC):
         return resolved_path.parents[num_parts - 1]
 
     def _render_path_template(
-        self, raw_value: str, row: pd.Series, template: str
+        self,
+        raw_value: str,
+        row: pd.Series,
+        template: str,
+        template_name: str = "path_template",
     ) -> str:
         def replace(match: re.Match[str]) -> str:
             placeholder = match.group(1).strip()
@@ -561,7 +617,7 @@ class BaseSchemaLoader(abc.ABC):
             row_key = self._resolve_row_column(row, placeholder)
             if row_key is None:
                 raise KeyError(
-                    f"Could not render path_template placeholder '{placeholder}'. "
+                    f"Could not render {template_name} placeholder '{placeholder}'. "
                     f"Available columns: {list(row.index)}"
                 )
 

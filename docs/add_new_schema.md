@@ -52,6 +52,30 @@ columns:
 `index_file`. `base_audio_path` can also be a list when audio files may live in
 more than one directory.
 
+If your metadata stores IDs instead of directly joinable audio paths, you can
+compose the real path from metadata columns declaratively:
+
+```yaml
+dataset_id: "your-dataset-id"
+task: "ASR"
+index_file: "data/metadata.csv"
+base_audio_path: "data/${Split}/"
+
+columns:
+  audio_path:
+    source_column: "Sentence ID"
+    dtype: "file_path"
+    file_extension: ".wav"
+    path_template: "${Speaker ID}_khm_${value}"
+  transcription:
+    source_column: "Sentences"
+    dtype: "string"
+```
+
+The loader replaces `${...}` placeholders using values from the current
+metadata row, so this stays generic and avoids hardcoding dataset-specific
+Python logic.
+
 ### Step 4: Test locally
 
 You can test your schema before submitting it. Place your `schema.yaml` in the folder where you extracted the dataset and run:

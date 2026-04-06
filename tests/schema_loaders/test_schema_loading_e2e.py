@@ -168,6 +168,48 @@ class TestASRIndexE2E:
         assert df["audio_path"].iloc[0] == str(audio_path)
         assert df["transcription"].iloc[0] == "hello"
 
+    def test_file_path_template_renders_dynamic_audio_root(
+        self, tmp_path: Path
+    ) -> None:
+        _write(
+            tmp_path / "dataset" / "data" / "metadata.csv",
+            "Split,Speaker ID,Sentence ID,Sentences\n"
+            "recipes,f-adt1-0001,recipes_01_0001_0001,hello\n",
+        )
+        audio_path = (
+            tmp_path
+            / "dataset"
+            / "data"
+            / "recipes"
+            / "f-adt1-0001_khm_recipes_01_0001_0001.wav"
+        )
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = _schema_from_dict(
+            {
+                "dataset_id": "asr-audio-search-dynamic-root",
+                "task": "ASR",
+                "index_file": "data/metadata.csv",
+                "base_audio_path": "data/${Split}/",
+                "columns": {
+                    "audio_path": {
+                        "source_column": "Sentence ID",
+                        "dtype": "file_path",
+                        "file_extension": ".wav",
+                        "path_template": "${Speaker ID}_khm_${value}",
+                    },
+                    "transcription": {
+                        "source_column": "Sentences",
+                        "dtype": "string",
+                    },
+                },
+            }
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert df["audio_path"].iloc[0] == str(audio_path)
+        assert df["transcription"].iloc[0] == "hello"
+
 
 # ===========================================================================
 # ASR — multi-split

@@ -94,6 +94,37 @@ class TestTTSIndexBased:
         df = TTSLoader(schema, tmp_path).load()
         assert df["text"].iloc[0] == "grüezi"
 
+    def test_file_path_template_renders_dynamic_audio_root_from_metadata(
+        self, tmp_path: Path
+    ) -> None:
+        _write(
+            tmp_path / "dataset" / "metadata.tsv",
+            "split\tspeaker_id\tsentence_id\ttext\nrecipes\tspk-01\tsent-01\thello\n",
+        )
+        audio_path = tmp_path / "dataset" / "recipes" / "spk-01_khm_sent-01.wav"
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="TTS",
+            format="tsv",
+            index_file="metadata.tsv",
+            base_audio_path="${split}/",
+            columns={
+                "audio": ColumnMapping(
+                    source_column="sentence_id",
+                    dtype="file_path",
+                    file_extension=".wav",
+                    path_template="${speaker_id}_khm_${value}",
+                ),
+                "text": ColumnMapping(source_column="text"),
+            },
+        )
+        df = TTSLoader(schema, tmp_path / "dataset").load()
+        assert df["audio"].iloc[0] == str(audio_path)
+        assert df["text"].iloc[0] == "hello"
+
 
 class TestTTSPairedGlob:
     def _setup_paired(self, root: Path) -> None:

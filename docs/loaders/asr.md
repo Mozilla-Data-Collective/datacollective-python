@@ -159,6 +159,29 @@ Template placeholders reference raw metadata column names exactly, and
 `${value}` refers to the current `source_column` value. Relative paths are
 resolved from the dataset root inferred from the resolved `index_file`.
 
+If the audio directory itself varies per row, `base_audio_path` can use the
+same placeholder syntax:
+
+```yaml
+dataset_id: "khmer-asr-cultural-dataset-4e33cd05"
+task: "ASR"
+index_file: "data/metadata.csv"
+base_audio_path: "data/${Split}/"
+
+columns:
+  audio_path:
+    source_column: "Sentence ID"
+    dtype: "file_path"
+    file_extension: ".wav"
+    path_template: "${Speaker ID}_khm_${value}"
+  transcription:
+    source_column: "Sentences"
+    dtype: "string"
+```
+
+That resolves each row as
+`dataset_root / data/<Split>/<Speaker ID>_khm_<Sentence ID>.wav`.
+
 ### Multi-split schema
 
 ```yaml

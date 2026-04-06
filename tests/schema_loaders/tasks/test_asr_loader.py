@@ -236,6 +236,43 @@ class TestASRIndexBased:
         df = ASRLoader(schema, tmp_path).load()
         assert df["audio"].iloc[0] == str(audio_path)
 
+    def test_file_path_template_renders_dynamic_audio_root_from_metadata(
+        self, tmp_path: Path
+    ) -> None:
+        _write_tsv(
+            tmp_path / "dataset" / "data" / "metadata.csv",
+            "Split,Speaker ID,Sentence ID,Sentences\n"
+            "recipes,f-adt1-0001,recipes_01_0001_0001,hello\n",
+        )
+        audio_path = (
+            tmp_path
+            / "dataset"
+            / "data"
+            / "recipes"
+            / "f-adt1-0001_khm_recipes_01_0001_0001.wav"
+        )
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            index_file="data/metadata.csv",
+            base_audio_path="data/${Split}/",
+            columns={
+                "audio": ColumnMapping(
+                    source_column="Sentence ID",
+                    dtype="file_path",
+                    file_extension=".wav",
+                    path_template="${Speaker ID}_khm_${value}",
+                ),
+                "text": ColumnMapping(source_column="Sentences"),
+            },
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert df["audio"].iloc[0] == str(audio_path)
+        assert df["text"].iloc[0] == "hello"
+
     def test_contains_search_raises_on_ambiguous_matches(self, tmp_path: Path) -> None:
         _write_tsv(tmp_path / "index.tsv", "clip_fragment\nclip_001\n")
         audio_path_1 = tmp_path / "audio" / "nested" / "speaker_clip_001_take1.wav"

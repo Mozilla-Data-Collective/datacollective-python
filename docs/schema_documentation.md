@@ -76,7 +76,7 @@ strategy is inferred from the fields present in the schema:
 | `format` | Inferred from `index_file` when possible | ✗ | Optional format hint: `"csv"`, `"tsv"`, or `"pipe"`. Useful when the file extension is misleading. |
 | `index_file` | — | ✓ | Path to the metadata file, relative to the dataset root. |
 | `columns` | — | ✓ | Mapping of logical column names → source columns (see below). |
-| `base_audio_path` | `""` | ✗ | Directory prefix or list of directories used to resolve `file_path` dtype columns. |
+| `base_audio_path` | `""` | ✗ | Directory prefix or list of directories used to resolve `file_path` dtype columns. Entries may also use `${column}` placeholders from the current metadata row. |
 | `separator` | Inferred from `format` or `index_file` | ✗ | Explicit column separator override (e.g. `"\|"`). |
 | `has_header` | `true` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
 | `encoding` | `"utf-8"` | ✗ | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
@@ -89,7 +89,7 @@ strategy is inferred from the fields present in the schema:
 | `splits` | — | ✓ | List of split names to load (e.g. `["train", "dev", "test"]`). |
 | `splits_file_pattern` | `"**/*.tsv"` | ✗ | Glob pattern to locate split files. |
 | `columns` | *(optional)* | ✗ | Column mappings applied to every split frame. |
-| `base_audio_path` | `""` | ✗ | Directory prefix or list of directories used to resolve `file_path` dtype columns. |
+| `base_audio_path` | `""` | ✗ | Directory prefix or list of directories used to resolve `file_path` dtype columns. Entries may also use `${column}` placeholders from the current metadata row. |
 
 ### Paired-glob fields
 
@@ -159,6 +159,23 @@ columns:
 appear in the metadata, and `${value}` refers to the current column's source
 value.
 
+`base_audio_path` can use the same placeholder syntax when the containing
+directory also depends on metadata columns:
+
+```yaml
+base_audio_path: "data/${Split}/"
+
+columns:
+  audio_path:
+    source_column: "Sentence ID"
+    dtype: "file_path"
+    file_extension: ".wav"
+    path_template: "${Speaker ID}_khm_${value}"
+```
+
+In that example, each row resolves to
+`dataset_root / data/<Split>/<Speaker ID>_khm_<Sentence ID>.wav`.
+
 For **headerless** files (`has_header: false`), use a positional integer
 instead of a column name:
 
@@ -177,7 +194,7 @@ columns:
 | dtype | Behaviour |
 |---|---|
 | `string` | Cast to `str` (default). |
-| `file_path` | Resolve to an absolute path. By default this is `dataset_root / base_audio_path / value`, but the loader can also search one or more `base_audio_path` roots when `path_match_strategy` is set, or render a filename from multiple metadata columns with `path_template`. |
+| `file_path` | Resolve to an absolute path. By default this is `dataset_root / base_audio_path / value`, but the loader can also search one or more `base_audio_path` roots when `path_match_strategy` is set, or render filenames and directory roots from metadata columns with `path_template` and templated `base_audio_path` entries. |
 | `category` | Cast to pandas `Categorical`. |
 | `int` | Numeric coercion → nullable `Int64`. |
 | `float` | Numeric coercion → `float64`. |

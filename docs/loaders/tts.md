@@ -80,6 +80,29 @@ columns:
     dtype: "string"
 ```
 
+You can also build filenames and directory roots from metadata columns without
+hardcoding dataset-specific logic:
+
+```yaml
+dataset_id: "example-tts-dynamic-path"
+task: "TTS"
+index_file: "metadata.tsv"
+base_audio_path: "${split}/"
+
+columns:
+  audio_path:
+    source_column: "sentence_id"
+    dtype: "file_path"
+    file_extension: ".wav"
+    path_template: "${speaker_id}_khm_${value}"
+  transcription:
+    source_column: "text"
+    dtype: "string"
+```
+
+For each row, that resolves to
+`dataset_root / <split>/<speaker_id>_khm_<sentence_id>.wav`.
+
 ### Paired-glob schema
 
 ```yaml
