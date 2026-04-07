@@ -6,11 +6,7 @@ import pandas as pd
 
 from datacollective.logging_utils import get_logger
 from datacollective.schema import DatasetSchema
-from datacollective.schema_loaders.base import (
-    BaseSchemaLoader,
-    FORMAT_SEP,
-    Strategy,
-)
+from datacollective.schema_loaders.base import BaseSchemaLoader, Strategy
 
 logger = get_logger(__name__)
 
@@ -28,8 +24,6 @@ class ASRLoader(BaseSchemaLoader):
         else:
             if not schema.index_file:
                 raise ValueError("ASR schema must specify 'index_file'")
-            if not schema.format:
-                raise ValueError("ASR schema must specify 'format' (csv or tsv)")
             if not schema.columns:
                 raise ValueError(
                     "ASR schema must specify at least two column mappings for audio and transcription"
@@ -66,14 +60,11 @@ class ASRLoader(BaseSchemaLoader):
                 f"{sorted(allowed_splits)} found under '{self.extract_dir}'"
             )
 
-        sep = self.schema.separator or FORMAT_SEP.get(self.schema.format or "tsv", "\t")
         frames: list[pd.DataFrame] = []
 
         for split_name, file_path in sorted(split_files.items()):
             logger.debug(f"Reading split '{split_name}' from {file_path}")
-            raw_df = pd.read_csv(
-                file_path, sep=sep, header="infer", encoding=self.schema.encoding
-            )  # If the split files have headers, they will be inferred here and preserved in the raw_df columns. If not, raw_df will have default integer columns.
+            raw_df = self._read_delimited_file(file_path)
             raw_df["split"] = split_name
 
             if self.schema.columns:

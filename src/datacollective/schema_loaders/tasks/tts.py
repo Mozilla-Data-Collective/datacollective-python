@@ -33,10 +33,6 @@ class TTSLoader(BaseSchemaLoader):
         """
         if not self.schema.index_file:
             raise ValueError("TTS index-based schema must specify 'index_file'")
-        if not self.schema.format and not self.schema.separator:
-            raise ValueError(
-                "TTS index-based schema must specify 'format' or 'separator'"
-            )
 
         raw_df = self._load_index_file()
 
