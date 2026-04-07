@@ -1104,7 +1104,7 @@ strategy is inferred from the fields present in the schema:</p>
 <tr>
 <td><strong>Index-based</strong> (default)</td>
 <td>A metadata file (CSV / TSV / pipe-delimited) lists each sample.</td>
-<td><code>format</code>, <code>index_file</code>, <code>columns</code></td>
+<td><code>index_file</code>, <code>columns</code></td>
 </tr>
 <tr>
 <td><strong>Multi-split</strong></td>
@@ -1131,9 +1131,9 @@ strategy is inferred from the fields present in the schema:</p>
 <tbody>
 <tr>
 <td><code>format</code></td>
-<td>—</td>
-<td>✓</td>
-<td>File format: <code>"csv"</code>, <code>"tsv"</code>, or <code>"pipe"</code>.</td>
+<td>Inferred from <code>index_file</code> when possible</td>
+<td>✗</td>
+<td>Optional format hint: <code>"csv"</code>, <code>"tsv"</code>, or <code>"pipe"</code>. Useful when the file extension is misleading.</td>
 </tr>
 <tr>
 <td><code>index_file</code></td>
@@ -1151,11 +1151,11 @@ strategy is inferred from the fields present in the schema:</p>
 <td><code>base_audio_path</code></td>
 <td><code>""</code></td>
 <td>✗</td>
-<td>Directory prefix prepended to <code>file_path</code> dtype columns.</td>
+<td>Directory prefix or list of directories used to resolve <code>file_path</code> dtype columns. Entries may also use <code>${column}</code> placeholders from the current metadata row.</td>
 </tr>
 <tr>
 <td><code>separator</code></td>
-<td>Inferred from <code>format</code></td>
+<td>Inferred from <code>format</code> or <code>index_file</code></td>
 <td>✗</td>
 <td>Explicit column separator override (e.g. <code>"\|"</code>).</td>
 </tr>
@@ -1212,7 +1212,7 @@ strategy is inferred from the fields present in the schema:</p>
 <td><code>base_audio_path</code></td>
 <td><code>""</code></td>
 <td>✗</td>
-<td>Directory prefix prepended to <code>file_path</code> dtype columns.</td>
+<td>Directory prefix or list of directories used to resolve <code>file_path</code> dtype columns. Entries may also use <code>${column}</code> placeholders from the current metadata row.</td>
 </tr>
 </tbody>
 </table>
@@ -1263,15 +1263,60 @@ DataFrame:</p>
 </span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;category&quot;</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">              </span><span class="c1"># skip silently if the column is missing</span>
 </span></code></pre></div>
+<p>For datasets where the index stores an ID instead of the full audio filename,
+you can opt into search-based file resolution:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">base_audio_path</span><span class="p">:</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/recipes/&quot;</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/giving_gift/&quot;</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Sentence</span><span class="nv"> </span><span class="s">ID&quot;</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">path_match_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;exact&quot;</span><span class="w">   </span><span class="c1"># &quot;direct&quot; (default), &quot;exact&quot;, or &quot;contains&quot;</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">file_extension</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.wav&quot;</span><span class="w">         </span><span class="c1"># optional, helps when the index omits the suffix</span>
+</span></code></pre></div>
+<p>With <code>path_match_strategy: "exact"</code>, the loader searches the configured
+<code>base_audio_path</code> directories for a matching filename or stem. With
+<code>"contains"</code>, it searches for a filename or relative path containing the
+source value. If that source value is not unique enough on its own, use
+<code>path_template</code> to build the real filename from multiple metadata columns:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">base_audio_path</span><span class="p">:</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/recipes/&quot;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/giving_gift/&quot;</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Sentence</span><span class="nv"> </span><span class="s">ID&quot;</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">file_extension</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.wav&quot;</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">path_template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${Speaker</span><span class="nv"> </span><span class="s">ID}_khm_${Sentence</span><span class="nv"> </span><span class="s">ID}.wav&quot;</span>
+</span></code></pre></div>
+<p><code>path_template</code> placeholders reference raw index-file columns exactly as they
+appear in the metadata, and <code>${value}</code> refers to the current column's source
+value.</p>
+<p><code>base_audio_path</code> can use the same placeholder syntax when the containing
+directory also depends on metadata columns:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">base_audio_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/${Split}/&quot;</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Sentence</span><span class="nv"> </span><span class="s">ID&quot;</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">file_extension</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.wav&quot;</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">path_template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${Speaker</span><span class="nv"> </span><span class="s">ID}_khm_${value}&quot;</span>
+</span></code></pre></div>
+<p>In that example, each row resolves to
+<code>dataset_root / data/&lt;Split&gt;/&lt;Speaker ID&gt;_khm_&lt;Sentence ID&gt;.wav</code>.</p>
 <p>For <strong>headerless</strong> files (<code>has_header: false</code>), use a positional integer
 instead of a column name:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">columns</span><span class="p">:</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
 </span></code></pre></div>
 <h3 id="supported-dtypes">Supported dtypes</h3>
 <table>
@@ -1288,7 +1333,7 @@ instead of a column name:</p>
 </tr>
 <tr>
 <td><code>file_path</code></td>
-<td>Resolve to an absolute path: <code>extract_dir / base_audio_path / value</code>.</td>
+<td>Resolve to an absolute path. By default this is <code>dataset_root / base_audio_path / value</code>, but the loader can also search one or more <code>base_audio_path</code> roots when <code>path_match_strategy</code> is set, or render filenames and directory roots from metadata columns with <code>path_template</code> and templated <code>base_audio_path</code> entries.</td>
 </tr>
 <tr>
 <td><code>category</code></td>
@@ -1307,9 +1352,9 @@ instead of a column name:</p>
 <h2 id="content-mapping">Content mapping</h2>
 <p>Used by <strong>glob-based</strong> strategies to describe how file contents become
 DataFrame columns:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">content_mapping</span><span class="p">:</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_content&quot;</span><span class="w">     </span><span class="c1"># each file&#39;s text → &quot;text&quot; column</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="nt">meta_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_name&quot;</span><span class="w"> </span><span class="c1"># filename → &quot;meta_source&quot; column</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">content_mapping</span><span class="p">:</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_content&quot;</span><span class="w">     </span><span class="c1"># each file&#39;s text → &quot;text&quot; column</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">meta_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_name&quot;</span><span class="w"> </span><span class="c1"># filename → &quot;meta_source&quot; column</span>
 </span></code></pre></div>
 <hr />
 <h2 id="complete-examples">Complete examples</h2>
