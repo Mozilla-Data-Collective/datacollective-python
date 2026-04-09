@@ -824,6 +824,81 @@
   
   
   
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internal Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Internal Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="library_development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Library Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="release/" class="md-nav__link">
         
@@ -841,6 +916,14 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1087,7 +1170,7 @@
 
 <h1 id="mozilla-data-collective-python-sdk-library">Mozilla Data Collective Python SDK Library</h1>
 <p>Welcome to the documentation for the <code>datacollective</code> Python client for the
-<a href="https://datacollective.mozillafoundation.org/">Mozilla Data Collective</a> REST API.</p>
+<a href="https://mozilladatacollective.com">Mozilla Data Collective</a> REST API.</p>
 <p>This library helps you:</p>
 <ul>
 <li>Authenticate with the Mozilla Data Collective.</li>
@@ -1101,9 +1184,9 @@
 <h2 id="getting-an-api-key">Getting an API Key</h2>
 <p>To use the Mozilla Data Collective API, you need an API key:</p>
 <ol>
-<li>Sign up to the <a href="https://datacollective.mozillafoundation.org/">Mozilla Data Collective</a> platform.</li>
+<li>Sign up to the <a href="https://mozilladatacollective.com">Mozilla Data Collective</a> platform.</li>
 <li>Create or retrieve an API key from your Account -&gt; Credentials page.</li>
-<li>Store your key secret in a <code>.env</code> file and do not commit it to version control (git).</li>
+<li>Store your API key secret in a <code>.env</code> file, while excluding it from being committed to version control.</li>
 </ol>
 <h2 id="configuration">Configuration</h2>
 <p>The client reads configuration from environment variables and <code>.env</code> files.</p>
@@ -1114,15 +1197,14 @@
 </ul>
 <p>Optional:</p>
 <ul>
-<li><code>MDC_API_URL</code> - API endpoint (defaults to the production URL).</li>
 <li><code>MDC_DOWNLOAD_PATH</code> - Local directory where datasets will be downloaded
   (defaults to <code>~/.mozdata/datasets</code>).</li>
 <li><code>MDC_LOG_PATH</code> - File path for logs (defaults to a <code>.log</code> file in the download directory).</li>
 </ul>
 <p>Example using environment variables directly:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_API_KEY</span><span class="o">=</span>your-api-key-here
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_API_URL</span><span class="o">=</span>https://datacollective.mozillafoundation.org/api
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_DOWNLOAD_PATH</span><span class="o">=</span>~/.mozdata/datasets
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_DOWNLOAD_PATH</span><span class="o">=</span>~/.mozdata/datasets
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>~/.mozdata
 </span></code></pre></div>
 <h3 id="env-file"><code>.env</code> file</h3>
 <p>The client will automatically load configuration from a <code>.env</code> file in your
@@ -1130,8 +1212,8 @@ project root or present working directory.</p>
 <p>Create a file named <code>.env</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># MDC API Configuration</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">MDC_API_KEY</span><span class="o">=</span>your-api-key-here
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">MDC_API_URL</span><span class="o">=</span>https://datacollective.mozillafoundation.org/api
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">MDC_DOWNLOAD_PATH</span><span class="o">=</span>~/.mozdata/datasets
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">MDC_DOWNLOAD_PATH</span><span class="o">=</span>~/.mozdata/datasets
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>~/.mozdata
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Security note</p>
@@ -1150,7 +1232,7 @@ either through the <code>.env</code> file or by executing on your terminal:</p>
 <p><strong>IMPORTANT NOTE:</strong> Before trying to access any dataset, make sure you have thoroughly <strong>read and agreed</strong> to the specific dataset's conditions &amp; licensing terms.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>You can find the <code>dataset-id</code> by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the <code>/datasets/</code> path. For example, for URL <code>https://datacollective.mozillafoundation.org/datasets/cmflnuzw6lrt9e6ui4kwcshvn</code> dataset id will be <code>cmflnuzw6lrt9e6ui4kwcshvn</code>.</p>
+<p>You can find the <code>dataset-id</code> by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the <code>/datasets/</code> path. For example, for URL <code>https://mozilladatacollective.com/datasets/cmflnuzw6lrt9e6ui4kwcshvn</code> dataset id will be <code>cmflnuzw6lrt9e6ui4kwcshvn</code>.</p>
 </div>
 <h3 id="download-a-dataset">Download a dataset</h3>
 <p>Use <code>download_dataset</code> to download a dataset to the configured download path:</p>
@@ -1289,7 +1371,8 @@ The SDK identifies the data if the extracted folder name matches the archive nam
 <p>Run the full test suite:
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pytest<span class="w"> </span>-v
 </span></code></pre></div></p>
-<p>Note that the e2e tests require a valid <code>MDC_TEST_API_KEY</code> and a <code>MDC_TEST_API_URL</code> key set in your environment. Pytest will skip the live e2e tests automatically if either is missing.</p>
+<p>Internal SDK development workflows, including live E2E configuration and API
+endpoint overrides, are documented in <a href="library_development/">Internal Development</a>.</p>
 <h2 id="release-workflow">Release Workflow</h2>
 <p>Check out the <a href="release/">Release Workflow</a> document for details on how to
 publish new versions of the library to PyPI using GitHub Actions.</p>

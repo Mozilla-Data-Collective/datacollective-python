@@ -9,8 +9,10 @@
       
       
       
-        <link rel="prev" href="../library_development/">
+        <link rel="prev" href="../api/">
       
+      
+        <link rel="next" href="../release/">
       
       
         
@@ -21,7 +23,7 @@
     
     
       
-        <title>Release Workflow - Mozilla Data Collective Python SDK</title>
+        <title>Library Development - Mozilla Data Collective Python SDK</title>
       
     
     
@@ -74,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#release-workflow" class="md-skip">
+        <a href="#library-development" class="md-skip">
           Skip to content
         </a>
       
@@ -109,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Release Workflow
+              Library Development
             
           </span>
         </div>
@@ -630,34 +632,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../library_development/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Library Development
-  
-
-    
-  </span>
-  
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -677,7 +651,7 @@
   <span class="md-ellipsis">
     
   
-    Release Workflow
+    Library Development
   
 
     
@@ -695,7 +669,7 @@
   <span class="md-ellipsis">
     
   
-    Release Workflow
+    Library Development
   
 
     
@@ -721,10 +695,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#api-endpoint-overrides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        API endpoint overrides
       
     </span>
   </a>
@@ -732,10 +706,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-prepare-the-code-for-release" class="md-nav__link">
+  <a href="#live-e2e-tests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Prepare the code for release
+        Live E2E tests
       
     </span>
   </a>
@@ -743,87 +717,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-choose-the-version-bump" class="md-nav__link">
+  <a href="#related-workflows" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Choose the version bump
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-bump-the-version-using-bump-my-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Bump the version using bump-my-version
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-update-uvlock" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Update uv.lock
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-push-the-changes-and-tag" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Push the changes and tag
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-create-a-github-release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Create a GitHub Release
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-automatic-publish-to-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Automatic publish to PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-verify-the-release-on-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Verify the release on PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes-and-best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes and Best Practices
+        Related workflows
       
     </span>
   </a>
@@ -834,6 +731,34 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
     </li>
   
 
@@ -873,10 +798,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#prerequisites" class="md-nav__link">
+  <a href="#api-endpoint-overrides" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Prerequisites
+        API endpoint overrides
       
     </span>
   </a>
@@ -884,10 +809,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#1-prepare-the-code-for-release" class="md-nav__link">
+  <a href="#live-e2e-tests" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. Prepare the code for release
+        Live E2E tests
       
     </span>
   </a>
@@ -895,87 +820,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#2-choose-the-version-bump" class="md-nav__link">
+  <a href="#related-workflows" class="md-nav__link">
     <span class="md-ellipsis">
       
-        2. Choose the version bump
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#3-bump-the-version-using-bump-my-version" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        3. Bump the version using bump-my-version
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#4-update-uvlock" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        4. Update uv.lock
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#5-push-the-changes-and-tag" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        5. Push the changes and tag
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#6-create-a-github-release" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        6. Create a GitHub Release
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#7-automatic-publish-to-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        7. Automatic publish to PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#8-verify-the-release-on-pypi" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        8. Verify the release on PyPI
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#notes-and-best-practices" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Notes and Best Practices
+        Related workflows
       
     </span>
   </a>
@@ -1002,126 +850,44 @@
   
 
 
-<h1 id="release-workflow">Release Workflow</h1>
-<p>This project uses:</p>
+<h1 id="library-development">Library Development</h1>
+<p>This page is intended for developers of this library with access to development environments.</p>
+<h2 id="api-endpoint-overrides">API endpoint overrides</h2>
+<p>The SDK defaults to the production API endpoint, so normal usage should not set
+<code>MDC_API_URL</code>.</p>
+<p>For internal development, staging, or test environments, you can override the
+default API endpoint by setting <code>MDC_API_URL</code> in your shell or <code>.env</code> file.</p>
+<p>Example shell configuration:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_API_URL</span><span class="o">=</span>https://your-dev-environment.example/api
+</span></code></pre></div>
+<p>Example <code>.env</code> entry:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nv">MDC_API_URL</span><span class="o">=</span>https://your-dev-environment.example/api
+</span></code></pre></div>
+<p>Notes:</p>
 <ul>
-<li><code>bump-my-version</code> as the single source of truth for the version and updating it.</li>
-<li>GitHub Releases to trigger automatic publishing to PyPI via GitHub Actions.</li>
+<li>The override applies to the SDK API requests.</li>
+<li>The cutover compatibility shim rewrites the legacy production host
+  <code>https://datacollective.mozillafoundation.org/api</code> to
+  <code>https://mozilladatacollective.com/api</code>.</li>
+<li>Custom non-production URLs are passed through unchanged.</li>
 </ul>
-<p>Publishing to PyPI happens <strong>only</strong> when a GitHub Release is created for a version tag (for example, <code>0.1.0</code>).</p>
-<hr />
-<h2 id="prerequisites">Prerequisites</h2>
-<p>Before doing a release, make sure you have:</p>
+<h2 id="live-e2e-tests">Live E2E tests</h2>
+<p>The live E2E tests are intended for internal SDK validation. They require:</p>
 <ul>
-<li>Push access to the repository.</li>
-<li>A local Python environment with <code>bump-my-version</code> installed:</li>
+<li><code>MDC_TEST_API_KEY</code></li>
+<li><code>MDC_TEST_API_URL</code></li>
 </ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>tool<span class="w"> </span>install<span class="w"> </span>bump-my-version
+<p>Example:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_TEST_API_KEY</span><span class="o">=</span>your-test-api-key
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_TEST_API_URL</span><span class="o">=</span>https://your-dev-environment.example/api
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pytest<span class="w"> </span>-v
 </span></code></pre></div>
+<p>Pytest skips the live E2E tests automatically if either variable is missing.</p>
+<h2 id="related-workflows">Related workflows</h2>
 <ul>
-<li>An up-to-date local clone with all changes merged into <code>main</code>:</li>
-</ul>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>git<span class="w"> </span>checkout<span class="w"> </span>main
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>git<span class="w"> </span>pull<span class="w"> </span>origin<span class="w"> </span>main
-</span></code></pre></div>
-<hr />
-<h2 id="1-prepare-the-code-for-release">1. Prepare the code for release</h2>
-<ol>
-<li>Make sure all desired changes are merged into <code>main</code>.</li>
-<li>Run tests and checks locally (adjust commands to your setup):</li>
-</ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pre-commit<span class="w"> </span>run<span class="w"> </span>--all-files
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pytest<span class="w"> </span>-q
-</span></code></pre></div>
-<hr />
-<h2 id="2-choose-the-version-bump">2. Choose the version bump</h2>
-<p>Decide what type of version bump you need according to <a href="https://semver.org/">Semantic Versioning</a>:</p>
-<ul>
-<li><code>patch</code>: bug fixes only (e.g. <code>0.0.34</code> → <code>0.0.35</code>)</li>
-<li><code>minor</code>: new features, backwards compatible (e.g. <code>0.0.34</code> → <code>0.1.0</code>)</li>
-<li><code>major</code>: breaking changes (e.g. <code>0.0.34</code> → <code>1.0.0</code>)</li>
-</ul>
-<p>Check the potential versioning paths with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>bump-my-version<span class="w"> </span>show-bump
-</span></code></pre></div>
-<p>And verify that the version you plan to release is the expected one:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>bump-my-version<span class="w"> </span>show<span class="w"> </span>--increment<span class="w"> </span>minor<span class="w"> </span>new_version
-</span></code></pre></div>
-<p>Finally, you can run a dry run to see what will happen:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w"> </span>--dry-run<span class="w"> </span>-vv
-</span></code></pre></div>
-<hr />
-<h2 id="3-bump-the-version-using-bump-my-version">3. Bump the version using bump-my-version</h2>
-<p>Run <strong>one</strong> of the following from the repository root:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># choose exactly one:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w"> </span>-vv
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># or</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w"> </span>-vv
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># or</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w"> </span>-vv
-</span></code></pre></div>
-<p>This will update the version in <code>pyproject.toml</code> and <code>src/datacollective/__init__.py</code>.</p>
-<hr />
-<h2 id="4-update-uvlock">4. Update uv.lock</h2>
-<p>After bumping the version, you need to update the <code>uv.lock</code> file to reflect the new version:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>lock
-</span></code></pre></div>
-<h2 id="5-push-the-changes-and-tag">5. Push the changes and tag</h2>
-<p>Commit the version bump and push to the <code>main</code> branch:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>git<span class="w"> </span>add<span class="w"> </span>pyproject.toml<span class="w"> </span>src/datacollective/__init__.py<span class="w"> </span>uv.lock
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">&quot;Bump version to X.Y.Z&quot;</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main
-</span></code></pre></div>
-<p>Replace <code>X.Y.Z</code> with the tag created in the previous step (for example, <code>0.0.35</code>).</p>
-<hr />
-<h2 id="6-create-a-github-release">6. Create a GitHub Release</h2>
-<ol>
-<li>Go to the repository page on GitHub.</li>
-<li>Open the <code>Releases</code> section.</li>
-<li>Click <code>Draft a new release</code>.</li>
-<li>Select the tag you just pushed (for example, <code>0.0.35</code>).</li>
-<li>Set the release title to the same value (e.g. <code>0.0.35</code>).</li>
-<li>Add release notes (high-level changes).</li>
-<li>Click <code>Publish release</code>.</li>
-</ol>
-<p>This will trigger the <code>Publish to PyPI</code> GitHub Actions workflow.</p>
-<hr />
-<h2 id="7-automatic-publish-to-pypi">7. Automatic publish to PyPI</h2>
-<p>Once the GitHub Release is published:</p>
-<ul>
-<li>GitHub Actions automatically:</li>
-<li>Checks out the code.</li>
-<li>Builds the distribution.</li>
-<li>Uploads the package to PyPI using the <code>PYPI_API_TOKEN</code> secret.</li>
-</ul>
-<p>You can monitor the progress:</p>
-<ol>
-<li>Open the <code>Actions</code> tab in GitHub.</li>
-<li>Open the <code>Publish to PyPI</code> workflow run associated with your release.</li>
-<li>Wait for it to complete successfully.</li>
-</ol>
-<hr />
-<h2 id="8-verify-the-release-on-pypi">8. Verify the release on PyPI</h2>
-<p>After the workflow succeeds:</p>
-<ol>
-<li>Go to the project page on PyPI.</li>
-<li>Confirm that the new version <code>X.Y.Z</code> is listed.</li>
-<li>Optionally install the package in a clean environment to verify:</li>
-</ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span><span class="nv">datacollective</span><span class="o">==</span>X.Y.Z
-</span></code></pre></div>
-<hr />
-<h2 id="notes-and-best-practices">Notes and Best Practices</h2>
-<ul>
-<li>
-<p><strong>Single source of truth</strong>: The version is managed only by bump-my-version. Do <strong>not</strong> manually edit the version in any file.</p>
-</li>
-<li>
-<p><strong>Tag format</strong>: Always use <code>X.Y.Z</code> tags (for example, <code>0.0.35</code>). The <code>bump-my-version</code> configuration enforces this.</p>
-</li>
-<li>
-<p><strong>Manual workflow dispatch (advanced)</strong>: In rare cases, you can re-run the publish job from the <code>Actions</code> tab using <code>workflow_dispatch</code>, but normally you should always go through a GitHub Release.</p>
-</li>
+<li>For release steps, see <a href="../release/">Release Workflow</a>.</li>
+<li>For loader and schema extension work, see <a href="../extend_schema_loading_logic/">Extending the Loading Logic</a>
+  and <a href="../add_new_schema/">Adding a New Schema</a>.</li>
 </ul>
 
 

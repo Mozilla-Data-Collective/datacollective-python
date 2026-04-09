@@ -904,6 +904,81 @@
   
   
   
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internal Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Internal Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../library_development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Library Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
     <li class="md-nav__item">
       <a href="../release/" class="md-nav__link">
         
@@ -921,6 +996,14 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1258,7 +1341,7 @@
 <h2 id="prerequisites">Prerequisites</h2>
 <p>Before uploading, ensure you have:</p>
 <ul>
-<li>An API key from the Mozilla Data Collective <a href="https://datacollective.mozillafoundation.org/api-reference">dashboard</a></li>
+<li>An API key from the Mozilla Data Collective <a href="https://mozilladatacollective.com/api-reference">dashboard</a></li>
 <li>Your dataset packaged as an archive file (<code>.tar.gz</code>, uploads use <code>application/gzip</code>)</li>
 <li>All the required metadata for the dataset submission</li>
 <li>Dataset archives must be <strong>80GB or less</strong></li>
@@ -1323,7 +1406,7 @@
 <li>Go to <strong>Profile → Uploads</strong> on the platform.</li>
 <li>Click on the dataset submission you want to upload a new version for (must be in an Approved state).</li>
 <li>Copy the ID from the URL, for example:
-   <code>https://datacollective.mozillafoundation.org/profile/submissions/&lt;ID&gt;</code></li>
+   <code>https://mozilladatacollective.com/profile/submissions/&lt;ID&gt;</code></li>
 <li>Pass that value to <code>upload_dataset_file</code> as <code>submission_id</code>.</li>
 </ol>
 <blockquote>
@@ -1391,7 +1474,7 @@ The value after <code>/profile/submissions/</code> is the <strong>submission ID<
 </span></code></pre></div>
 <blockquote>
 <p>[!TIP]
-You can also find your submission ID by going to your <a href="https://datacollective.mozillafoundation.org/profile/uploads">Uploads</a> in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., <code>https://datacollective.mozillafoundation.org/submissions/cmmjpewijXXXXXXXXX</code>).</p>
+You can also find your submission ID by going to your <a href="https://mozilladatacollective.com/profile/uploads">Uploads</a> in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., <code>https://mozilladatacollective.com/submissions/cmmjpewijXXXXXXXXX</code>).</p>
 </blockquote>
 <h3 id="step-3-update-submission-metadata">Step 3: Update Submission Metadata</h3>
 <p>For this step, you will need the <code>fileUploadId</code> from the upload response above, which is required to link the uploaded file to your submission. Without this ID, you won't be able to proceed to the submission step. If you no longer have access to it, you will need to re-upload the file to get a new <code>fileUploadId</code>.</p>

@@ -2,7 +2,7 @@ from datacollective import upload_dataset_file
 
 # The dataset must already be approved on the platform.
 # Copy the submission ID from:
-# https://datacollective.mozillafoundation.org/profile/submissions/<submission-id>
+# https://mozilladatacollective.com/profile/submissions/<submission-id>
 approved_submission_id = "XXXXXXXXXXXXX"
 
 upload_state = upload_dataset_file(
