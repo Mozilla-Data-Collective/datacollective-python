@@ -14,7 +14,7 @@ dependencies = [
     "requests>=2.32.5",
 ]
 authors = [
-    { name="Mozilla Data Collective", email="mozilladatacollective@mozillafoundation.org"},
+    { name="Mozilla Data Collective", email="support@mozilladatacollective.com"},
 ]
 description = "A Python package for interfacing with the Mozilla Data Collective's API"
 readme = "README.md"

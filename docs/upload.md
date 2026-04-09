@@ -19,7 +19,7 @@ The SDK also supports **resumable uploads**, meaning if an upload is interrupted
 
 Before uploading, ensure you have:
 
-- An API key from the Mozilla Data Collective [dashboard](https://datacollective.mozillafoundation.org/api-reference)
+- An API key from the Mozilla Data Collective [dashboard](https://mozilladatacollective.com/api-reference)
 - Your dataset packaged as an archive file (`.tar.gz`, uploads use `application/gzip`)
 - All the required metadata for the dataset submission
 - Dataset archives must be **80GB or less**
@@ -97,7 +97,7 @@ Use `upload_dataset_file` when the dataset already exists on the platform and is
 1. Go to **Profile → Uploads** on the platform.
 2. Click on the dataset submission you want to upload a new version for (must be in an Approved state).
 3. Copy the ID from the URL, for example:
-   `https://datacollective.mozillafoundation.org/profile/submissions/<ID>`
+   `https://mozilladatacollective.com/profile/submissions/<ID>`
 4. Pass that value to `upload_dataset_file` as `submission_id`.
 
 > [!IMPORTANT]
@@ -181,7 +181,7 @@ print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 ```
 
 > [!TIP]
-> You can also find your submission ID by going to your [Uploads](https://datacollective.mozillafoundation.org/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://datacollective.mozillafoundation.org/submissions/cmmjpewijXXXXXXXXX`).
+> You can also find your submission ID by going to your [Uploads](https://mozilladatacollective.com/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://mozilladatacollective.com/submissions/cmmjpewijXXXXXXXXX`).
 
 ### Step 3: Update Submission Metadata
 
