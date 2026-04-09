@@ -72,7 +72,13 @@ class TestDatasetSchema:
             dataset_id="ds1",
             task="ASR",
             columns={
-                "audio": ColumnMapping(source_column="path", dtype="file_path"),
+                "audio": ColumnMapping(
+                    source_column="path",
+                    dtype="file_path",
+                    path_match_strategy="contains",
+                    file_extension=".wav",
+                    path_template="${Speaker ID}_khm_${value}.wav",
+                ),
                 "text": ColumnMapping(
                     source_column="sentence", dtype="string", optional=True
                 ),
@@ -82,6 +88,11 @@ class TestDatasetSchema:
         assert "columns" in d
         assert d["columns"]["audio"]["source_column"] == "path"
         assert d["columns"]["audio"]["dtype"] == "file_path"
+        assert d["columns"]["audio"]["path_match_strategy"] == "contains"
+        assert d["columns"]["audio"]["file_extension"] == ".wav"
+        assert (
+            d["columns"]["audio"]["path_template"] == "${Speaker ID}_khm_${value}.wav"
+        )
         assert d["columns"]["text"]["optional"] is True
 
     def test_to_yaml_dict_round_trip(self) -> None:
@@ -91,8 +102,15 @@ class TestDatasetSchema:
             task="TTS",
             format="tsv",
             index_file="meta.tsv",
+            base_audio_path=["wavs/", "backup_wavs/"],
             columns={
-                "audio": ColumnMapping(source_column="path", dtype="file_path"),
+                "audio": ColumnMapping(
+                    source_column="path",
+                    dtype="file_path",
+                    path_match_strategy="exact",
+                    file_extension=".wav",
+                    path_template="${Speaker ID}_khm_${path}.wav",
+                ),
             },
             root_strategy="paired_glob",
             file_pattern="**/*.txt",
@@ -106,8 +124,14 @@ class TestDatasetSchema:
         assert restored.format == original.format
         assert restored.root_strategy == original.root_strategy
         assert restored.checksum == original.checksum
+        assert restored.base_audio_path == ["wavs/", "backup_wavs/"]
         assert "audio" in restored.columns
         assert restored.columns["audio"].dtype == "file_path"
+        assert restored.columns["audio"].path_match_strategy == "exact"
+        assert restored.columns["audio"].file_extension == ".wav"
+        assert (
+            restored.columns["audio"].path_template == "${Speaker ID}_khm_${path}.wav"
+        )
 
 
 class TestParseSchema:
@@ -144,13 +168,22 @@ class TestParseSchema:
             "dataset_id": "ds1",
             "task": "ASR",
             "columns": {
-                "audio_path": {"source_column": "path", "dtype": "file_path"},
+                "audio_path": {
+                    "source_column": "path",
+                    "dtype": "file_path",
+                    "path_match_strategy": "contains",
+                    "file_extension": ".wav",
+                    "path_template": "${Speaker ID}_khm_${value}.wav",
+                },
                 "text": {"source_column": "sentence"},
             },
         }
         s = _parse_schema(raw)
         assert "audio_path" in s.columns
         assert s.columns["audio_path"].dtype == "file_path"
+        assert s.columns["audio_path"].path_match_strategy == "contains"
+        assert s.columns["audio_path"].file_extension == ".wav"
+        assert s.columns["audio_path"].path_template == "${Speaker ID}_khm_${value}.wav"
         assert s.columns["text"].dtype == "string"  # default
 
     def test_columns_with_int_source(self) -> None:
@@ -197,6 +230,16 @@ class TestParseSchema:
         s = _parse_schema(raw)
         assert s.root_strategy == "multi_split"
 
+    def test_base_audio_path_list_parsed(self) -> None:
+        raw: dict[str, Any] = {
+            "dataset_id": "ds1",
+            "task": "ASR",
+            "index_file": "meta.csv",
+            "base_audio_path": ["clips/", "backup/"],
+        }
+        s = _parse_schema(raw)
+        assert s.base_audio_path == ["clips/", "backup/"]
+
     def test_all_fields(self) -> None:
         """Comprehensive parsing with every known field populated."""
         raw: dict[str, Any] = {
@@ -204,7 +247,7 @@ class TestParseSchema:
             "task": "TTS",
             "format": "pipe",
             "index_file": "meta.csv",
-            "base_audio_path": "wavs/",
+            "base_audio_path": ["wavs/", "backup_wavs/"],
             "separator": "|",
             "has_header": False,
             "encoding": "utf-8-sig",
@@ -216,17 +259,28 @@ class TestParseSchema:
             "splits_file_pattern": "**/*.csv",
             "checksum": "ck",
             "columns": {
-                "a": {"source_column": 0, "dtype": "file_path", "optional": True},
+                "a": {
+                    "source_column": 0,
+                    "dtype": "file_path",
+                    "optional": True,
+                    "path_match_strategy": "exact",
+                    "file_extension": ".wav",
+                    "path_template": "${Speaker ID}_khm_${value}.wav",
+                },
             },
         }
         s = _parse_schema(raw)
         assert s.format == "pipe"
+        assert s.base_audio_path == ["wavs/", "backup_wavs/"]
         assert s.separator == "|"
         assert s.has_header is False
         assert s.encoding == "utf-8-sig"
         assert s.splits == ["train"]
         assert s.splits_file_pattern == "**/*.csv"
         assert s.columns["a"].optional is True
+        assert s.columns["a"].path_match_strategy == "exact"
+        assert s.columns["a"].file_extension == ".wav"
+        assert s.columns["a"].path_template == "${Speaker ID}_khm_${value}.wav"
 
     def test_non_dict_column_entries_ignored(self) -> None:
         raw: dict[str, Any] = {

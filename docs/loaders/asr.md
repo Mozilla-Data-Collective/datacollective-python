@@ -14,10 +14,10 @@ A CSV or TSV index file maps audio paths to transcriptions and other metadata co
 
 | Field | Required | Description |
 |---|---|---|
-| `format` | ✓ | File format (`"csv"` or `"tsv"`). |
 | `index_file` | ✓ | Path to the metadata file, relative to the dataset root. |
 | `columns` | ✓ | Mapping of logical column names to source columns and dtypes. |
-| `base_audio_path` | ✗ | *(optional)* Directory prefix prepended to `file_path` dtype columns. |
+| `base_audio_path` | ✗ | *(optional)* Directory prefix or list of directories used to resolve `file_path` dtype columns. |
+| `format` | ✗ | Optional file format hint (`"csv"`, `"tsv"`, `"pipe"`). When omitted, the loader infers it from `index_file` where possible. |
 
 ### Multi-split strategy (`root_strategy: "multi_split"`)
 
@@ -30,7 +30,7 @@ Each split (e.g. `train`, `dev`, `test`) is stored in a separate file. The loade
 | `splits` | ✓ | List of split names to load (e.g. `["train", "dev", "test"]`). |
 | `splits_file_pattern` | ✗ | *(optional)* Glob pattern to locate split files (default: `"**/*.tsv"`). |
 | `columns` | ✗ | *(optional)* Column mappings applied to every split frame. |
-| `base_audio_path` | ✗ | *(optional)* Directory prefix prepended to `file_path` dtype columns. |
+| `base_audio_path` | ✗ | *(optional)* Directory prefix or list of directories used to resolve `file_path` dtype columns. |
 
 ---
 
@@ -103,6 +103,85 @@ columns:
     optional: true
 ```
 
+### Search-based audio resolution
+
+When the metadata stores an ID or partial filename instead of a directly
+joinable relative path, `file_path` columns can search within one or more
+audio roots:
+
+```yaml
+dataset_id: "example-asr"
+task: "ASR"
+index_file: "data/metadata.csv"
+base_audio_path:
+  - "data/recipes/"
+  - "data/giving_gift/"
+
+columns:
+  audio_path:
+    source_column: "Sentence ID"
+    dtype: "file_path"
+    path_match_strategy: "exact"   # or "contains"
+    file_extension: ".wav"
+  transcription:
+    source_column: "Sentences"
+    dtype: "string"
+```
+
+`path_match_strategy: "direct"` remains the default and preserves the existing
+`extract_dir / base_audio_path / value` behavior. The loader also trims BOMs
+and surrounding header whitespace, and can retry common delimiters
+automatically when a file initially parses as a single column.
+
+If the true audio filename is composed from multiple metadata columns, use
+`path_template` instead of a fuzzy search:
+
+```yaml
+dataset_id: "khmer-asr-cultural-dataset-4e33cd05"
+task: "ASR"
+index_file: "data/metadata.csv"
+base_audio_path:
+  - "data/recipes/"
+  - "data/giving_gift/"
+
+columns:
+  audio_path:
+    source_column: "Sentence ID"
+    dtype: "file_path"
+    file_extension: ".wav"
+    path_template: "${Speaker ID}_khm_${Sentence ID}.wav"
+  transcription:
+    source_column: "Sentences"
+    dtype: "string"
+```
+
+Template placeholders reference raw metadata column names exactly, and
+`${value}` refers to the current `source_column` value. Relative paths are
+resolved from the dataset root inferred from the resolved `index_file`.
+
+If the audio directory itself varies per row, `base_audio_path` can use the
+same placeholder syntax:
+
+```yaml
+dataset_id: "khmer-asr-cultural-dataset-4e33cd05"
+task: "ASR"
+index_file: "data/metadata.csv"
+base_audio_path: "data/${Split}/"
+
+columns:
+  audio_path:
+    source_column: "Sentence ID"
+    dtype: "file_path"
+    file_extension: ".wav"
+    path_template: "${Speaker ID}_khm_${value}"
+  transcription:
+    source_column: "Sentences"
+    dtype: "string"
+```
+
+That resolves each row as
+`dataset_root / data/<Split>/<Speaker ID>_khm_<Sentence ID>.wav`.
+
 ### Multi-split schema
 
 ```yaml
@@ -171,4 +250,3 @@ columns:
     optional: true
 
 ```
-
