@@ -463,6 +463,54 @@ class TestASRIndexBased:
         df = ASRLoader(schema, tmp_path).load()
         assert len(df) == 1
 
+    def test_file_content_dtype_reads_text_file(self, tmp_path: Path) -> None:
+        _write_tsv(
+            tmp_path / "index.csv",
+            "audio,transcript\nclip.wav,transcripts/clip.txt\n",
+        )
+        txt_path = tmp_path / "transcripts" / "clip.txt"
+        txt_path.parent.mkdir()
+        txt_path.write_text("hello world\n", encoding="utf-8")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            format="csv",
+            index_file="index.csv",
+            columns={
+                "audio": ColumnMapping(source_column="audio", dtype="file_path"),
+                "text": ColumnMapping(source_column="transcript", dtype="file_content"),
+            },
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert df["text"].iloc[0] == "hello world"
+
+    def test_file_content_dtype_with_file_extension(self, tmp_path: Path) -> None:
+        _write_tsv(
+            tmp_path / "index.csv",
+            "audio,transcript\nclip.wav,transcripts/clip\n",
+        )
+        txt_path = tmp_path / "transcripts" / "clip.txt"
+        txt_path.parent.mkdir()
+        txt_path.write_text("resolved with extension\n", encoding="utf-8")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="ASR",
+            format="csv",
+            index_file="index.csv",
+            columns={
+                "audio": ColumnMapping(source_column="audio", dtype="file_path"),
+                "text": ColumnMapping(
+                    source_column="transcript",
+                    dtype="file_content",
+                    file_extension=".txt",
+                ),
+            },
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert df["text"].iloc[0] == "resolved with extension"
+
 
 class TestASRMultiSplit:
     def test_load_multiple_splits(self, tmp_path: Path) -> None:
