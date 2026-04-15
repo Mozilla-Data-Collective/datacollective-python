@@ -378,7 +378,16 @@ class BaseSchemaLoader(abc.ABC):
         self, value: object, col_map: ColumnMapping, row: pd.Series | None = None
     ) -> str:
         """Resolve a file path (like ``file_path`` dtype) and return its text content."""
-        resolved = self._resolve_file_path(value, col_map, row)
+        if pd.isna(value):  # if missing value, skip loading
+            return str(value)
+
+        # Remove whitespaces in the path
+        raw = str(value).strip()
+        parts = Path(raw).parts
+        if parts:
+            raw = str(Path(*[p.strip() for p in parts]))
+
+        resolved = self._resolve_file_path(raw, col_map, row)
         path = Path(resolved)
         if path.is_file():
             return path.read_text(encoding=self.schema.encoding).strip()
