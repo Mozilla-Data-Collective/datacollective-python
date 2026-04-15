@@ -195,6 +195,7 @@ columns:
 |---|---|
 | `string` | Cast to `str` (default). |
 | `file_path` | Resolve to an absolute path. By default this is `dataset_root / base_audio_path / value`, but the loader can also search one or more `base_audio_path` roots when `path_match_strategy` is set, or render filenames and directory roots from metadata columns with `path_template` and templated `base_audio_path` entries. |
+| `file_content` | Like `file_path`, but instead of keeping the resolved path, reads the file and returns its text content. Useful when the index stores paths to transcription files rather than inline text. Supports the same resolution options (`base_audio_path`, `file_extension`, `path_match_strategy`, `path_template`). |
 | `category` | Cast to pandas `Categorical`. |
 | `int` | Numeric coercion → nullable `Int64`. |
 | `float` | Numeric coercion → `float64`. |
