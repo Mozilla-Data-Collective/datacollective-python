@@ -1419,6 +1419,10 @@ instead of a column name:</p>
 <td>Resolve to an absolute path. By default this is <code>dataset_root / base_audio_path / value</code>, but the loader can also search one or more <code>base_audio_path</code> roots when <code>path_match_strategy</code> is set, or render filenames and directory roots from metadata columns with <code>path_template</code> and templated <code>base_audio_path</code> entries.</td>
 </tr>
 <tr>
+<td><code>file_content</code></td>
+<td>Like <code>file_path</code>, but instead of keeping the resolved path, reads the file and returns its text content. Useful when the index stores paths to transcription files rather than inline text. Supports the same resolution options (<code>base_audio_path</code>, <code>file_extension</code>, <code>path_match_strategy</code>, <code>path_template</code>).</td>
+</tr>
+<tr>
 <td><code>category</code></td>
 <td>Cast to pandas <code>Categorical</code>.</td>
 </tr>
