@@ -174,6 +174,13 @@ class BaseSchemaLoader(abc.ABC):
                     ),
                     axis=1,
                 )
+            elif col_map.dtype == "file_content":
+                series = raw_df.apply(
+                    lambda row, _col_map=col_map, _source=resolved_source: (
+                        self._load_file_content(row[_source], _col_map, row)
+                    ),
+                    axis=1,
+                )
             elif col_map.dtype == "category":
                 series = series.astype("category")
             elif col_map.dtype == "int":
@@ -366,6 +373,25 @@ class BaseSchemaLoader(abc.ABC):
         if direct_candidates:
             return str(direct_candidates[0])
         return raw_value
+
+    def _load_file_content(
+        self, value: object, col_map: ColumnMapping, row: pd.Series | None = None
+    ) -> str:
+        """Resolve a file path (like ``file_path`` dtype) and return its text content."""
+        if pd.isna(value):  # if missing value, skip loading
+            return str(value)
+
+        # Remove whitespaces in the path
+        raw = str(value).strip()
+        parts = Path(raw).parts
+        if parts:
+            raw = str(Path(*[p.strip() for p in parts]))
+
+        resolved = self._resolve_file_path(raw, col_map, row)
+        path = Path(resolved)
+        if path.is_file():
+            return path.read_text(encoding=self.schema.encoding).strip()
+        return resolved
 
     def _build_direct_file_candidates(
         self,

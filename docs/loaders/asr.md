@@ -182,6 +182,36 @@ columns:
 That resolves each row as
 `dataset_root / data/<Split>/<Speaker ID>_khm_<Sentence ID>.wav`.
 
+### File-content dtype
+
+When the index file stores paths to transcription files instead of inline text,
+use `dtype: "file_content"` to read the file contents into the DataFrame:
+
+```yaml
+dataset_id: "speech-data-nupe"
+task: "ASR"
+index_file: "Metadata.csv"
+base_audio_path:
+  - "Speaker_id_1"
+  - "Speaker_id_2"
+
+columns:
+  audio_path:
+    source_column: "Audio_File_Path"
+    dtype: "file_path"
+    file_extension: ".wav"
+  transcription:
+    source_column: "Transcript_File_Path"
+    dtype: "file_content"
+    file_extension: ".txt"
+  speaker_id:
+    source_column: "Speaker_ID"
+```
+
+The `file_content` dtype reuses the same path resolution as `file_path`
+(`base_audio_path`, `file_extension`, `path_match_strategy`, `path_template`)
+but returns the file's text content instead of the resolved path.
+
 ### Multi-split schema
 
 ```yaml
