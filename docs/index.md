@@ -77,7 +77,7 @@ You can change the log file location by setting the `MDC_LOG_PATH` environment v
 either through the `.env` file or by executing on your terminal:
 
 ```bash
-export MDC_LOG_PATH=/path/to/your/logfile.log
+export MDC_LOG_PATH=/path/to/save/the/log/files
 ```
 
 ## Basic Usage
