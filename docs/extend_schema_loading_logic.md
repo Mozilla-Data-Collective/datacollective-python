@@ -55,6 +55,7 @@ from datacollective.schema_loaders.tasks.mt import MTLoader
 _TASK_REGISTRY: dict[str, Type[BaseSchemaLoader]] = {
     "ASR": ASRLoader,
     "TTS": TTSLoader,
+    "OTH": OTHLoader,
     "MT":  MTLoader,  # Add your new task here
 }
 ```
@@ -71,7 +72,7 @@ Strategies are defined in the `Strategy` enum in `src/datacollective/schema_load
 |---|---|---|
 | `Strategy.MULTI_SPLIT` | `"multi_split"` | Loads multiple files matching a pattern. |
 | `Strategy.PAIRED_GLOB` | `"paired_glob"` | Pairs audio files with `.txt` files. |
-| `Strategy.GLOB` | `"glob"` | Generic single-pattern globbing. |
+| `Strategy.GLOB` | `"glob"` | Walks directory-structured datasets, deriving metadata from the path hierarchy. |
 
 ### Adding a new strategy
 
@@ -90,6 +91,7 @@ When a user calls `load_dataset("id")`:
 3. **`_resolve_schema()`**: Locates or downloads `schema.yaml`.
 4. **`parse_schema()`**: Validates YAML into a `DatasetSchema` object.
 5. **`load_dataset_from_schema()`**: 
+    - If the schema specifies `extract_files`, extracts inner archives (skipped when already extracted).
     - Finds the correct loader in the **Registry**.
     - Calls `loader.load()`.
     - Returns the final **pandas DataFrame**.
@@ -102,4 +104,4 @@ When a user calls `load_dataset("id")`:
 | `datacollective.schema_loaders.base` | Abstract base class and strategy definitions. |
 | `datacollective.schema_loaders.registry` | Task-to-loader mapping. |
 | `datacollective.schema_loaders.cache_schema` | Local schema caching and checksum validation. |
-| `datacollective.schema_loaders.tasks.*` | Implementation of task-specific logic (ASR, TTS). |
+| `datacollective.schema_loaders.tasks.*` | Implementation of task-specific logic (ASR, TTS, OTH). |

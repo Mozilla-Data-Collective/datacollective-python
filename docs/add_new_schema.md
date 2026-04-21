@@ -15,10 +15,11 @@ Extract your dataset and understand its file layout. This determines which **str
 - **Index-based**: You have a central metadata file (CSV, TSV, or pipe-delimited) that lists paths to files and their transcriptions/metadata.
 - **Multi-split**: You have separate files for each split (e.g., `train.tsv`, `test.tsv`, `dev.tsv`).
 - **Paired-glob**: There is no index file; instead, each audio file has a matching `.txt` file with the same name.
+- **Glob**: There is no index file or text pairing; metadata is encoded in the directory hierarchy (e.g., `speaker_id/language/utterance.wav`).
 
 ### Step 2: Identify the task
 
-Determine which task your dataset belongs to. Most datasets on MDC are either **ASR** (Automatic Speech Recognition) or **TTS** (Text-to-Speech).
+Determine which task your dataset belongs to. Datasets on MDC are typically **ASR** (Automatic Speech Recognition), **TTS** (Text-to-Speech), or **OTH** (Other — e.g. speaker verification, language identification).
 
 ### Step 3: Write the schema
 
