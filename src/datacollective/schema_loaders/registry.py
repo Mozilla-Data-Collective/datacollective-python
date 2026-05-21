@@ -9,6 +9,7 @@ from datacollective.logging_utils import get_logger
 from datacollective.schema import DatasetSchema
 from datacollective.schema_loaders.base import BaseSchemaLoader
 from datacollective.schema_loaders.tasks.asr import ASRLoader
+from datacollective.schema_loaders.tasks.oth import OTHLoader
 from datacollective.schema_loaders.tasks.tts import TTSLoader
 
 logger = get_logger(__name__)
@@ -16,6 +17,7 @@ logger = get_logger(__name__)
 
 _TASK_REGISTRY: dict[str, Type[BaseSchemaLoader]] = {
     "ASR": ASRLoader,
+    "OTH": OTHLoader,
     "TTS": TTSLoader,
 }
 
