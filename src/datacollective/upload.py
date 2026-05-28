@@ -58,8 +58,8 @@ def upload_dataset_file(
         raise ValueError("`file_path` must point to a non-empty file")
     if file_size > MAX_UPLOAD_BYTES:
         logger.warning(
-            f"{file_path} exceeds the 80GB upload limit. If you have not yet received "
-            "an approval, please contact support@mozilladatacollective.com"
+            f"{file_path} exceeds the {MAX_UPLOAD_BYTES // (1000 ** 3)} GB upload limit. "
+            "If you have not yet received an approval, please contact support@mozilladatacollective.com"
         )
 
     final_filename = path.name

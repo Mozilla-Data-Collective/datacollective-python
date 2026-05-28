@@ -41,7 +41,7 @@ class UploadState(NonEmptyStrModel):
     submissionId: str
     fileUploadId: str
     uploadId: str
-    fileSize: int = Field(..., gt=0, le=MAX_UPLOAD_BYTES)
+    fileSize: int = Field(..., gt=0)
     partSize: int = Field(..., gt=0)
     filename: str
     mimeType: str
@@ -58,7 +58,7 @@ class PresignedPartUrl(NonEmptyStrModel):
 class _UploadInitiatePayload(NonEmptyStrModel):
     submissionId: str
     filename: str
-    fileSize: int = Field(..., gt=0, le=MAX_UPLOAD_BYTES)
+    fileSize: int = Field(..., gt=0)
     mimeType: str
 
 
