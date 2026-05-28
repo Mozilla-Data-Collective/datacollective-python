@@ -34,7 +34,7 @@ def upload_dataset_file(
     """
     Upload a dataset file using multipart uploads with resumable state.
 
-    Uploads are limited to 80GB and use the `application/gzip` MIME type.
+    Files above 80GB will trigger a warning; contact support for approval before uploading.
     Pass the submission ID of the target dataset submission. This works for
     both draft submissions and for uploading a new `.tar.gz` version to an
     already approved dataset submission.
@@ -57,8 +57,9 @@ def upload_dataset_file(
     if file_size <= 0:
         raise ValueError("`file_path` must point to a non-empty file")
     if file_size > MAX_UPLOAD_BYTES:
-        raise ValueError(
-            f"`file_path` exceeds the 80GB upload limit: `{file_path}`"
+        logger.warning(
+            f"{file_path} exceeds the 80GB upload limit. If you have not yet received "
+            "an approval, please contact support@mozilladatacollective.com"
         )
 
     final_filename = path.name
