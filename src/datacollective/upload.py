@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from datacollective.logging_utils import (
@@ -9,6 +10,7 @@ from datacollective.logging_utils import (
 from datacollective.upload_utils import (
     UploadState,
     MAX_UPLOAD_BYTES,
+    WARN_UPLOAD_BYTES,
     _default_state_path,
     _load_or_create_state,
     _expected_parts,
@@ -38,7 +40,8 @@ def upload_dataset_file(
     """
     Upload a dataset file using multipart uploads with resumable state.
 
-    Files above 150GB will trigger a warning; contact support for approval before uploading.
+    Files above 80GB will trigger a warning printed to stderr; contact support for
+    approval before uploading files above this size.
     Pass the submission ID of the target dataset submission. This works for
     both draft submissions and for uploading a new `.tar.gz` version to an
     already approved dataset submission.
@@ -71,10 +74,13 @@ def upload_dataset_file(
     file_size = path.stat().st_size
     if file_size <= 0:
         raise ValueError("`file_path` must point to a non-empty file")
-    if file_size > MAX_UPLOAD_BYTES:
-        logger.warning(
-            f"{file_path} exceeds the {MAX_UPLOAD_BYTES // (1000 ** 3)} GB upload limit. "
-            "If you have not yet received an approval, please contact support@mozilladatacollective.com"
+    if file_size > WARN_UPLOAD_BYTES:
+        print(
+            f"\nWARNING: {file_path} ({file_size / (1000 ** 3):.1f} GB) exceeds the "
+            f"{WARN_UPLOAD_BYTES // (1000 ** 3)} GB recommended upload limit.\n"
+            "If you have not yet received approval to upload large files, please\n"
+            "contact support@mozilladatacollective.com before proceeding.\n",
+            file=sys.stderr,
         )
 
     final_filename = path.name
