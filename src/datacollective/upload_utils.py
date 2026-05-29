@@ -184,7 +184,7 @@ def _initiate_upload(
 
 def _get_presigned_part_url(file_upload_id: str, part_number: int) -> PresignedPartUrl:
     """
-    Request a presigned URL for a specific multipart part.
+    Request a presigned URL for a specific multipart part, with retries.
 
     Args:
         file_upload_id: File upload ID.
@@ -192,15 +192,33 @@ def _get_presigned_part_url(file_upload_id: str, part_number: int) -> PresignedP
     """
     request = _PresignedPartRequest(fileUploadId=file_upload_id, partNumber=part_number)
     url = f"{_get_api_url()}/uploads/{request.fileUploadId}/parts/{request.partNumber}"
-    resp = _send_api_request("GET", url)
-    data = dict(resp.json())
-    presigned_url = data.get("url") or data.get("presignedUrl")
-    payload = {
-        "partNumber": int(data.get("partNumber", request.partNumber)),
-        "url": str(presigned_url or ""),
-        "expiresAt": data.get("expiresAt") or None,
-    }
-    return PresignedPartUrl.model_validate(payload)
+
+    last_exc: Exception | None = None
+    for attempt in range(1, MAX_UPLOAD_RETRIES + 1):
+        try:
+            resp = _send_api_request("GET", url)
+            data = dict(resp.json())
+            presigned_url = data.get("url") or data.get("presignedUrl")
+            payload = {
+                "partNumber": int(data.get("partNumber", request.partNumber)),
+                "url": str(presigned_url or ""),
+                "expiresAt": data.get("expiresAt") or None,
+            }
+            return PresignedPartUrl.model_validate(payload)
+        except Exception as exc:
+            last_exc = exc
+            if attempt < MAX_UPLOAD_RETRIES:
+                wait_time = RETRY_BACKOFF_SECONDS * attempt
+                logger.debug(
+                    f"Failed to fetch presigned URL for part {part_number} "
+                    f"(attempt {attempt}), retrying in {wait_time}s..."
+                )
+                time.sleep(wait_time)
+
+    raise RuntimeError(
+        f"Failed to fetch presigned URL for part {part_number} "
+        f"after {MAX_UPLOAD_RETRIES} attempts"
+    ) from last_exc
 
 
 def _complete_upload(
