@@ -292,8 +292,20 @@ response = create_submission_with_upload(
 
 ### Disabling Resume
 
-To force a fresh upload (ignoring any existing state), simply delete the state file 
-(<filename>.mdc-upload.json) created by the SDK before starting another upload.
+To force a fresh upload (ignoring any existing state), delete the state file that the
+SDK created alongside your archive. It takes the form `<your-archive>.mdc-upload.json`:
+
+```bash
+rm /path/to/dataset.tar.gz.mdc-upload.json
+```
+
+If you're not sure where the file is, use `find` to locate it:
+
+```bash
+find ~ -name "*.mdc-upload.json" 2>/dev/null
+```
+
+Once deleted, rerunning your upload call will start from part 1.
 
 ## Error Handling
 
