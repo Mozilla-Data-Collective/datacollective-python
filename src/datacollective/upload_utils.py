@@ -1,3 +1,4 @@
+import contextlib
 import hashlib
 import json
 import math
@@ -63,6 +64,44 @@ def _resolve_max_concurrent_parts(explicit: int | None) -> int:
                 f"Ignoring invalid {ENV_MAX_CONCURRENT_PARTS} value '{raw}' (expected an integer)."
             )
     return 1
+
+
+class _ProgressChunk:
+    """File-like wrapper around a bytes chunk that reports upload progress as data is read.
+
+    urllib3 calls ``read()`` in ~16 KB increments as it writes to the socket, so
+    progress updates are smooth and continuous rather than jumping by a whole part
+    at a time.  A ``lock`` should be supplied when multiple threads share the same
+    ``ProgressBar`` instance.
+    """
+
+    def __init__(
+        self,
+        data: bytes,
+        progress_bar: "ProgressBar",
+        lock: threading.Lock | None = None,
+    ) -> None:
+        self._data = data
+        self._pos = 0
+        self._progress_bar = progress_bar
+        self._lock = lock
+        self.bytes_reported: int = 0
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def read(self, size: int = -1) -> bytes:
+        remaining = len(self._data) - self._pos
+        if size < 0 or size > remaining:
+            size = remaining
+        if size == 0:
+            return b""
+        chunk = self._data[self._pos : self._pos + size]
+        self._pos += size
+        with (self._lock or contextlib.nullcontext()):
+            self._progress_bar.update(size)
+        self.bytes_reported += size
+        return chunk
 
 
 class UploadSession(NonEmptyStrModel):
@@ -286,22 +325,23 @@ def _upload_missing_parts(
 ) -> tuple[int, str]:
     hasher = hashlib.sha256()
     bytes_read = 0
+    # Shared lock ensures only one thread updates the progress bar or state file at a time
+    state_lock = threading.Lock()
+    progress_lock = threading.Lock() if (max_workers > 1 and progress_bar) else None
 
     def _upload_single_part(part_number: int, chunk: bytes) -> tuple[int, str]:
         presigned = _get_presigned_part_url(state.fileUploadId, part_number)
-        response = _upload_part_with_retry(presigned.url, chunk)
+        response = _upload_part_with_retry(
+            presigned.url, chunk, progress_bar=progress_bar, progress_lock=progress_lock
+        )
         return part_number, _extract_etag(response)
 
-    state_lock = threading.Lock()
-
-    def _record_completed_part(future: Any, chunk_size: int) -> None:
+    def _record_completed_part(future: Any) -> None:
         part_num, etag = future.result()
         with state_lock:
             parts_by_number[part_num] = etag
             state.parts = _parts_from_mapping(parts_by_number)
             _save_upload_state(state_file, state)
-        if progress_bar:
-            progress_bar.update(chunk_size)
 
     with open(path, "rb") as file_handle:
         if max_workers <= 1:
@@ -315,13 +355,13 @@ def _upload_missing_parts(
                 if part_number in parts_by_number:
                     continue
                 presigned = _get_presigned_part_url(state.fileUploadId, part_number)
-                response = _upload_part_with_retry(presigned.url, chunk)
+                response = _upload_part_with_retry(
+                    presigned.url, chunk, progress_bar=progress_bar
+                )
                 etag = _extract_etag(response)
                 parts_by_number[part_number] = etag
                 state.parts = _parts_from_mapping(parts_by_number)
                 _save_upload_state(state_file, state)
-                if progress_bar:
-                    progress_bar.update(len(chunk))
         else:
             pending: dict[Any, int] = {}  # future -> chunk_size
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -339,12 +379,13 @@ def _upload_missing_parts(
                     while len(pending) >= max_workers:
                         done, _ = wait(pending, return_when=FIRST_COMPLETED)
                         for f in done:
-                            _record_completed_part(f, pending.pop(f))
+                            _record_completed_part(f)
+                            del pending[f]
                     future = executor.submit(_upload_single_part, part_number, chunk)
                     pending[future] = len(chunk)
                 # Drain remaining in-flight parts
                 for f in as_completed(list(pending)):
-                    _record_completed_part(f, pending[f])
+                    _record_completed_part(f)
 
     return bytes_read, hasher.hexdigest()
 
@@ -372,7 +413,7 @@ def _cleanup_state_file(state_file: Path) -> None:
         logger.debug(f"Failed to remove upload state file: {state_file}")
 
 
-def _upload_part(presigned_url: str, payload: bytes) -> requests.Response:
+def _upload_part(presigned_url: str, payload: Any) -> requests.Response:
     if not presigned_url:
         raise ValueError("Missing presigned URL for upload part")
     resp = requests.put(presigned_url, data=payload, timeout=UPLOAD_TIMEOUT)
@@ -393,32 +434,55 @@ def _upload_part_with_retry(
     presigned_url: str,
     payload: bytes,
     max_retries: int = MAX_UPLOAD_RETRIES,
+    progress_bar: "ProgressBar | None" = None,
+    progress_lock: threading.Lock | None = None,
 ) -> requests.Response:
-    """Upload a single part with automatic retries on transient failures."""
+    """Upload a single part with automatic retries on transient failures.
+
+    When a ``progress_bar`` is supplied, bytes are reported as they flow
+    through the socket (~16 KB at a time) rather than only on completion.
+    On retry, any progress reported by the failed attempt is rolled back so
+    the bar stays accurate.
+    """
     last_exc: Exception | None = None
+    prev_reported: int = 0
+
     for attempt in range(1, max_retries + 1):
+        # Roll back progress reported by the previous failed attempt
+        if prev_reported > 0 and progress_bar is not None:
+            with (progress_lock or contextlib.nullcontext()):
+                progress_bar.downloaded = max(0, progress_bar.downloaded - prev_reported)
+            prev_reported = 0
+
+        data: Any = (
+            _ProgressChunk(payload, progress_bar, progress_lock)
+            if progress_bar is not None
+            else payload
+        )
         try:
-            return _upload_part(presigned_url, payload)
+            return _upload_part(presigned_url, data)
         except (requests.ConnectionError, requests.Timeout) as exc:
+            prev_reported = data.bytes_reported if isinstance(data, _ProgressChunk) else 0
             last_exc = exc
             if attempt < max_retries:
-                wait = RETRY_BACKOFF_SECONDS * attempt
+                wait_time = RETRY_BACKOFF_SECONDS * attempt
                 logger.debug(
-                    f"Upload part attempt {attempt} failed, retrying in {wait}s..."
+                    f"Upload part attempt {attempt} failed, retrying in {wait_time}s..."
                 )
-                time.sleep(wait)
+                time.sleep(wait_time)
         except requests.HTTPError as exc:
             if exc.response is not None and exc.response.status_code < 500:
                 raise
+            prev_reported = data.bytes_reported if isinstance(data, _ProgressChunk) else 0
             last_exc = exc
             if attempt < max_retries:
-                wait = RETRY_BACKOFF_SECONDS * attempt
+                wait_time = RETRY_BACKOFF_SECONDS * attempt
                 logger.debug(
                     f"Upload part attempt {attempt} failed with server error "
                     f"({exc.response.status_code if exc.response is not None else 'unknown'}), "
-                    f"retrying in {wait}s..."
+                    f"retrying in {wait_time}s..."
                 )
-                time.sleep(wait)
+                time.sleep(wait_time)
     raise RuntimeError(
         f"Failed to upload part after {max_retries} attempts"
     ) from last_exc
