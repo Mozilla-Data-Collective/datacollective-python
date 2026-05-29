@@ -1,7 +1,10 @@
 import hashlib
 import json
 import math
+import os
+import threading
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +32,37 @@ RETRY_BACKOFF_SECONDS = 2
 DEFAULT_PART_SIZE = 5 * 1024 * 1024  # 5 MB default part size to upload chunk by chunk
 DEFAULT_MIME_TYPE = "application/gzip"
 MAX_UPLOAD_BYTES = 150 * 1000 * 1000 * 1000  # 150 GB
+
+ENV_PART_SIZE = "MDC_PART_SIZE"
+ENV_MAX_CONCURRENT_PARTS = "MDC_MAX_CONCURRENT_PARTS"
+
+
+def _resolve_part_size(explicit: int | None) -> int | None:
+    """Return the effective part size: explicit arg → MDC_PART_SIZE env var → None (use server default)."""
+    if explicit is not None:
+        return explicit
+    raw = os.getenv(ENV_PART_SIZE)
+    if raw:
+        try:
+            return int(raw)
+        except ValueError:
+            logger.warning(f"Ignoring invalid {ENV_PART_SIZE} value '{raw}' (expected an integer).")
+    return None
+
+
+def _resolve_max_concurrent_parts(explicit: int | None) -> int:
+    """Return the effective concurrency: explicit arg → MDC_MAX_CONCURRENT_PARTS env var → 1 (sequential)."""
+    if explicit is not None:
+        return explicit
+    raw = os.getenv(ENV_MAX_CONCURRENT_PARTS)
+    if raw:
+        try:
+            return int(raw)
+        except ValueError:
+            logger.warning(
+                f"Ignoring invalid {ENV_MAX_CONCURRENT_PARTS} value '{raw}' (expected an integer)."
+            )
+    return 1
 
 
 class UploadSession(NonEmptyStrModel):
@@ -180,6 +214,7 @@ def _load_or_create_state(
     submission_id: str,
     final_filename: str,
     file_size: int,
+    part_size: int | None = None,
 ) -> UploadState:
     state = _load_upload_state(state_file)
     if state:
@@ -203,7 +238,7 @@ def _load_or_create_state(
             fileUploadId=session.fileUploadId,
             uploadId=session.uploadId,
             fileSize=file_size,
-            partSize=session.partSize,
+            partSize=part_size if part_size is not None else session.partSize,
             filename=final_filename,
             mimeType=DEFAULT_MIME_TYPE,
             parts=[],
@@ -247,30 +282,69 @@ def _upload_missing_parts(
     expected_parts: int,
     progress_bar: ProgressBar | None,
     state_file: Path,
+    max_workers: int = 1,
 ) -> tuple[int, str]:
     hasher = hashlib.sha256()
     bytes_read = 0
-    with open(path, "rb") as file_handle:
-        for part_index in range(expected_parts):
-            part_number = part_index + 1
-            chunk = file_handle.read(state.partSize)
-            if not chunk:
-                break
-            bytes_read += len(chunk)
-            hasher.update(chunk)
 
-            if part_number in parts_by_number:
-                continue
+    def _upload_single_part(part_number: int, chunk: bytes) -> tuple[int, str]:
+        presigned = _get_presigned_part_url(state.fileUploadId, part_number)
+        response = _upload_part_with_retry(presigned.url, chunk)
+        return part_number, _extract_etag(response)
 
-            presigned = _get_presigned_part_url(state.fileUploadId, part_number)
-            response = _upload_part_with_retry(presigned.url, chunk)
-            etag = _extract_etag(response)
-            parts_by_number[part_number] = etag
+    state_lock = threading.Lock()
+
+    def _record_completed_part(future: Any, chunk_size: int) -> None:
+        part_num, etag = future.result()
+        with state_lock:
+            parts_by_number[part_num] = etag
             state.parts = _parts_from_mapping(parts_by_number)
             _save_upload_state(state_file, state)
+        if progress_bar:
+            progress_bar.update(chunk_size)
 
-            if progress_bar:
-                progress_bar.update(len(chunk))
+    with open(path, "rb") as file_handle:
+        if max_workers <= 1:
+            for part_index in range(expected_parts):
+                part_number = part_index + 1
+                chunk = file_handle.read(state.partSize)
+                if not chunk:
+                    break
+                bytes_read += len(chunk)
+                hasher.update(chunk)
+                if part_number in parts_by_number:
+                    continue
+                presigned = _get_presigned_part_url(state.fileUploadId, part_number)
+                response = _upload_part_with_retry(presigned.url, chunk)
+                etag = _extract_etag(response)
+                parts_by_number[part_number] = etag
+                state.parts = _parts_from_mapping(parts_by_number)
+                _save_upload_state(state_file, state)
+                if progress_bar:
+                    progress_bar.update(len(chunk))
+        else:
+            pending: dict[Any, int] = {}  # future -> chunk_size
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                for part_index in range(expected_parts):
+                    part_number = part_index + 1
+                    chunk = file_handle.read(state.partSize)
+                    if not chunk:
+                        break
+                    bytes_read += len(chunk)
+                    hasher.update(chunk)
+                    if part_number in parts_by_number:
+                        continue
+                    # Drain one completed future before reading the next chunk
+                    # to keep at most max_workers chunks in memory at once
+                    while len(pending) >= max_workers:
+                        done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                        for f in done:
+                            _record_completed_part(f, pending.pop(f))
+                    future = executor.submit(_upload_single_part, part_number, chunk)
+                    pending[future] = len(chunk)
+                # Drain remaining in-flight parts
+                for f in as_completed(list(pending)):
+                    _record_completed_part(f, pending[f])
 
     return bytes_read, hasher.hexdigest()
 

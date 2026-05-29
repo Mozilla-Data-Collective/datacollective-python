@@ -19,6 +19,8 @@ from datacollective.upload_utils import (
     _save_upload_state,
     _complete_upload,
     _cleanup_state_file,
+    _resolve_part_size,
+    _resolve_max_concurrent_parts,
 )
 
 logger = get_logger(__name__)
@@ -30,11 +32,13 @@ def upload_dataset_file(
     state_path: str | None = None,
     show_progress: bool = True,
     enable_logging: bool = False,
+    part_size: int | None = None,
+    max_concurrent_parts: int | None = None,
 ) -> UploadState:
     """
     Upload a dataset file using multipart uploads with resumable state.
 
-    Files above 80GB will trigger a warning; contact support for approval before uploading.
+    Files above 150GB will trigger a warning; contact support for approval before uploading.
     Pass the submission ID of the target dataset submission. This works for
     both draft submissions and for uploading a new `.tar.gz` version to an
     already approved dataset submission.
@@ -46,6 +50,17 @@ def upload_dataset_file(
             `<filename>.mdc-upload.json` alongside the archive.
         enable_logging: Whether to enable detailed logging during the upload.
         show_progress: Whether to show a progress bar during upload.
+        part_size: Size of each upload part in bytes. When omitted, falls back
+            to the ``MDC_PART_SIZE`` environment variable, then the server
+            default (typically 5 MB). Larger values (e.g. 50 MB) reduce
+            per-part API overhead and can improve throughput. Ignored when
+            resuming an existing upload.
+        max_concurrent_parts: Number of parts to upload in parallel. When
+            omitted, falls back to the ``MDC_MAX_CONCURRENT_PARTS``
+            environment variable, then 1 (sequential). Increase to 4–8 to
+            better saturate a fast connection. Each concurrent part holds one
+            ``part_size`` chunk in memory, so total memory usage is
+            approximately ``max_concurrent_parts * part_size``.
     """
     path = Path(file_path)
     _enable_logging(enable_logging)
@@ -64,6 +79,9 @@ def upload_dataset_file(
 
     final_filename = path.name
 
+    resolved_part_size = _resolve_part_size(part_size)
+    resolved_max_concurrent = _resolve_max_concurrent_parts(max_concurrent_parts)
+
     state_file = Path(state_path) if state_path else _default_state_path(path)
 
     state = _load_or_create_state(
@@ -71,6 +89,7 @@ def upload_dataset_file(
         submission_id=submission_id,
         final_filename=final_filename,
         file_size=file_size,
+        part_size=resolved_part_size,
     )
 
     expected_parts = _expected_parts(state.fileSize, state.partSize)
@@ -97,6 +116,7 @@ def upload_dataset_file(
         expected_parts=expected_parts,
         progress_bar=progress_bar,
         state_file=state_file,
+        max_workers=resolved_max_concurrent,
     )
 
     if progress_bar:
