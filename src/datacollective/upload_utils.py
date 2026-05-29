@@ -331,10 +331,13 @@ def _upload_missing_parts(
     state_lock = threading.Lock()
     progress_lock = threading.Lock() if (max_workers > 1 and progress_bar) else None
 
-    def _upload_single_part(part_number: int, chunk: bytes) -> tuple[int, str]:
-        presigned = _get_presigned_part_url(state.fileUploadId, part_number)
+    def _upload_single_part(
+        part_number: int, presigned_url: str, chunk: bytes
+    ) -> tuple[int, str]:
+        # Presigned URL is fetched in the main thread before this is submitted,
+        # so worker threads only perform the PUT upload — no API calls here.
         response = _upload_part_with_retry(
-            presigned.url, chunk, progress_bar=progress_bar, progress_lock=progress_lock
+            presigned_url, chunk, progress_bar=progress_bar, progress_lock=progress_lock
         )
         return part_number, _extract_etag(response)
 
@@ -383,7 +386,12 @@ def _upload_missing_parts(
                         for f in done:
                             _record_completed_part(f)
                             del pending[f]
-                    future = executor.submit(_upload_single_part, part_number, chunk)
+                    # Fetch presigned URL in the main thread (sequential) so
+                    # worker threads never make concurrent API calls
+                    presigned = _get_presigned_part_url(state.fileUploadId, part_number)
+                    future = executor.submit(
+                        _upload_single_part, part_number, presigned.url, chunk
+                    )
                     pending[future] = len(chunk)
                 # Drain remaining in-flight parts
                 for f in as_completed(list(pending)):
