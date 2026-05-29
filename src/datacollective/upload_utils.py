@@ -333,6 +333,18 @@ def _upload_part_with_retry(
                     f"Upload part attempt {attempt} failed, retrying in {wait}s..."
                 )
                 time.sleep(wait)
+        except requests.HTTPError as exc:
+            if exc.response is not None and exc.response.status_code < 500:
+                raise
+            last_exc = exc
+            if attempt < max_retries:
+                wait = RETRY_BACKOFF_SECONDS * attempt
+                logger.debug(
+                    f"Upload part attempt {attempt} failed with server error "
+                    f"({exc.response.status_code if exc.response is not None else 'unknown'}), "
+                    f"retrying in {wait}s..."
+                )
+                time.sleep(wait)
     raise RuntimeError(
         f"Failed to upload part after {max_retries} attempts"
     ) from last_exc
