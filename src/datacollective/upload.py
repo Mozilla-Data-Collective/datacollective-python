@@ -9,7 +9,6 @@ from datacollective.logging_utils import (
 )
 from datacollective.upload_utils import (
     UploadState,
-    MAX_UPLOAD_BYTES,
     WARN_UPLOAD_BYTES,
     _default_state_path,
     _load_or_create_state,

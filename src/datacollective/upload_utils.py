@@ -35,7 +35,6 @@ RETRY_BACKOFF_SECONDS = 2
 
 DEFAULT_PART_SIZE = 5 * 1024 * 1024  # 5 MB default part size to upload chunk by chunk
 DEFAULT_MIME_TYPE = "application/gzip"
-MAX_UPLOAD_BYTES = 150 * 1000 * 1000 * 1000  # 150 GB — technical cap
 WARN_UPLOAD_BYTES = 80 * 1000 * 1000 * 1000  # 80 GB — soft limit; contact support before uploading
 MAX_PARTS = 10_000  # S3/R2 hard limit on the number of parts in a multipart upload
 
