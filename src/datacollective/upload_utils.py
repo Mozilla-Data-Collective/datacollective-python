@@ -171,7 +171,6 @@ def _initiate_upload(
     url = f"{_get_api_url()}/uploads"
     resp = _send_api_request("POST", url, json_body=payload.model_dump())
     data = dict(resp.json())
-    print(data)
     session_payload = {
         "fileUploadId": str(data.get("fileUploadId", "")),
         "uploadId": str(data.get("uploadId", "")),
@@ -446,6 +445,11 @@ def _upload_part(presigned_url: str, payload: Any) -> requests.Response:
     if not presigned_url:
         raise ValueError("Missing presigned URL for upload part")
     resp = requests.put(presigned_url, data=payload, timeout=UPLOAD_TIMEOUT)
+    if resp.status_code == 403:
+        raise RuntimeError(
+            "Upload rejected with 403 Forbidden. The upload session has likely expired. "
+            "Delete the .mdc-upload.json state file alongside your archive and retry."
+        )
     resp.raise_for_status()
     return resp
 
