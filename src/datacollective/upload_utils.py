@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 import os
+import sys
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed, wait, FIRST_COMPLETED
@@ -36,6 +37,7 @@ DEFAULT_PART_SIZE = 5 * 1024 * 1024  # 5 MB default part size to upload chunk by
 DEFAULT_MIME_TYPE = "application/gzip"
 MAX_UPLOAD_BYTES = 150 * 1000 * 1000 * 1000  # 150 GB — technical cap
 WARN_UPLOAD_BYTES = 80 * 1000 * 1000 * 1000  # 80 GB — soft limit; contact support before uploading
+MAX_PARTS = 10_000  # S3/R2 hard limit on the number of parts in a multipart upload
 
 ENV_PART_SIZE = "MDC_PART_SIZE"
 ENV_MAX_CONCURRENT_PARTS = "MDC_MAX_CONCURRENT_PARTS"
@@ -268,6 +270,11 @@ def _default_state_path(file_path: Path) -> Path:
     return file_path.with_name(file_path.name + ".mdc-upload.json")
 
 
+def _minimum_part_size(file_size: int) -> int:
+    """Return the smallest part size that keeps the part count within MAX_PARTS."""
+    return math.ceil(file_size / MAX_PARTS)
+
+
 def _load_or_create_state(
     state_file: Path,
     submission_id: str,
@@ -292,12 +299,22 @@ def _load_or_create_state(
         session = _initiate_upload(
             submission_id, final_filename, file_size, DEFAULT_MIME_TYPE
         )
+        effective_part_size = part_size if part_size is not None else session.partSize
+        min_size = _minimum_part_size(file_size)
+        if effective_part_size < min_size:
+            print(
+                f"\nNote: part size adjusted from {_format_bytes(effective_part_size)} to "
+                f"{_format_bytes(min_size)} — {_format_bytes(file_size)} file would otherwise "
+                f"require more than {MAX_PARTS:,} parts (S3/R2 hard limit).\n",
+                file=sys.stderr,
+            )
+            effective_part_size = min_size
         state = UploadState(
             submissionId=submission_id,
             fileUploadId=session.fileUploadId,
             uploadId=session.uploadId,
             fileSize=file_size,
-            partSize=part_size if part_size is not None else session.partSize,
+            partSize=effective_part_size,
             filename=final_filename,
             mimeType=DEFAULT_MIME_TYPE,
             parts=[],

@@ -9,9 +9,11 @@ from datacollective.models import UploadPart
 from datacollective.upload_utils import (
     ENV_MAX_CONCURRENT_PARTS,
     ENV_PART_SIZE,
+    MAX_PARTS,
     UploadState,
     _ProgressChunk,
     _load_upload_state,
+    _minimum_part_size,
     _resolve_max_concurrent_parts,
     _resolve_part_size,
     _save_upload_state,
@@ -170,6 +172,39 @@ def test_progress_chunk_len_returns_data_length() -> None:
     chunk = _ProgressChunk(b"hello", MagicMock())
     assert len(chunk) == 5
 
+
+# ---------------------------------------------------------------------------
+# _minimum_part_size
+# ---------------------------------------------------------------------------
+
+def test_minimum_part_size_returns_exact_ceiling() -> None:
+    """Part count must not exceed MAX_PARTS."""
+    file_size = 150 * 1_000 * 1_000 * 1_000  # 150 GB
+    result = _minimum_part_size(file_size)
+    assert result == 15_000_000  # math.ceil(150 GB / 10_000)
+    assert file_size / result <= MAX_PARTS
+
+
+def test_minimum_part_size_small_file_is_one_byte() -> None:
+    """For tiny files the minimum is trivially 1 byte (1 part)."""
+    assert _minimum_part_size(1) == 1
+
+
+def test_minimum_part_size_exact_multiple() -> None:
+    """When file_size is an exact multiple of MAX_PARTS, no rounding occurs."""
+    file_size = MAX_PARTS * 1_000_000  # each part exactly 1 MB
+    assert _minimum_part_size(file_size) == 1_000_000
+
+
+def test_minimum_part_size_rounds_up() -> None:
+    """A file one byte larger than an exact multiple must round up."""
+    file_size = MAX_PARTS * 1_000_000 + 1
+    result = _minimum_part_size(file_size)
+    assert result == 1_000_001
+    assert file_size / result <= MAX_PARTS
+
+
+# ---------------------------------------------------------------------------
 
 def test_progress_chunk_uses_lock_when_provided() -> None:
     bar = MagicMock()
