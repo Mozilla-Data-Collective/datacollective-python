@@ -352,10 +352,11 @@ def _upload_missing_parts(
     def _upload_single_part(
         part_number: int, presigned_url: str, chunk: bytes
     ) -> tuple[int, str]:
-        # Presigned URL is fetched in the main thread before this is submitted,
-        # so worker threads only perform the PUT upload — no API calls here.
+        # Presigned URL is fetched in the main thread before this is submitted.
+        # On 403, _upload_part_with_retry will re-fetch a fresh URL from the API.
         response = _upload_part_with_retry(
-            presigned_url, chunk, progress_bar=progress_bar, progress_lock=progress_lock
+            state.fileUploadId, part_number, presigned_url, chunk,
+            progress_bar=progress_bar, progress_lock=progress_lock,
         )
         return part_number, _extract_etag(response)
 
@@ -379,7 +380,8 @@ def _upload_missing_parts(
                     continue
                 presigned = _get_presigned_part_url(state.fileUploadId, part_number)
                 response = _upload_part_with_retry(
-                    presigned.url, chunk, progress_bar=progress_bar
+                    state.fileUploadId, part_number, presigned.url, chunk,
+                    progress_bar=progress_bar,
                 )
                 etag = _extract_etag(response)
                 parts_by_number[part_number] = etag
@@ -441,15 +443,16 @@ def _cleanup_state_file(state_file: Path) -> None:
         logger.debug(f"Failed to remove upload state file: {state_file}")
 
 
+class _PresignedUrlExpiredError(Exception):
+    """Raised when R2 returns 403, indicating the presigned URL (or upload session) has expired."""
+
+
 def _upload_part(presigned_url: str, payload: Any) -> requests.Response:
     if not presigned_url:
         raise ValueError("Missing presigned URL for upload part")
     resp = requests.put(presigned_url, data=payload, timeout=UPLOAD_TIMEOUT)
     if resp.status_code == 403:
-        raise RuntimeError(
-            "Upload rejected with 403 Forbidden. The upload session has likely expired. "
-            "Delete the .mdc-upload.json state file alongside your archive and retry."
-        )
+        raise _PresignedUrlExpiredError("403 Forbidden from R2")
     resp.raise_for_status()
     return resp
 
@@ -464,6 +467,8 @@ def _resolve_upload_state(
 
 
 def _upload_part_with_retry(
+    file_upload_id: str,
+    part_number: int,
     presigned_url: str,
     payload: bytes,
     max_retries: int = MAX_UPLOAD_RETRIES,
@@ -476,6 +481,9 @@ def _upload_part_with_retry(
     through the socket (~16 KB at a time) rather than only on completion.
     On retry, any progress reported by the failed attempt is rolled back so
     the bar stays accurate.
+
+    On 403 (expired presigned URL), a fresh URL is re-fetched from the API
+    before retrying rather than failing immediately.
     """
     last_exc: Exception | None = None
     prev_reported: int = 0
@@ -494,13 +502,32 @@ def _upload_part_with_retry(
         )
         try:
             return _upload_part(presigned_url, data)
+        except _PresignedUrlExpiredError as exc:
+            # 403 most commonly means the presigned URL expired during a network
+            # stall. Re-fetch a fresh URL from the API and retry.
+            prev_reported = data.bytes_reported if isinstance(data, _ProgressChunk) else 0
+            last_exc = exc
+            if attempt < max_retries:
+                wait_time = RETRY_BACKOFF_SECONDS * attempt
+                logger.debug(
+                    f"Presigned URL for part {part_number} returned 403 "
+                    f"(attempt {attempt}), re-fetching URL in {wait_time}s..."
+                )
+                time.sleep(wait_time)
+                try:
+                    presigned = _get_presigned_part_url(file_upload_id, part_number)
+                    presigned_url = presigned.url
+                except Exception as refetch_exc:
+                    last_exc = refetch_exc
+                    break
         except (requests.ConnectionError, requests.Timeout) as exc:
             prev_reported = data.bytes_reported if isinstance(data, _ProgressChunk) else 0
             last_exc = exc
             if attempt < max_retries:
                 wait_time = RETRY_BACKOFF_SECONDS * attempt
                 logger.debug(
-                    f"Upload part attempt {attempt} failed, retrying in {wait_time}s..."
+                    f"Upload part {part_number} attempt {attempt} failed, "
+                    f"retrying in {wait_time}s..."
                 )
                 time.sleep(wait_time)
         except requests.HTTPError as exc:
@@ -511,13 +538,15 @@ def _upload_part_with_retry(
             if attempt < max_retries:
                 wait_time = RETRY_BACKOFF_SECONDS * attempt
                 logger.debug(
-                    f"Upload part attempt {attempt} failed with server error "
+                    f"Upload part {part_number} attempt {attempt} failed with server error "
                     f"({exc.response.status_code if exc.response is not None else 'unknown'}), "
                     f"retrying in {wait_time}s..."
                 )
                 time.sleep(wait_time)
     raise RuntimeError(
-        f"Failed to upload part after {max_retries} attempts"
+        f"Failed to upload part {part_number} after {max_retries} attempts. "
+        "The upload session may have expired — delete the .mdc-upload.json state "
+        "file alongside your archive and retry."
     ) from last_exc
 
 
