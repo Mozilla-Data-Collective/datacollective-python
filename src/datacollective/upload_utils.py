@@ -12,7 +12,27 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from fox_progress_bar import ProgressBar
+from fox_progress_bar import ProgressBar as _BaseProgressBar
+
+
+class ProgressBar(_BaseProgressBar):
+    """ProgressBar with a corrected HH:MM:SS time formatter.
+
+    The upstream ``fox_progress_bar`` formatter uses MM:SS only, which
+    overflows to values like ``642:08`` for long uploads. This subclass
+    replaces it with an HH:MM:SS format that stays readable.
+    """
+
+    @staticmethod
+    def _format_time(seconds: float) -> str:
+        if seconds < 0:
+            return "--:--:--"
+        total_seconds = int(seconds)
+        hours, remainder = divmod(total_seconds, 3600)
+        mins, secs = divmod(remainder, 60)
+        if hours > 0:
+            return f"{hours:02d}:{mins:02d}:{secs:02d}"
+        return f"{mins:02d}:{secs:02d}"
 from pydantic import Field, ValidationError
 
 from datacollective.api_utils import (
