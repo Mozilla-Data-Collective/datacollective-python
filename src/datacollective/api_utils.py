@@ -103,7 +103,12 @@ def _send_api_request(
         from datacollective.errors import RateLimitError
 
         raise RateLimitError(response=resp)
-    resp.raise_for_status()
+    if not resp.ok:
+        detail = _extract_error_detail(resp)
+        error_msg = f"{resp.status_code} Error: {method.upper()} {url}"
+        if detail:
+            error_msg += f" — {detail}"
+        raise requests.HTTPError(error_msg, response=resp)
 
     return resp
 
