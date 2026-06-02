@@ -32,7 +32,6 @@ DEFAULT_MIME_TYPE = "application/gzip"
 # used as a warning threshold not a hard limit, as the API may support larger uploads depending on configuration
 LARGE_UPLOAD_WARNING_BYTES = 80 * 1000 * 1000 * 1000  # 80 GB warning threshold
 
-
 class UploadSession(NonEmptyStrModel):
     fileUploadId: str
     uploadId: str
@@ -235,7 +234,7 @@ def _init_progress_bar(
 ) -> ProgressBar | None:
     if not show_progress:
         return None
-    progress_bar = ProgressBar(file_size)
+    progress_bar = ProgressBar(file_size, bar_length=30)
     if already_uploaded > 0:
         progress_bar.update(already_uploaded * part_size)
         progress_bar._display()
