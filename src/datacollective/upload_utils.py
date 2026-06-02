@@ -28,7 +28,9 @@ RETRY_BACKOFF_SECONDS = 2
 
 DEFAULT_PART_SIZE = 5 * 1024 * 1024  # 5 MB default part size to upload chunk by chunk
 DEFAULT_MIME_TYPE = "application/gzip"
-MAX_UPLOAD_BYTES = 150 * 1000 * 1000 * 1000  # 150 GB
+
+# used as a warning threshold not a hard limit, as the API may support larger uploads depending on configuration
+LARGE_UPLOAD_WARNING_BYTES = 80 * 1000 * 1000 * 1000  # 80 GB warning threshold
 
 
 class UploadSession(NonEmptyStrModel):
@@ -41,7 +43,7 @@ class UploadState(NonEmptyStrModel):
     submissionId: str
     fileUploadId: str
     uploadId: str
-    fileSize: int = Field(..., gt=0, le=MAX_UPLOAD_BYTES)
+    fileSize: int = Field(..., gt=0)
     partSize: int = Field(..., gt=0)
     filename: str
     mimeType: str
@@ -58,7 +60,7 @@ class PresignedPartUrl(NonEmptyStrModel):
 class _UploadInitiatePayload(NonEmptyStrModel):
     submissionId: str
     filename: str
-    fileSize: int = Field(..., gt=0, le=MAX_UPLOAD_BYTES)
+    fileSize: int = Field(..., gt=0)
     mimeType: str
 
 

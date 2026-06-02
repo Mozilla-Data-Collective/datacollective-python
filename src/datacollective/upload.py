@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import warnings 
+
 from pathlib import Path
 
 from datacollective.logging_utils import (
@@ -8,7 +10,7 @@ from datacollective.logging_utils import (
 )
 from datacollective.upload_utils import (
     UploadState,
-    MAX_UPLOAD_BYTES,
+    LARGE_UPLOAD_WARNING_BYTES,
     _default_state_path,
     _load_or_create_state,
     _expected_parts,
@@ -56,8 +58,11 @@ def upload_dataset_file(
     file_size = path.stat().st_size
     if file_size <= 0:
         raise ValueError("`file_path` must point to a non-empty file")
-    if file_size > MAX_UPLOAD_BYTES:
-        raise ValueError("`file_path` exceeds the 80GB upload limit")
+    if file_size > LARGE_UPLOAD_WARNING_BYTES:
+        warnings.warn(
+        "WARNING: We have detected that you are uploading a file larger than 80GB. "
+        "Please ensure you contact support@mozilladatacollective.com so that we can assist you."
+    )
 
     final_filename = path.name
 
