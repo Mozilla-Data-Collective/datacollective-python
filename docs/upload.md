@@ -22,7 +22,7 @@ Before uploading, ensure you have:
 - An API key from the Mozilla Data Collective [dashboard](https://mozilladatacollective.com/api-reference)
 - Your dataset packaged as an archive file (`.tar.gz`, uploads use `application/gzip`)
 - All the required metadata for the dataset submission
-- Dataset archives must be **80GB or less**
+- Where a dataset archive is larger than 80GB, you will receive a warning notice on upload. The upload will still proceed, but you must contact support@mozilladatacollective.com if 
 
 ### Configuration
 
