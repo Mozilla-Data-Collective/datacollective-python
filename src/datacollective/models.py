@@ -275,8 +275,6 @@ UPDATE_FIELDS = {
     "showContactInfo",
     "visibility",
     "exclusivityOptOut",
-    "fileUploadId",
-    "agreeToSubmit",
 }
 SUBMIT_FIELDS = {"agreeToSubmit"}
 
