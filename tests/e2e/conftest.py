@@ -9,7 +9,7 @@ from requests import HTTPError
 from requests import Timeout
 
 from datacollective.errors import RateLimitError
-from datacollective.models import DatasetSubmission, License, Task
+from datacollective.models import DatasetSubmission, License, Task, Visibility
 
 
 LIVE_TEST_SKIP_REASON = (
@@ -92,6 +92,8 @@ def sample_dataset_submission(name: str) -> DatasetSubmission:
         createdByEmail="sdk-tests@example.com",
         intendedUsage="Exercise the upload and submission lifecycle in live tests.",
         ethicalReviewProcess="No review required for synthetic test data.",
+        showContactInfo=True,
+        visibility=Visibility.PUBLIC,
         exclusivityOptOut=True,
         agreeToSubmit=True,
     )
