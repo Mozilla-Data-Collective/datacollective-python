@@ -43,7 +43,13 @@ MDC_API_KEY=your-api-key-here
 The simplest way to upload a dataset is using `create_submission_with_upload`, which handles the entire workflow in a single call:
 
 ```python
-from datacollective import DatasetSubmission, License, Task, create_submission_with_upload
+from datacollective import (
+    DatasetSubmission,
+    License,
+    Task,
+    Visibility,
+    create_submission_with_upload,
+)
 
 submission = DatasetSubmission(
     name="Dataset Name",
@@ -73,6 +79,8 @@ submission = DatasetSubmission(
     ethicalReviewProcess="Describe the ethical review process that was "
                          "followed for this dataset, including any approvals "
                          "or considerations related to data collection and usage.",
+    showContactInfo=True,  # Whether to publicly display the contact information above
+    visibility=Visibility.PUBLIC,  # public | private | restricted
     exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
                               # False = Dataset is exclusively hosted in Mozilla Data Collective
     agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and 
@@ -89,6 +97,9 @@ print(response)
 ```
 
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
+
+### Visibility
+- `visibility` controls who can access the dataset and must be one of the `Visibility` enum values: `Visibility.PUBLIC`, `Visibility.PRIVATE`, or `Visibility.RESTRICTED`.
 
 ## Upload a New File Version to an Approved Dataset
 
@@ -134,6 +145,8 @@ To complete the submission process, the submission **must** include at least all
 - `forbiddenUsage`
 - `pointOfContactFullName`
 - `pointOfContactEmail`
+- `showContactInfo`
+- `visibility`
 - `agreeToSubmit=True`
 - `fileUploadId`
 
@@ -190,7 +203,13 @@ For this step, you will need the `fileUploadId` from the upload response above, 
 At this step, you can also update any other metadata fields.
 
 ```python
-from datacollective import DatasetSubmission, License, Task, update_submission
+from datacollective import (
+    DatasetSubmission,
+    License,
+    Task,
+    Visibility,
+    update_submission,
+)
 
 update_fields = DatasetSubmission(
     task=Task.ASR,
@@ -201,6 +220,8 @@ update_fields = DatasetSubmission(
     forbiddenUsage="Do not use for unlawful purposes.",
     pointOfContactFullName="Jane Doe",
     pointOfContactEmail="jane@example.com",
+    showContactInfo=True,
+    visibility=Visibility.PUBLIC,
     fileUploadId=upload_state.fileUploadId,
     # ... other metadata fields ...
 )
