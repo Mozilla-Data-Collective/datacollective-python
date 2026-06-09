@@ -148,9 +148,8 @@ To complete the submission process, the submission **must** include at least all
 - `showContactInfo`
 - `visibility`
 - `agreeToSubmit=True`
-- `fileUploadId`
 
-The `fileUploadId` is only available after a successful file upload and is required to link the uploaded archive to the submission. 
+A completed file upload must also be attached to the submission before it can be submitted for review. The uploaded archive is linked to the submission automatically when the multipart upload completes (the upload is started with the submission's ID). 
 
 ## Step-by-Step Upload
 
@@ -198,9 +197,7 @@ print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 
 ### Step 3: Update Submission Metadata
 
-For this step, you will need the `fileUploadId` from the upload response above, which is required to link the uploaded file to your submission. Without this ID, you won't be able to proceed to the submission step. If you no longer have access to it, you will need to re-upload the file to get a new `fileUploadId`.
-
-At this step, you can also update any other metadata fields.
+Fill in the datasheet fields for your submission.
 
 ```python
 from datacollective import (
@@ -222,7 +219,6 @@ update_fields = DatasetSubmission(
     pointOfContactEmail="jane@example.com",
     showContactInfo=True,
     visibility=Visibility.PUBLIC,
-    fileUploadId=upload_state.fileUploadId,
     # ... other metadata fields ...
 )
 
