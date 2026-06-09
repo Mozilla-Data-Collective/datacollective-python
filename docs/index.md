@@ -112,7 +112,13 @@ The SDK supports creating dataset submissions and uploading files with resumable
 The upload state is stored in a JSON file alongside the archive so interrupted uploads can resume automatically.
 
 ```python
-from datacollective import DatasetSubmission, License, Task, create_submission_with_upload
+from datacollective import (
+    DatasetSubmission,
+    License,
+    Task,
+    Visibility,
+    create_submission_with_upload,
+)
 
 submission = DatasetSubmission(
     name="Dataset Name",
@@ -142,6 +148,8 @@ submission = DatasetSubmission(
     ethicalReviewProcess="Describe the ethical review process that was "
                          "followed for this dataset, including any approvals "
                          "or considerations related to data collection and usage.",
+    showContactInfo=True,  # Whether to publicly display the contact information above
+    visibility=Visibility.PUBLIC,  # public | private | restricted
     exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
                               # False = Dataset is exclusively hosted in Mozilla Data Collective
     agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and 
