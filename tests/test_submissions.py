@@ -3,7 +3,7 @@ from pathlib import Path
 import datacollective.submissions as submissions_module
 import pytest
 
-from datacollective.models import DatasetSubmission, License, Task
+from datacollective.models import DatasetSubmission, License, Task, Visibility
 
 
 def _build_complete_submission(
@@ -20,6 +20,8 @@ def _build_complete_submission(
         "forbiddenUsage": "Do not use for unlawful purposes.",
         "pointOfContactFullName": "Jane Doe",
         "pointOfContactEmail": "jane@example.com",
+        "showContactInfo": True,
+        "visibility": Visibility.PUBLIC,
         "agreeToSubmit": True,
     }
     if file_upload_id is not None:
