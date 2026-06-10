@@ -21,7 +21,7 @@ class Task(str, Enum):
     NA = "N/A"
     NLP = "NLP"
     ASR = "ASR"
-    LI = "LI"
+    LID = "LID"
     TTS = "TTS"
     MT = "MT"
     LM = "LM"
@@ -32,7 +32,7 @@ class Task(str, Enum):
     RAG = "RAG"
     CV = "CV"
     ML = "ML"
-    OTHER = "Other"
+    OTH = "OTH"
 
 
 class License(str, Enum):
@@ -63,6 +63,14 @@ class License(str, Enum):
     OPUBL_1_0 = "OPUBL-1.0"
     OGDL_TAIWAN_1_0 = "OGDL-Taiwan-1.0"
     UNLICENSE = "Unlicense"
+
+
+class Visibility(str, Enum):
+    """Dataset visibility levels."""
+
+    PUBLIC = "public"
+    PRIVATE = "private"
+    RESTRICTED = "restricted"
 
 
 class NonEmptyStrModel(BaseModel):
@@ -150,6 +158,14 @@ class DatasetSubmission(NonEmptyStrModel):
     ethicalReviewProcess: str | None = Field(
         None, description="Description of ethical review conducted."
     )
+    showContactInfo: bool | None = Field(
+        None,
+        description="Whether to publicly display the dataset contact information.",
+    )
+    visibility: Visibility | None = Field(
+        None,
+        description="Dataset visibility: `public`, `private`, or `restricted`.",
+    )
     exclusivityOptOut: bool | None = Field(
         None,
         description="True if dataset is non-exclusive; False if hosted exclusively on Mozilla Data Collective (see https://mozilladatacollective.com/terms/providers#appendix-1).",
@@ -223,6 +239,8 @@ FINAL_SUBMISSION_REQUIRED_FIELDS = (
     "forbiddenUsage",
     "pointOfContactFullName",
     "pointOfContactEmail",
+    "showContactInfo",
+    "visibility",
 )
 FINAL_SUBMISSION_LOCAL_FIELDS = set(FINAL_SUBMISSION_REQUIRED_FIELDS) | {
     "licenseAbbreviation",
@@ -254,9 +272,9 @@ UPDATE_FIELDS = {
     "createdByEmail",
     "intendedUsage",
     "ethicalReviewProcess",
+    "showContactInfo",
+    "visibility",
     "exclusivityOptOut",
-    "fileUploadId",
-    "agreeToSubmit",
 }
 SUBMIT_FIELDS = {"agreeToSubmit"}
 

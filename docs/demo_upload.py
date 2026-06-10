@@ -2,6 +2,7 @@ from datacollective import (
     DatasetSubmission,
     License,
     Task,
+    Visibility,
     create_submission_with_upload,
 )
 
@@ -33,6 +34,8 @@ submission = DatasetSubmission(
     ethicalReviewProcess="Describe the ethical review process that was "
     "followed for this dataset, including any approvals "
     "or considerations related to data collection and usage.",
+    showContactInfo=True,  # Whether to publicly display the contact information above
+    visibility=Visibility.PUBLIC,  # public | private | restricted
     exclusivityOptOut=True,  # True = dataset is not exclusive to Data Collective (can be found elsewhere),
     # False = dataset is exclusively shared in Mozilla Data Collective
     agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and that all information provided in the datasheet is accurate. Required to be true to complete the submission
