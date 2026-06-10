@@ -10,6 +10,7 @@ from datacollective.upload_utils import (
     _save_upload_state,
     _load_upload_state,
     _ensure_part_size_is_valid,
+    _expected_parts,
 )
 
 
@@ -63,3 +64,14 @@ def test_validate_part_count_rejects_too_many_parts() -> None:
 def test_validate_part_count_allows_fitting_file() -> None:
     file_size = DEFAULT_PART_SIZE * MAX_UPLOAD_PARTS
     _ensure_part_size_is_valid(file_size, DEFAULT_PART_SIZE)
+
+
+def test_validate_part_count_rejects_non_positive_part_size() -> None:
+    with pytest.raises(ValueError, match="greater than 0"):
+        _ensure_part_size_is_valid(1024, 0)
+
+
+def test_expected_parts_rounds_up_for_remainder() -> None:
+    # A trailing partial chunk must get its own part.
+    assert _expected_parts(file_size=250, part_size=100) == 3
+    assert _expected_parts(file_size=200, part_size=100) == 2
