@@ -8,7 +8,6 @@ from datacollective.logging_utils import (
 )
 from datacollective.upload_utils import (
     UploadState,
-    MAX_UPLOAD_BYTES,
     _default_state_path,
     _load_or_create_state,
     _expected_parts,
@@ -37,7 +36,7 @@ def upload_dataset_file(
     """
     Upload a dataset file using multipart uploads with resumable state.
 
-    Uploads are limited to 80GB and use the `application/gzip` MIME type.
+    Uploads use the `application/gzip` MIME type.
     Pass the submission ID of the target dataset submission. This works for
     both draft submissions and for uploading a new `.tar.gz` version to an
     already approved dataset submission.
@@ -61,8 +60,6 @@ def upload_dataset_file(
     file_size = path.stat().st_size
     if file_size <= 0:
         raise ValueError("`file_path` must point to a non-empty file")
-    if file_size > MAX_UPLOAD_BYTES:
-        raise ValueError("`file_path` exceeds the 150GB upload limit")
 
     _ensure_part_size_is_valid(file_size, part_size)
 
