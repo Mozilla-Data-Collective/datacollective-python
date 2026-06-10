@@ -29,22 +29,31 @@ RETRY_BACKOFF_SECONDS = 2
 DEFAULT_PART_SIZE = 10 * 1024 * 1024  # 10 MB default part size to upload chunk by chunk
 DEFAULT_MIME_TYPE = "application/gzip"
 
+# Storage requires every part except the last to be at least 5 MB
+MINIMUM_PART_SIZE = 5 * 1024 * 1024
 # Storage caps a multipart upload at 10.000 presigned parts
 MAX_UPLOAD_PARTS = 10_000
 
 
 def _ensure_part_size_is_valid(file_size: int, part_size: int) -> None:
     """
-    Ensure the file does not require more than ``MAX_UPLOAD_PARTS`` parts.
-    For example, if MAX_UPLOADS_PARTS is 10.000 and file_size is 100 GB, the part
-    size must be minimum 10 MB, otherwise the upload will fail when requesting
-    presigned URLs for parts above the limit.
+    Ensure the part size is valid for the upload.
+
+    The part size must be at least ``MINIMUM_PART_SIZE`` (the storage backend
+    rejects parts smaller than this, except the last one) and large enough that
+    the file does not require more than ``MAX_UPLOAD_PARTS`` parts. For example,
+    if MAX_UPLOAD_PARTS is 10.000 and file_size is 100 GB, the part size must be
+    minimum 10 MB, otherwise the upload will fail when requesting presigned URLs
+    for parts above the limit.
 
     Raises a clear error up front instead of letting the storage backend reject
-    a part number above the presigned-URL limit mid-upload.
+    an undersized part or a part number above the presigned-URL limit mid-upload.
     """
-    if part_size <= 0:
-        raise ValueError("`part_size` must be greater than 0")
+    if part_size < MINIMUM_PART_SIZE:
+        raise ValueError(
+            f"`part_size` must be at least {_format_bytes(MINIMUM_PART_SIZE)}, "
+            f"got {_format_bytes(part_size)}."
+        )
     required_parts = _expected_parts(file_size, part_size)
     if required_parts > MAX_UPLOAD_PARTS:
         min_part_size = int(math.ceil(file_size / MAX_UPLOAD_PARTS))
