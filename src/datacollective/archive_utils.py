@@ -1,10 +1,11 @@
-from pathlib import Path
-import logging
 import shutil
 import tarfile
 import zipfile
+from pathlib import Path
 
-logger = logging.getLogger(__name__)
+from datacollective.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 TAR_GZ_SUFFIX = ".tar.gz"
 

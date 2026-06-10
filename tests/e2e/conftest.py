@@ -58,7 +58,7 @@ def dev_dataset_id() -> str:
 
 @pytest.fixture(scope="session")
 def approved_dataset_submission_id() -> str:
-    return "cmmmjfo3c000mnz07uoxu19u7"
+    return "cmmxk22ls0003mf07vou27n72"
 
 
 @pytest.fixture(scope="session")

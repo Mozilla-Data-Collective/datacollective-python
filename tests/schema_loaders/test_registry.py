@@ -74,6 +74,34 @@ class TestLoadDatasetFromSchema:
         assert "audio_path" in df.columns
         assert "transcription" in df.columns
 
+    def test_dispatches_oth_index(self, tmp_path: Path) -> None:
+        """An OTH index-based schema should load via OTHLoader and apply column mappings."""
+        _write(
+            tmp_path / "data.tsv",
+            "id\tsentence\tlang\n1\thello\ten\n2\tbonjour\tfr\n",
+        )
+
+        schema = DatasetSchema(
+            dataset_id="test-oth",
+            task="OTH",
+            format="tsv",
+            index_file="data.tsv",
+            columns={
+                "id": ColumnMapping(source_column="id", dtype="int"),
+                "sentence": ColumnMapping(source_column="sentence", dtype="string"),
+                "lang": ColumnMapping(source_column="lang", dtype="category"),
+            },
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert len(df) == 2
+        assert list(df.columns) == ["id", "sentence", "lang"]
+        assert df["lang"].dtype.name == "category"
+
+    def test_oth_requires_index_file(self, tmp_path: Path) -> None:
+        schema = DatasetSchema(dataset_id="test-oth", task="OTH")
+        with pytest.raises(ValueError, match="OTH schema must specify 'index_file'"):
+            _load_dataset_from_schema(schema, tmp_path)
+
     def test_unknown_task_raises(self, tmp_path: Path) -> None:
         schema = DatasetSchema(dataset_id="ds", task="UNKNOWN_TASK")
         with pytest.raises(ValueError, match="No schema loader registered"):

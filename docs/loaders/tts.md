@@ -14,9 +14,9 @@ A CSV / TSV / pipe-delimited index file maps audio paths to transcriptions.
 
 | Field | Required | Description |
 |---|---|---|
-| `format` | ✓ | File format (`"csv"`, `"tsv"`, `"pipe"`). |
+| `format` | ✗ | Optional file format hint (`"csv"`, `"tsv"`, `"pipe"`). When omitted, the loader infers it from `index_file` where possible. |
 | `index_file` | ✓ | Path to the index file, relative to the dataset root. |
-| `base_audio_path` | ✗ | Directory prefix prepended to `file_path` dtype columns. |
+| `base_audio_path` | ✗ | Directory prefix or list of directories used to resolve `file_path` dtype columns. |
 | `columns` | ✗ | Column mappings from source columns to logical names. |
 | `separator` | ✗ | Explicit column separator (e.g. `"\|"`). |
 | `has_header` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
@@ -58,6 +58,51 @@ columns:
     dtype: "string"
 ```
 
+If the index stores IDs instead of directly joinable filenames, the shared
+`file_path` resolver also supports search-based matching:
+
+```yaml
+dataset_id: "example-tts"
+task: "TTS"
+index_file: "metadata.csv"
+base_audio_path:
+  - "wavs/"
+  - "backup_wavs/"
+
+columns:
+  audio_path:
+    source_column: "clip_id"
+    dtype: "file_path"
+    path_match_strategy: "exact"   # or "contains"
+    file_extension: ".wav"
+  transcription:
+    source_column: "text"
+    dtype: "string"
+```
+
+You can also build filenames and directory roots from metadata columns without
+hardcoding dataset-specific logic:
+
+```yaml
+dataset_id: "example-tts-dynamic-path"
+task: "TTS"
+index_file: "metadata.tsv"
+base_audio_path: "${split}/"
+
+columns:
+  audio_path:
+    source_column: "sentence_id"
+    dtype: "file_path"
+    file_extension: ".wav"
+    path_template: "${speaker_id}_khm_${value}"
+  transcription:
+    source_column: "text"
+    dtype: "string"
+```
+
+For each row, that resolves to
+`dataset_root / <split>/<speaker_id>_khm_<sentence_id>.wav`.
+
 ### Paired-glob schema
 
 ```yaml
@@ -67,4 +112,3 @@ root_strategy: "paired_glob"
 file_pattern: "**/*.txt"
 audio_extension: ".webm"
 ```
-

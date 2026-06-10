@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
 import pandas as pd
 
+from datacollective.logging_utils import get_logger
 from datacollective.schema import DatasetSchema
 from datacollective.schema_loaders.base import BaseSchemaLoader, Strategy
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class TTSLoader(BaseSchemaLoader):
@@ -23,6 +23,8 @@ class TTSLoader(BaseSchemaLoader):
     def load(self) -> pd.DataFrame:
         if self.schema.root_strategy == Strategy.PAIRED_GLOB:
             return self._load_paired_glob()
+        elif self.schema.root_strategy == Strategy.MULTI_SECTIONS:
+            return self._load_multi_sections()
         return self._load_based_on_index()
 
     def _load_based_on_index(self) -> pd.DataFrame:
@@ -31,10 +33,6 @@ class TTSLoader(BaseSchemaLoader):
         """
         if not self.schema.index_file:
             raise ValueError("TTS index-based schema must specify 'index_file'")
-        if not self.schema.format and not self.schema.separator:
-            raise ValueError(
-                "TTS index-based schema must specify 'format' or 'separator'"
-            )
 
         raw_df = self._load_index_file()
 

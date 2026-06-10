@@ -1,19 +1,19 @@
-import logging
 import os
 import platform
+import warnings
 from pathlib import Path
 from typing import Any
 
 import requests
 from dotenv import find_dotenv, load_dotenv
 
+from datacollective.logging_utils import get_logger
 
-logger = logging.getLogger(__name__)
-
-_PKG_LOGGER = logging.getLogger("datacollective")
+logger = get_logger(__name__)
 
 
-DEFAULT_API_URL = "https://datacollective.mozillafoundation.org/api"
+DEFAULT_API_URL = "https://mozilladatacollective.com/api"
+LEGACY_API_URL = "https://datacollective.mozillafoundation.org/api"
 SCHEMA_REGISTRY_RAW_BASE_URL = (
     "https://raw.githubusercontent.com/Mozilla-Data-Collective/dataset-schema-registry"
 )
@@ -21,6 +21,7 @@ ENV_API_KEY = "MDC_API_KEY"
 ENV_API_URL = "MDC_API_URL"
 ENV_DOWNLOAD_PATH = "MDC_DOWNLOAD_PATH"
 HTTP_TIMEOUT = (10, 60)  # (connect, read)
+_LEGACY_API_URL_NOTICE_EMITTED = False
 
 load_dotenv(find_dotenv())
 
@@ -67,7 +68,11 @@ def _send_api_request(
     if extra_headers:
         headers.update(extra_headers)
 
-    logger.debug(f"API request: {method.upper()} {url} (stream={stream})")
+    logger.debug(
+        f"API request: {method.upper()} {url} (stream={stream})\n"
+        f"json_body: {json_body}"
+        f"params: {params}"
+    )
 
     resp = requests.request(
         method=method.upper(),
@@ -78,6 +83,8 @@ def _send_api_request(
         json=json_body,
         params=params,
     )
+
+    logger.debug(f"API response: {_response_body_for_logging(resp, stream=stream)}")
 
     if resp.status_code == 404:
         detail = _extract_error_detail(resp)
@@ -102,7 +109,30 @@ def _send_api_request(
 
 
 def _get_api_url() -> str:
-    return os.getenv(ENV_API_URL, DEFAULT_API_URL).rstrip("/")
+    configured_url = os.getenv(ENV_API_URL, DEFAULT_API_URL).rstrip("/")
+    # Overwrite legacy URL during runtime
+    if configured_url == LEGACY_API_URL:
+        _warn_legacy_api_url_once()
+        return DEFAULT_API_URL
+    return configured_url
+
+
+def _warn_legacy_api_url_once() -> None:
+    global _LEGACY_API_URL_NOTICE_EMITTED
+
+    if _LEGACY_API_URL_NOTICE_EMITTED:
+        return None
+
+    _LEGACY_API_URL_NOTICE_EMITTED = True
+    message = (
+        f"`{ENV_API_URL}` is set to the legacy API URL `{LEGACY_API_URL}`. "
+        f"The SDK is using `{DEFAULT_API_URL}` instead. "
+        f"Update the variable `{ENV_API_URL}` in your `.env` file to the new URL"
+        f", or completely remove `{ENV_API_URL}` to use the SDK default."
+    )
+    warnings.warn(message, FutureWarning, stacklevel=3)
+    logger.warning(message)
+    return None
 
 
 def _extract_error_detail(resp: requests.Response) -> str:
@@ -112,6 +142,17 @@ def _extract_error_detail(resp: requests.Response) -> str:
         return str(body.get("message") or body.get("error") or "")
     except Exception:
         return ""
+
+
+def _response_body_for_logging(resp: requests.Response, stream: bool = False) -> str:
+    """Return the response body for logging without consuming streamed payloads."""
+    if stream:
+        return "<streamed response body omitted>"
+    try:
+        status, body = resp.status_code, resp.text
+    except Exception:
+        return "<unavailable>"
+    return f"{status}: {body}"
 
 
 def _get_api_key() -> str:
@@ -180,14 +221,3 @@ def _format_bytes(bytes_val: int) -> str:
             return f"{value:.1f} {unit}"
         value /= 1024.0
     return ""
-
-
-def _enable_verbose(verbose: bool) -> None:
-    if not verbose:
-        return
-    handler = logging.StreamHandler()
-    handler.setFormatter(
-        logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-    )
-    _PKG_LOGGER.handlers = [handler]
-    _PKG_LOGGER.setLevel(logging.INFO)

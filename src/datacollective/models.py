@@ -152,7 +152,7 @@ class DatasetSubmission(NonEmptyStrModel):
     )
     exclusivityOptOut: bool | None = Field(
         None,
-        description="True if dataset is non-exclusive; False if hosted exclusively on Mozilla Data Collective (see https://datacollective.mozillafoundation.org/terms/providers#appendix-1).",
+        description="True if dataset is non-exclusive; False if hosted exclusively on Mozilla Data Collective (see https://mozilladatacollective.com/terms/providers#appendix-1).",
     )
     agreeToSubmit: bool | None = Field(
         None,

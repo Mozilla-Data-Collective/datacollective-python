@@ -70,11 +70,11 @@ class TestTTSIndexBased:
         with pytest.raises(ValueError, match="index_file"):
             TTSLoader(schema, tmp_path).load()
 
-    def test_missing_format_and_separator_raises(self, tmp_path: Path) -> None:
+    def test_missing_format_uses_index_file_extension(self, tmp_path: Path) -> None:
         _write(tmp_path / "meta.csv", "a,b\n1,2\n")
         schema = DatasetSchema(dataset_id="ds", task="TTS", index_file="meta.csv")
-        with pytest.raises(ValueError, match="format.*separator"):
-            TTSLoader(schema, tmp_path).load()
+        df = TTSLoader(schema, tmp_path).load()
+        assert list(df.columns) == ["a", "b"]
 
     def test_custom_encoding(self, tmp_path: Path) -> None:
         content = "audio\ttext\nc1.wav\tgrüezi\n"
@@ -93,6 +93,37 @@ class TestTTSIndexBased:
         )
         df = TTSLoader(schema, tmp_path).load()
         assert df["text"].iloc[0] == "grüezi"
+
+    def test_file_path_template_renders_dynamic_audio_root_from_metadata(
+        self, tmp_path: Path
+    ) -> None:
+        _write(
+            tmp_path / "dataset" / "metadata.tsv",
+            "split\tspeaker_id\tsentence_id\ttext\nrecipes\tspk-01\tsent-01\thello\n",
+        )
+        audio_path = tmp_path / "dataset" / "recipes" / "spk-01_khm_sent-01.wav"
+        audio_path.parent.mkdir(parents=True, exist_ok=True)
+        audio_path.write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="TTS",
+            format="tsv",
+            index_file="metadata.tsv",
+            base_audio_path="${split}/",
+            columns={
+                "audio": ColumnMapping(
+                    source_column="sentence_id",
+                    dtype="file_path",
+                    file_extension=".wav",
+                    path_template="${speaker_id}_khm_${value}",
+                ),
+                "text": ColumnMapping(source_column="text"),
+            },
+        )
+        df = TTSLoader(schema, tmp_path / "dataset").load()
+        assert df["audio"].iloc[0] == str(audio_path)
+        assert df["text"].iloc[0] == "hello"
 
 
 class TestTTSPairedGlob:
@@ -219,3 +250,88 @@ class TestTTSPairedGlob:
         )
         df = TTSLoader(schema, tmp_path).load()
         assert Path(df["audio_path"].iloc[0]).is_absolute()
+
+    def test_paired_glob_audio_path_is_absolute_from_relative_extract_dir(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        dataset_dir = tmp_path / "dataset"
+        d = dataset_dir / "s"
+        d.mkdir(parents=True)
+        _write(d / "001.txt", "hi")
+        (d / "001.wav").write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="TTS",
+            root_strategy="paired_glob",
+            file_pattern="**/*.txt",
+            audio_extension=".wav",
+        )
+
+        monkeypatch.chdir(tmp_path)
+        df = TTSLoader(schema, Path("dataset")).load()
+
+        assert Path(df["audio_path"].iloc[0]).is_absolute()
+        assert df["audio_path"].iloc[0] == str(dataset_dir / "s" / "001.wav")
+
+
+class TestTTSMultiSections:
+    def _setup_sections(self, root: Path, sections: list[str]) -> None:
+        """Create a multi-sections dataset structure under root."""
+        for section in sections:
+            _write(
+                root / "dataset" / section / "metadata.tsv",
+                f"audio\ttext\n{section.lower()}.wav\tHello from {section}\n",
+            )
+
+    def test_load_multiple_sections(self, tmp_path: Path) -> None:
+        self._setup_sections(tmp_path, ["General", "Chat"])
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="TTS",
+            root_strategy="multi_sections",
+            section_root="dataset",
+            sections=["General", "Chat"],
+            index_file="metadata.tsv",
+            format="tsv",
+        )
+        df = TTSLoader(schema, tmp_path).load()
+        assert len(df) == 2
+        assert "section" in df.columns
+        assert set(df["section"]) == {"General", "Chat"}
+        assert set(df["text"]) == {"Hello from General", "Hello from Chat"}
+
+    def test_multi_sections_ignores_unlisted_sections(self, tmp_path: Path) -> None:
+        self._setup_sections(tmp_path, ["General", "Chat", "Other"])
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="TTS",
+            root_strategy="multi_sections",
+            section_root="dataset",
+            sections=["General", "Chat"],
+            index_file="metadata.tsv",
+            format="tsv",
+        )
+        df = TTSLoader(schema, tmp_path).load()
+        assert len(df) == 2
+        assert set(df["section"]) == {"General", "Chat"}
+
+    def test_multi_sections_missing_index_file_raises(self, tmp_path: Path) -> None:
+        _write(
+            tmp_path / "dataset" / "General" / "metadata.tsv",
+            "audio\ttext\ngeneral.wav\tHello from General\n",
+        )
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            task="TTS",
+            root_strategy="multi_sections",
+            section_root="dataset",
+            sections=["General", "Chat"],
+            index_file="metadata.tsv",
+            format="tsv",
+        )
+        with pytest.raises(FileNotFoundError, match="Chat"):
+            TTSLoader(schema, tmp_path).load()

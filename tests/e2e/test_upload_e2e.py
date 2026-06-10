@@ -20,7 +20,7 @@ def test_create_submission_with_upload(
             file_path=str(example_dataset_archive_path),
             submission=submission,
             state_path=str(state_path),
-            verbose=True,
+            enable_logging=True,
         )
     except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)

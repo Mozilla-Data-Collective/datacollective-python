@@ -1,18 +1,18 @@
 from __future__ import annotations
 
-import logging
-from pathlib import Path
-from typing import Any
-
 import urllib.error
 import urllib.request
+from pathlib import Path
+from typing import Any, Literal
+
 import yaml
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from datacollective.api_utils import SCHEMA_REGISTRY_RAW_BASE_URL
+from datacollective.logging_utils import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class ColumnMapping(BaseModel):
@@ -30,6 +30,21 @@ class ColumnMapping(BaseModel):
     )
     dtype: str = "string"
     optional: bool = False
+    path_match_strategy: Literal["direct", "exact", "contains"] = "direct"
+    file_extension: str | None = Field(
+        default=None,
+        description=(
+            'optional extension used when resolving file_path columns (e.g. ".wav")'
+        ),
+    )
+    path_template: str | None = Field(
+        default=None,
+        description=(
+            "optional template used to construct file_path values from one or more "
+            "metadata columns. Supports relative paths and ${value}, e.g. "
+            '"${Speaker ID}_khm_${Sentence ID}.wav" or "${Split}/${value}.wav"'
+        ),
+    )
 
 
 class ContentMapping(BaseModel):
@@ -71,9 +86,21 @@ class DatasetSchema(BaseModel):
     )
 
     # --- Index-based strategy (ASR / TTS) ---
-    format: str | None = Field(default=None, description='e.g. "csv", "tsv", "pipe"')
+    format: str | None = Field(
+        default=None,
+        description=(
+            'optional format hint (e.g. "csv", "tsv", "pipe"); '
+            "inferred from the index file when omitted"
+        ),
+    )
     index_file: str | None = Field(default=None, description='e.g. "train.csv"')
-    base_audio_path: str | None = Field(default=None, description='e.g. "clips/"')
+    base_audio_path: str | list[str] | None = Field(
+        default=None,
+        description=(
+            'e.g. "clips/" or ["clips/", "wavs/"]". Entries may also use '
+            'metadata placeholders such as "${Split}/clips/".'
+        ),
+    )
     columns: dict[str, ColumnMapping] = Field(
         default_factory=dict, description="Mapping of index columns to logical fields"
     )
@@ -106,6 +133,9 @@ class DatasetSchema(BaseModel):
     splits_file_pattern: str | None = Field(
         default=None, description='glob pattern for split files, e.g. "**/*.tsv"'
     )
+    # --- Multi-section strategy
+    sections: list[str] | None = None
+    section_root: str | None = None
 
     # --- Schema versioning ---
     checksum: str | None = Field(
@@ -199,6 +229,9 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
                 source_column=col_def["source_column"],  # str or int
                 dtype=col_def.get("dtype", "string"),
                 optional=col_def.get("optional", False),
+                path_match_strategy=col_def.get("path_match_strategy", "direct"),
+                file_extension=col_def.get("file_extension"),
+                path_template=col_def.get("path_template"),
             )
 
     # Content mapping (glob-based)
@@ -227,6 +260,8 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         "content_mapping",
         "splits",
         "splits_file_pattern",
+        "sections",
+        "section_root",
         "checksum",
     }
     extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -247,6 +282,8 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         content_mapping=content_mapping,
         splits=data.get("splits"),
         splits_file_pattern=data.get("splits_file_pattern"),
+        sections=data.get("sections"),
+        section_root=data.get("section_root"),
         checksum=data.get("checksum"),
         extra=extra,
     )

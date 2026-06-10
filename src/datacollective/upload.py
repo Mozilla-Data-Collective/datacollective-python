@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 
-
-from datacollective.api_utils import (
-    _enable_verbose,
+from datacollective.logging_utils import (
+    _enable_logging,
+    get_logger,
 )
 from datacollective.upload_utils import (
     UploadState,
@@ -22,15 +21,15 @@ from datacollective.upload_utils import (
     _cleanup_state_file,
 )
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def upload_dataset_file(
     file_path: str,
     submission_id: str,
     state_path: str | None = None,
-    verbose: bool = False,
     show_progress: bool = True,
+    enable_logging: bool = False,
 ) -> UploadState:
     """
     Upload a dataset file using multipart uploads with resumable state.
@@ -45,12 +44,12 @@ def upload_dataset_file(
         submission_id: Dataset submission ID (not the dataset ID).
         state_path: Optional path to persist upload state. Defaults to
             `<filename>.mdc-upload.json` alongside the archive.
-        verbose: Whether to enable detailed logging during the upload.
+        enable_logging: Whether to enable detailed logging during the upload.
         show_progress: Whether to show a progress bar during upload.
     """
-    _enable_verbose(verbose)
-
     path = Path(file_path)
+    _enable_logging(enable_logging)
+
     if not path.exists():
         raise FileNotFoundError(f"File not found: `{file_path}`")
 
