@@ -22,7 +22,7 @@ Before uploading, ensure you have:
 - An API key from the Mozilla Data Collective [dashboard](https://mozilladatacollective.com/api-reference)
 - Your dataset packaged as an archive file (`.tar.gz`, uploads use `application/gzip`)
 - All the required metadata for the dataset submission
-- Dataset archives must be **150GB or less**
+- Dataset archives must be **80GB or less**
 
 ### Configuration
 
@@ -79,7 +79,7 @@ submission = DatasetSubmission(
     ethicalReviewProcess="Describe the ethical review process that was "
                          "followed for this dataset, including any approvals "
                          "or considerations related to data collection and usage.",
-    showContactInfo=True,  # Whether to publicly display the contact information above
+    showContactInfo=False,  # Whether to publicly display the contact information above
     visibility=Visibility.PUBLIC,  # public | private | restricted
     exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
                               # False = Dataset is exclusively hosted in Mozilla Data Collective
@@ -148,6 +148,7 @@ To complete the submission process, the submission **must** include at least all
 - `showContactInfo`
 - `visibility`
 - `agreeToSubmit=True`
+- `fileUploadId`
 
 A completed file upload must also be attached to the submission before it can be submitted for review. The uploaded archive is linked to the submission automatically when the multipart upload completes (the upload is started with the submission's ID). 
 
@@ -217,7 +218,7 @@ update_fields = DatasetSubmission(
     forbiddenUsage="Do not use for unlawful purposes.",
     pointOfContactFullName="Jane Doe",
     pointOfContactEmail="jane@example.com",
-    showContactInfo=True,
+    showContactInfo=False,
     visibility=Visibility.PUBLIC,
     # ... other metadata fields ...
 )

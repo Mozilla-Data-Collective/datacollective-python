@@ -307,10 +307,11 @@ def _build_final_submission_error(
 ) -> str:
     message = (
         "Cannot submit dataset. Missing required fields for final submission: "
-        f"{', '.join(missing_items)}."
+        f"{', '.join(missing_items)}. Please update your DatasetSubmission model "
+        f"with the appropriate fields."
     )
     if missing_file_upload_id:
-        message += " Upload the dataset file first to get a `fileUploadId`."
+        message += " Upload the dataset file before submitting."
     return message
 
 

@@ -92,7 +92,7 @@ def sample_dataset_submission(name: str) -> DatasetSubmission:
         createdByEmail="sdk-tests@example.com",
         intendedUsage="Exercise the upload and submission lifecycle in live tests.",
         ethicalReviewProcess="No review required for synthetic test data.",
-        showContactInfo=True,
+        showContactInfo=False,
         visibility=Visibility.PUBLIC,
         exclusivityOptOut=True,
         agreeToSubmit=True,
