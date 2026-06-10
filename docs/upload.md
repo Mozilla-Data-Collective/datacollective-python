@@ -22,7 +22,7 @@ Before uploading, ensure you have:
 - An API key from the Mozilla Data Collective [dashboard](https://mozilladatacollective.com/api-reference)
 - Your dataset packaged as an archive file (`.tar.gz`, uploads use `application/gzip`)
 - All the required metadata for the dataset submission
-- Dataset archives must be **80GB or less**
+- Dataset archives must be **150GB or less**
 
 ### Configuration
 
@@ -148,7 +148,6 @@ To complete the submission process, the submission **must** include at least all
 - `showContactInfo`
 - `visibility`
 - `agreeToSubmit=True`
-- `fileUploadId`
 
 A completed file upload must also be attached to the submission before it can be submitted for review. The uploaded archive is linked to the submission automatically when the multipart upload completes (the upload is started with the submission's ID). 
 
