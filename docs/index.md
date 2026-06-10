@@ -148,7 +148,7 @@ submission = DatasetSubmission(
     ethicalReviewProcess="Describe the ethical review process that was "
                          "followed for this dataset, including any approvals "
                          "or considerations related to data collection and usage.",
-    showContactInfo=True,  # Whether to publicly display the contact information above
+    showContactInfo=False,  # Whether to publicly display the contact information above
     visibility=Visibility.PUBLIC,  # public | private | restricted
     exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
                               # False = Dataset is exclusively hosted in Mozilla Data Collective
