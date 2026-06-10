@@ -26,7 +26,7 @@ UPLOAD_TIMEOUT = (20, 600)  # (20s connect timeout, 10min read timeout)
 MAX_UPLOAD_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
 
-DEFAULT_PART_SIZE = 5 * 1024 * 1024  # 5 MB default part size to upload chunk by chunk
+DEFAULT_PART_SIZE = 10 * 1024 * 1024  # 10 MB default part size to upload chunk by chunk
 DEFAULT_MIME_TYPE = "application/gzip"
 
 # Storage caps a multipart upload at 10.000 presigned parts
