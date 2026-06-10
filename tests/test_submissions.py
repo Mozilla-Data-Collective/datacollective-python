@@ -20,7 +20,7 @@ def _build_complete_submission(
         "forbiddenUsage": "Do not use for unlawful purposes.",
         "pointOfContactFullName": "Jane Doe",
         "pointOfContactEmail": "jane@example.com",
-        "showContactInfo": True,
+        "showContactInfo": False,
         "visibility": Visibility.PUBLIC,
         "agreeToSubmit": True,
     }
