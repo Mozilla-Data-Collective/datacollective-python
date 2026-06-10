@@ -67,7 +67,7 @@ def test_validate_part_count_allows_fitting_file() -> None:
 
 
 def test_validate_part_count_rejects_non_positive_part_size() -> None:
-    with pytest.raises(ValueError, match="greater than 0"):
+    with pytest.raises(ValueError, match="must be at least"):
         _ensure_part_size_is_valid(1024, 0)
 
 
