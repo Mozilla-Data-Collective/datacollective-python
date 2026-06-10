@@ -150,6 +150,10 @@ def create_submission_with_upload(
         enable_logging=enable_logging,
     )
 
+    # The uploaded file is linked to the submission automatically when the
+    # multipart upload completes (the upload was started with `submissionId`),
+    # so `fileUploadId` is not sent on the metadata PATCH. We still record it on
+    # the model to satisfy the local completeness check below.
     submission.fileUploadId = upload_state.fileUploadId
     _validate_final_submission_fields(submission, require_file_upload_id=True)
 

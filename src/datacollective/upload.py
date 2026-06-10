@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from datacollective.api_utils import _format_bytes
 from datacollective.logging_utils import (
     _enable_logging,
     get_logger,
@@ -57,7 +58,10 @@ def upload_dataset_file(
     if file_size <= 0:
         raise ValueError("`file_path` must point to a non-empty file")
     if file_size > MAX_UPLOAD_BYTES:
-        raise ValueError("`file_path` exceeds the 80GB upload limit")
+        raise ValueError(
+            f"`file_path` exceeds the {_format_bytes(MAX_UPLOAD_BYTES, base=1000)} "
+            "upload limit"
+        )
 
     final_filename = path.name
 

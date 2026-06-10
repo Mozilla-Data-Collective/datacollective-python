@@ -22,7 +22,7 @@ Before uploading, ensure you have:
 - An API key from the Mozilla Data Collective [dashboard](https://mozilladatacollective.com/api-reference)
 - Your dataset packaged as an archive file (`.tar.gz`, uploads use `application/gzip`)
 - All the required metadata for the dataset submission
-- Dataset archives must be **80GB or less**
+- Dataset archives must be **150GB or less**
 
 ### Configuration
 
@@ -43,7 +43,13 @@ MDC_API_KEY=your-api-key-here
 The simplest way to upload a dataset is using `create_submission_with_upload`, which handles the entire workflow in a single call:
 
 ```python
-from datacollective import DatasetSubmission, License, Task, create_submission_with_upload
+from datacollective import (
+    DatasetSubmission,
+    License,
+    Task,
+    Visibility,
+    create_submission_with_upload,
+)
 
 submission = DatasetSubmission(
     name="Dataset Name",
@@ -73,6 +79,8 @@ submission = DatasetSubmission(
     ethicalReviewProcess="Describe the ethical review process that was "
                          "followed for this dataset, including any approvals "
                          "or considerations related to data collection and usage.",
+    showContactInfo=False,  # Whether to publicly display the contact information above
+    visibility=Visibility.PUBLIC,  # public | private | restricted
     exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
                               # False = Dataset is exclusively hosted in Mozilla Data Collective
     agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and 
@@ -89,6 +97,9 @@ print(response)
 ```
 
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
+
+### Visibility
+- `visibility` controls who can access the dataset and must be one of the `Visibility` enum values: `Visibility.PUBLIC`, `Visibility.PRIVATE`, or `Visibility.RESTRICTED`.
 
 ## Upload a New File Version to an Approved Dataset
 
@@ -134,10 +145,11 @@ To complete the submission process, the submission **must** include at least all
 - `forbiddenUsage`
 - `pointOfContactFullName`
 - `pointOfContactEmail`
+- `showContactInfo`
+- `visibility`
 - `agreeToSubmit=True`
-- `fileUploadId`
 
-The `fileUploadId` is only available after a successful file upload and is required to link the uploaded archive to the submission. 
+A completed file upload must also be attached to the submission before it can be submitted for review. The uploaded archive is linked to the submission automatically when the multipart upload completes (the upload is started with the submission's ID). 
 
 ## Step-by-Step Upload
 
@@ -185,12 +197,16 @@ print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 
 ### Step 3: Update Submission Metadata
 
-For this step, you will need the `fileUploadId` from the upload response above, which is required to link the uploaded file to your submission. Without this ID, you won't be able to proceed to the submission step. If you no longer have access to it, you will need to re-upload the file to get a new `fileUploadId`.
-
-At this step, you can also update any other metadata fields.
+Fill in the datasheet fields for your submission.
 
 ```python
-from datacollective import DatasetSubmission, License, Task, update_submission
+from datacollective import (
+    DatasetSubmission,
+    License,
+    Task,
+    Visibility,
+    update_submission,
+)
 
 update_fields = DatasetSubmission(
     task=Task.ASR,
@@ -201,7 +217,8 @@ update_fields = DatasetSubmission(
     forbiddenUsage="Do not use for unlawful purposes.",
     pointOfContactFullName="Jane Doe",
     pointOfContactEmail="jane@example.com",
-    fileUploadId=upload_state.fileUploadId,
+    showContactInfo=False,
+    visibility=Visibility.PUBLIC,
     # ... other metadata fields ...
 )
 
