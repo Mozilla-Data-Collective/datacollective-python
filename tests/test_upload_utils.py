@@ -1,10 +1,15 @@
 from pathlib import Path
 
+import pytest
+
 from datacollective.models import UploadPart
 from datacollective.upload_utils import (
+    DEFAULT_PART_SIZE,
+    MAX_UPLOAD_PARTS,
     UploadState,
     _save_upload_state,
     _load_upload_state,
+    _ensure_part_size_is_valid,
 )
 
 
@@ -47,3 +52,14 @@ def test_load_upload_state_returns_none_for_invalid_payload(tmp_path: Path) -> N
     )
 
     assert _load_upload_state(state_path) is None
+
+
+def test_validate_part_count_rejects_too_many_parts() -> None:
+    file_size = DEFAULT_PART_SIZE * (MAX_UPLOAD_PARTS + 1)
+    with pytest.raises(ValueError, match="exceeding the limit"):
+        _ensure_part_size_is_valid(file_size, DEFAULT_PART_SIZE)
+
+
+def test_validate_part_count_allows_fitting_file() -> None:
+    file_size = DEFAULT_PART_SIZE * MAX_UPLOAD_PARTS
+    _ensure_part_size_is_valid(file_size, DEFAULT_PART_SIZE)
