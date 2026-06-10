@@ -19,6 +19,8 @@ from datacollective.upload_utils import (
     _save_upload_state,
     _complete_upload,
     _cleanup_state_file,
+    _ensure_part_size_is_valid,
+    DEFAULT_PART_SIZE,
 )
 
 logger = get_logger(__name__)
@@ -30,6 +32,7 @@ def upload_dataset_file(
     state_path: str | None = None,
     show_progress: bool = True,
     enable_logging: bool = False,
+    part_size: int = DEFAULT_PART_SIZE,
 ) -> UploadState:
     """
     Upload a dataset file using multipart uploads with resumable state.
@@ -46,6 +49,8 @@ def upload_dataset_file(
             `<filename>.mdc-upload.json` alongside the archive.
         enable_logging: Whether to enable detailed logging during the upload.
         show_progress: Whether to show a progress bar during upload.
+        part_size: Multipart part size in bytes. Ignored when resuming an
+            existing upload, which keeps the part size recorded in its state file.
     """
     path = Path(file_path)
     _enable_logging(enable_logging)
@@ -57,7 +62,9 @@ def upload_dataset_file(
     if file_size <= 0:
         raise ValueError("`file_path` must point to a non-empty file")
     if file_size > MAX_UPLOAD_BYTES:
-        raise ValueError("`file_path` exceeds the 80GB upload limit")
+        raise ValueError("`file_path` exceeds the 150GB upload limit")
+
+    _ensure_part_size_is_valid(file_size, part_size)
 
     final_filename = path.name
 
@@ -68,6 +75,7 @@ def upload_dataset_file(
         submission_id=submission_id,
         final_filename=final_filename,
         file_size=file_size,
+        part_size=part_size,
     )
 
     expected_parts = _expected_parts(state.fileSize, state.partSize)

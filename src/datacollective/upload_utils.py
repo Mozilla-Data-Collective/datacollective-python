@@ -30,6 +30,32 @@ DEFAULT_PART_SIZE = 5 * 1024 * 1024  # 5 MB default part size to upload chunk by
 DEFAULT_MIME_TYPE = "application/gzip"
 MAX_UPLOAD_BYTES = 150 * 1000 * 1000 * 1000  # 150 GB
 
+# Storage caps a multipart upload at 10.000 presigned parts
+MAX_UPLOAD_PARTS = 10_000
+
+
+def _ensure_part_size_is_valid(file_size: int, part_size: int) -> None:
+    """
+    Ensure the file does not require more than ``MAX_UPLOAD_PARTS`` parts.
+    For example, if MAX_UPLOADS_PARTS is 10.000 and file_size is 100 GB, the part
+    size must be minimum 10 MB, otherwise the upload will fail when requesting
+    presigned URLs for parts above the limit.
+
+    Raises a clear error up front instead of letting the storage backend reject
+    a part number above the presigned-URL limit mid-upload.
+    """
+    if part_size <= 0:
+        raise ValueError("`part_size` must be greater than 0")
+    required_parts = _expected_parts(file_size, part_size)
+    if required_parts > MAX_UPLOAD_PARTS:
+        min_part_size = int(math.ceil(file_size / MAX_UPLOAD_PARTS))
+        raise ValueError(
+            f"File requires {required_parts} parts at a part size of "
+            f"{_format_bytes(part_size)} for the whole file of {_format_bytes(file_size)},"
+            f" exceeding the limit of {MAX_UPLOAD_PARTS}. Increase the "
+            f"`part_size` argument to at least {_format_bytes(min_part_size)}."
+        )
+
 
 class UploadSession(NonEmptyStrModel):
     fileUploadId: str
@@ -75,7 +101,7 @@ class _CompleteUploadPayload(NonEmptyStrModel):
 
 
 def _initiate_upload(
-    submission_id: str, filename: str, file_size: int, mime_type: str
+    submission_id: str, filename: str, file_size: int, mime_type: str, part_size: int
 ) -> UploadSession:
     """
     Start a multipart upload for a dataset submission.
@@ -85,6 +111,7 @@ def _initiate_upload(
         filename: Name of the file to upload.
         file_size: Size of the file in bytes.
         mime_type: MIME type for the file.
+        part_size: Multipart part size in bytes to use for this upload.
     """
     payload = _UploadInitiatePayload(
         submissionId=submission_id,
@@ -95,11 +122,10 @@ def _initiate_upload(
     url = f"{_get_api_url()}/uploads"
     resp = _send_api_request("POST", url, json_body=payload.model_dump())
     data = dict(resp.json())
-    print(data)
     session_payload = {
         "fileUploadId": str(data.get("fileUploadId", "")),
         "uploadId": str(data.get("uploadId", "")),
-        "partSize": int(data.get("partSize", 0)) or DEFAULT_PART_SIZE,
+        "partSize": part_size,
     }
     try:
         return UploadSession.model_validate(session_payload)
@@ -180,6 +206,7 @@ def _load_or_create_state(
     submission_id: str,
     final_filename: str,
     file_size: int,
+    part_size: int,
 ) -> UploadState:
     state = _load_upload_state(state_file)
     if state:
@@ -196,7 +223,7 @@ def _load_or_create_state(
             f"Initiating upload for '{final_filename}' ({_format_bytes(file_size)})..."
         )
         session = _initiate_upload(
-            submission_id, final_filename, file_size, DEFAULT_MIME_TYPE
+            submission_id, final_filename, file_size, DEFAULT_MIME_TYPE, part_size
         )
         state = UploadState(
             submissionId=submission_id,
