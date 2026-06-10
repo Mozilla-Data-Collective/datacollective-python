@@ -6,7 +6,12 @@ from datacollective.datasets import (
     load_dataset,
     save_dataset_to_disk,
 )
-from datacollective.models import DatasetSubmission, License, Task
+from datacollective.models import (
+    DatasetSubmission,
+    License,
+    Task,
+    Visibility,
+)
 from datacollective.submissions import (
     create_submission_draft,
     create_submission_with_upload,
@@ -28,6 +33,7 @@ __all__ = [
     "DatasetSubmission",
     "License",
     "Task",
+    "Visibility",
     "__version__",
 ]
 

@@ -3,7 +3,7 @@ from pathlib import Path
 import datacollective.submissions as submissions_module
 import pytest
 
-from datacollective.models import DatasetSubmission, License, Task
+from datacollective.models import DatasetSubmission, License, Task, Visibility
 
 
 def _build_complete_submission(
@@ -20,6 +20,8 @@ def _build_complete_submission(
         "forbiddenUsage": "Do not use for unlawful purposes.",
         "pointOfContactFullName": "Jane Doe",
         "pointOfContactEmail": "jane@example.com",
+        "showContactInfo": False,
+        "visibility": Visibility.PUBLIC,
         "agreeToSubmit": True,
     }
     if file_upload_id is not None:
@@ -80,8 +82,9 @@ def test_submit_submission_requires_file_upload_id_for_local_final_submission(
         )
 
     assert str(exc_info.value) == (
-        "Cannot submit dataset. Missing required fields for final submission: "
-        "`fileUploadId`. Upload the dataset file first to get a `fileUploadId`."
+        "Cannot submit dataset. Missing required fields for final submission: `fileUploadId`. "
+        "Please update your DatasetSubmission model with the appropriate fields. "
+        "Upload the dataset file before submitting."
     )
 
 
