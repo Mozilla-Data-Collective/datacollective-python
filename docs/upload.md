@@ -7,8 +7,8 @@ This guide explains how to programmatically upload datasets to the Mozilla Data 
 The SDK provides a complete workflow for uploading datasets:
 
 1. **Create a draft submission** - Initialize a new dataset submission
-2. **Upload the dataset file** - Upload your archive using resumable multipart uploads
-3. **Update submission metadata** - Add required metadata fields to the submission
+2. **Update submission metadata** - Add required metadata fields to the submission
+3. **Upload the dataset file** - Upload your archive using resumable multipart uploads
 4. **Submit for review** - Finalize the submission for review
 
 Additionally, the functionality of uploading a dataset file can be used independently to upload a new archive version to an already approved and published dataset submission. Check the [Upload a New File Version to an Approved Dataset](#upload-a-new-file-version-to-an-approved-dataset) section for more details.
@@ -177,27 +177,11 @@ Which should output something like:
 Created draft submission: cmmjpewijXXXXXXXXX
 ```
 
-### Step 2: Upload the Dataset File
+### Step 2: Update Submission Metadata
 
-Then, you can use the submission ID above to upload the dataset file:
-
-```python
-from datacollective import upload_dataset_file
-
-upload_state = upload_dataset_file(
-    file_path="/path/to/your/dataset.tar.gz",
-    submission_id=submission_id,
-)
-
-print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
-```
-
-> [!TIP]
-> You can also find your submission ID by going to your [Uploads](https://mozilladatacollective.com/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://mozilladatacollective.com/submissions/cmmjpewijXXXXXXXXX`).
-
-### Step 3: Update Submission Metadata
-
-Fill in the datasheet fields for your submission.
+Fill in the datasheet fields for your submission. Set the metadata **before**
+uploading the file, so that if the upload is later interrupted or fails, the
+submission still has its metadata filled in.
 
 ```python
 from datacollective import (
@@ -229,6 +213,24 @@ response = update_submission(
 
 print(f"Metadata updated: {response}")
 ```
+
+### Step 3: Upload the Dataset File
+
+Then, you can use the submission ID above to upload the dataset file:
+
+```python
+from datacollective import upload_dataset_file
+
+upload_state = upload_dataset_file(
+    file_path="/path/to/your/dataset.tar.gz",
+    submission_id=submission_id,
+)
+
+print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
+```
+
+> [!TIP]
+> You can also find your submission ID by going to your [Uploads](https://mozilladatacollective.com/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://mozilladatacollective.com/submissions/cmmjpewijXXXXXXXXX`).
 
 ### Step 4: Submit for Review
 

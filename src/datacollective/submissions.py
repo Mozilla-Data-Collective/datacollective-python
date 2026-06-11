@@ -105,7 +105,7 @@ def create_submission_with_upload(
     enable_logging: bool = False,
 ) -> dict[str, Any]:
     """
-    Single point function to create a submission, upload a file, update metadata, and submit for review.
+    Single point function to create a submission, update metadata, upload a file, and submit for review.
     Allows for resuming an upload if interrupted by persisting state to a file.
 
     Args:
