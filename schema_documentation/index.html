@@ -513,6 +513,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#glob-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Glob fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inner-archive-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inner archive extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1020,6 +1042,28 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#glob-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Glob fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inner-archive-extraction" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inner archive extraction
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1122,7 +1166,7 @@ without executing any custom code outside the datacollective library.</p>
 <li><strong>Resolve the schema</strong>: check local cache or the schema registry for <code>schema.yaml</code>. If the dataset is not registered this step raises a warning, so we never download an unsupported archive.</li>
 <li><strong>Download</strong> the archive (with resume support). The schema we fetched in step 1 tells the loader how the files are structured.</li>
 <li><strong>Extract</strong> the <code>.tar.gz</code> / <code>.zip</code> to a local directory.</li>
-<li><strong>Parse</strong> the YAML into a validated <code>DatasetSchema</code> (Pydantic model) and dispatch to the task-specific loader (ASR, TTS, …), which returns the final <strong>DataFrame</strong>.</li>
+<li><strong>Parse</strong> the YAML into a validated <code>DatasetSchema</code> (Pydantic model) and dispatch to the task-specific loader (ASR, TTS, OTH, …), which returns the final <strong>DataFrame</strong>.</li>
 </ol>
 <p>The schema file describes:</p>
 <ul>
@@ -1168,7 +1212,7 @@ column as audio file paths and the <code>sentence</code> column as transcription
 <td><code>task</code></td>
 <td><code>str</code></td>
 <td>✓</td>
-<td>Task type: determines which loader is used (e.g. <code>"ASR"</code>, <code>"TTS"</code>).</td>
+<td>Task type: determines which loader is used (<code>"ASR"</code>, <code>"TTS"</code>, <code>"OTH"</code>).</td>
 </tr>
 </tbody>
 </table>
@@ -1198,6 +1242,11 @@ strategy is inferred from the fields present in the schema:</p>
 <td><strong>Paired-glob</strong></td>
 <td>Each audio file has a matching <code>.txt</code> file, no index file at all.</td>
 <td><code>root_strategy: "paired_glob"</code>, <code>file_pattern</code>, <code>audio_extension</code></td>
+</tr>
+<tr>
+<td><strong>Glob</strong></td>
+<td>Directory-structured dataset with metadata encoded in the path hierarchy.</td>
+<td><code>root_strategy: "glob"</code>, <code>file_pattern</code></td>
 </tr>
 </tbody>
 </table>
@@ -1330,6 +1379,57 @@ strategy is inferred from the fields present in the schema:</p>
 </tr>
 </tbody>
 </table>
+<h3 id="glob-fields">Glob fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>root_strategy</code></td>
+<td>—</td>
+<td>✓</td>
+<td>Must be <code>"glob"</code>.</td>
+</tr>
+<tr>
+<td><code>file_pattern</code></td>
+<td>—</td>
+<td>✓</td>
+<td>Glob pattern to match files (e.g. <code>"**/*.wav"</code>).</td>
+</tr>
+<tr>
+<td><code>splits</code></td>
+<td>—</td>
+<td>✗</td>
+<td>List of subdirectory names to glob through. Each becomes a value in the <code>split</code> column. When omitted, the glob runs from the dataset root.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="inner-archive-extraction">Inner archive extraction</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>extract_files</code></td>
+<td>—</td>
+<td>✗</td>
+<td>List of archive paths (relative to dataset root) to extract before loading. Supports <code>.tar.gz</code>, <code>.tar.bz2</code>, <code>.tar.xz</code>, and <code>.zip</code>. Extraction is skipped on subsequent runs.</td>
+</tr>
+</tbody>
+</table>
+<p>This field is task-agnostic — it works with any loader.</p>
 <h2 id="column-mapping">Column mapping</h2>
 <p>Used by <strong>index-based</strong> and <strong>multi-split</strong> strategies.  Each key under
 <code>columns</code> is the <strong>logical</strong> column name that will appear in the resulting
