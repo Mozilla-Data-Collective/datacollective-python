@@ -18,7 +18,7 @@ from datacollective.models import (
     SUBMIT_FIELDS,
 )
 from datacollective.upload import upload_dataset_file
-from datacollective.upload_utils import _resolve_upload_state
+from datacollective.upload_utils import _resolve_upload_state, DEFAULT_PART_SIZE
 
 logger = get_logger(__name__)
 
@@ -103,6 +103,7 @@ def create_submission_with_upload(
     submission: DatasetSubmission,
     state_path: str | None = None,
     enable_logging: bool = False,
+    part_size: int = DEFAULT_PART_SIZE,
 ) -> dict[str, Any]:
     """
     Single point function to create a submission, upload a file, update metadata, and submit for review.
@@ -113,6 +114,8 @@ def create_submission_with_upload(
         submission: Dataset submission model with metadata fields.
         state_path: Optional path to persist upload state.
         enable_logging: Whether to enable detailed logging during the process.
+        part_size: Multipart part size in bytes. Ignored when resuming an existing upload,
+            which keeps the part size recorded in its state file.
     """
     _enable_logging(enable_logging)
 
@@ -148,6 +151,7 @@ def create_submission_with_upload(
         submission_id=submission_id,
         state_path=state_path,
         enable_logging=enable_logging,
+        part_size=part_size,
     )
 
     # The uploaded file is linked to the submission automatically when the
