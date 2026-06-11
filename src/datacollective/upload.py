@@ -8,7 +8,6 @@ from datacollective.logging_utils import (
 )
 from datacollective.upload_utils import (
     UploadState,
-    MAX_UPLOAD_BYTES,
     _default_state_path,
     _load_or_create_state,
     _expected_parts,
@@ -19,6 +18,8 @@ from datacollective.upload_utils import (
     _save_upload_state,
     _complete_upload,
     _cleanup_state_file,
+    _ensure_part_size_is_valid,
+    DEFAULT_PART_SIZE,
 )
 
 logger = get_logger(__name__)
@@ -30,11 +31,12 @@ def upload_dataset_file(
     state_path: str | None = None,
     show_progress: bool = True,
     enable_logging: bool = False,
+    part_size: int = DEFAULT_PART_SIZE,
 ) -> UploadState:
     """
     Upload a dataset file using multipart uploads with resumable state.
 
-    Uploads are limited to 80GB and use the `application/gzip` MIME type.
+    Uploads use the `application/gzip` MIME type.
     Pass the submission ID of the target dataset submission. This works for
     both draft submissions and for uploading a new `.tar.gz` version to an
     already approved dataset submission.
@@ -46,6 +48,8 @@ def upload_dataset_file(
             `<filename>.mdc-upload.json` alongside the archive.
         enable_logging: Whether to enable detailed logging during the upload.
         show_progress: Whether to show a progress bar during upload.
+        part_size: Multipart part size in bytes. Ignored when resuming an
+            existing upload, which keeps the part size recorded in its state file.
     """
     path = Path(file_path)
     _enable_logging(enable_logging)
@@ -56,8 +60,8 @@ def upload_dataset_file(
     file_size = path.stat().st_size
     if file_size <= 0:
         raise ValueError("`file_path` must point to a non-empty file")
-    if file_size > MAX_UPLOAD_BYTES:
-        raise ValueError("`file_path` exceeds the 80GB upload limit")
+
+    _ensure_part_size_is_valid(file_size, part_size)
 
     final_filename = path.name
 
@@ -68,6 +72,7 @@ def upload_dataset_file(
         submission_id=submission_id,
         final_filename=final_filename,
         file_size=file_size,
+        part_size=part_size,
     )
 
     expected_parts = _expected_parts(state.fileSize, state.partSize)

@@ -1,7 +1,12 @@
 import pytest
 from pydantic import ValidationError
 
-from datacollective.models import DatasetSubmission, License, Task
+from datacollective.models import (
+    DatasetSubmission,
+    License,
+    Task,
+    Visibility,
+)
 
 
 def test_submission_rejects_empty_strings() -> None:
@@ -47,7 +52,7 @@ def test_task_enum_all_values() -> None:
         "N/A",
         "NLP",
         "ASR",
-        "LI",
+        "LID",
         "TTS",
         "MT",
         "LM",
@@ -58,7 +63,7 @@ def test_task_enum_all_values() -> None:
         "RAG",
         "CV",
         "ML",
-        "Other",
+        "OTH",
     }
     assert {t.value for t in Task} == expected
 
@@ -74,8 +79,8 @@ def test_task_na_value() -> None:
 
 
 def test_task_other_value() -> None:
-    model = DatasetSubmission(task="Other")
-    assert model.task == Task.OTHER
+    model = DatasetSubmission(task="OTH")
+    assert model.task == Task.OTH
 
 
 def test_task_rejects_invalid_value() -> None:
@@ -123,3 +128,26 @@ def test_empty_license_abbreviation_requires_or_uses_license_name() -> None:
     )
     assert model.licenseAbbreviation == ""
     assert model.license == "Mozilla Research License"
+
+
+def test_visibility_enum_values() -> None:
+    assert {v.value for v in Visibility} == {"public", "private", "restricted"}
+
+
+def test_visibility_accepted_by_enum_and_string() -> None:
+    assert DatasetSubmission(visibility=Visibility.PRIVATE).visibility == (
+        Visibility.PRIVATE
+    )
+    assert DatasetSubmission(visibility="restricted").visibility == (
+        Visibility.RESTRICTED
+    )
+
+
+def test_visibility_rejects_invalid_value() -> None:
+    with pytest.raises(ValidationError):
+        DatasetSubmission(visibility="internal")
+
+
+def test_show_contact_info_accepts_boolean() -> None:
+    assert DatasetSubmission(showContactInfo=True).showContactInfo is True
+    assert DatasetSubmission(showContactInfo=False).showContactInfo is False

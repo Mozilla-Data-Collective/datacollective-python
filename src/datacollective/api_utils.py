@@ -212,12 +212,18 @@ def _prepare_download_headers(
     return {}, 0
 
 
-def _format_bytes(bytes_val: int) -> str:
-    """Format bytes into a human-readable string."""
+def _format_bytes(bytes_val: int, base: int = 1024) -> str:
+    """Format bytes into a human-readable string.
+
+    Args:
+        bytes_val: Number of bytes.
+        base: Unit base to divide by — ``1024`` for binary units or ``1000``
+            for decimal (SI) units. Defaults to ``1024``.
+    """
     units = ["B", "KB", "MB", "GB", "TB", "PB"]
     value = float(bytes_val)
     for unit in units:
-        if value < 1024.0 or unit == units[-1]:
+        if value < base or unit == units[-1]:
             return f"{value:.1f} {unit}"
-        value /= 1024.0
+        value /= base
     return ""

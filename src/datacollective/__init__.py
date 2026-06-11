@@ -6,7 +6,12 @@ from datacollective.datasets import (
     load_dataset,
     save_dataset_to_disk,
 )
-from datacollective.models import DatasetSubmission, License, Task
+from datacollective.models import (
+    DatasetSubmission,
+    License,
+    Task,
+    Visibility,
+)
 from datacollective.submissions import (
     create_submission_draft,
     create_submission_with_upload,
@@ -28,8 +33,9 @@ __all__ = [
     "DatasetSubmission",
     "License",
     "Task",
+    "Visibility",
     "__version__",
 ]
 
 # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
-__version__ = "0.5.0"
+__version__ = "0.5.1"

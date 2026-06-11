@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from pathlib import Path
 
 import pandas as pd
@@ -12,26 +10,38 @@ logger = get_logger(__name__)
 
 
 class OTHLoader(BaseSchemaLoader):
-    """Load a dataset described by a `DatasetSchema` with task ``OTH``.
+    """Loader for tasks classified as OTH.
 
-    Supports the ``glob`` strategy for directory-structured datasets
-    where metadata (e.g. speaker ID, language) is encoded in the path
-    hierarchy rather than in an index file or text-file pairing.
+    Supports two strategies:
+
+    1) Glob (``root_strategy: glob``): for directory-structured datasets where
+    metadata (e.g. speaker ID, language) is encoded in the path hierarchy rather
+    than in an index file or text-file pairing.
+
+    2) Index-file: reads a single delimited index file and applies the schema's
+    column mappings. Example datasets: Mozilla Common Voice Text Language
+    Identification dataset.
     """
 
     def __init__(self, schema: DatasetSchema, extract_dir: Path) -> None:
         super().__init__(schema, extract_dir)
+
         if schema.root_strategy == Strategy.GLOB:
             if not schema.file_pattern:
                 raise ValueError("OTH glob schema must specify 'file_pattern'")
-        else:
+        elif not schema.index_file:
             raise ValueError(
                 "OTH schema must specify either 'root_strategy: glob' with "
                 "'file_pattern', or an 'index_file'"
             )
 
     def load(self) -> pd.DataFrame:
-        return self._load_glob()
+        if self.schema.root_strategy == Strategy.GLOB:
+            return self._load_glob()
+        raw_df = self._load_index_file()
+        if not self.schema.columns:
+            return raw_df
+        return self._apply_column_mappings(raw_df)
 
     def _load_glob(self) -> pd.DataFrame:
         """Glob for files and derive metadata from the directory hierarchy.
