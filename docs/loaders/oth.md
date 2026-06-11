@@ -1,10 +1,10 @@
 # OTH Loader
 
-Loader for **OTH** (Other) datasets (e.g. speaker verification, language identification).
+Loader for tasks classified as **OTH** (other).
 
-The OTH loader uses the **glob** strategy to walk directory-structured archives where metadata is encoded in the path hierarchy rather than in an index file.
+There are two parsing strategies, controlled by the `root_strategy` field in the schema.
 
-## Strategy
+## Strategies
 
 ### Glob (`root_strategy: "glob"`)
 
@@ -25,6 +25,19 @@ The loader recursively finds all files matching `file_pattern` and derives metad
 | `file_pattern` | Yes | Glob pattern to match files (e.g. `"**/*.wav"`). |
 | `splits` | No | List of subdirectory names to glob through. Each becomes a value in the `split` column. When omitted, the glob runs from the dataset root. |
 | `extract_files` | No | List of inner archives to extract before loading (see below). |
+
+### Index-file (default)
+
+When `root_strategy` is not `"glob"`, the loader reads a single delimited index file. If `columns` are configured, it applies the same column mapping and path-resolution logic as the [ASR loader](asr.md) (`file_path`/`file_content` dtypes, `base_audio_path`, `path_template`, etc.). If `columns` is omitted, the raw index file is returned as-is.
+
+**Controlled by:**
+
+| Field | Required | Description |
+|---|---|---|
+| `index_file` | Yes | Path to the index file, relative to the dataset root. |
+| `columns` | No | Mapping of logical column names to source columns and dtypes. When omitted, the raw index file is returned unchanged. |
+| `format` | No | Optional file format hint (`"csv"`, `"tsv"`, `"pipe"`). When omitted, the loader infers it from `index_file` where possible. |
+| `base_audio_path` | No | Directory prefix or list of directories used to resolve `file_path`/`file_content` dtype columns. |
 
 ---
 
@@ -85,3 +98,24 @@ Resulting DataFrame:
 |---|---|---|---|
 | `/path/to/TidyVoiceX_Train/id011210/en/en_40387752.wav` | `id011210` | `en` | `TidyVoiceX_Train` |
 | `/path/to/TidyVoiceX_Dev/id013915/lt/lt_36478609.wav` | `id013915` | `lt` | `TidyVoiceX_Dev` |
+
+### Index-file schema
+
+A dataset described by a single delimited index file, with column mappings applied. Example: the Mozilla Common Voice Text Language Identification dataset.
+
+```yaml
+dataset_id: "common-voice-text-langid"
+task: "OTH"
+format: "tsv"
+index_file: "data.tsv"
+
+columns:
+  sentence:
+    source_column: "sentence"
+    dtype: "string"
+  language:
+    source_column: "lang"
+    dtype: "category"
+```
+
+When `columns` is omitted, the index file is returned as a raw DataFrame with its original columns.
