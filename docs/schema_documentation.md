@@ -19,7 +19,7 @@ Under the hood, `load_dataset()` performs the following steps automatically:
 1. **Resolve the schema**: check local cache or the schema registry for `schema.yaml`. If the dataset is not registered this step raises a warning, so we never download an unsupported archive.
 2. **Download** the archive (with resume support). The schema we fetched in step 1 tells the loader how the files are structured.
 3. **Extract** the `.tar.gz` / `.zip` to a local directory.
-4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model) and dispatch to the task-specific loader (ASR, TTS, …), which returns the final **DataFrame**.
+4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model) and dispatch to the task-specific loader (ASR, TTS, OTH, …), which returns the final **DataFrame**.
 
 The schema file describes:
 
@@ -56,7 +56,7 @@ Every schema **must** have:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `dataset_id` | `str` | ✓ | Unique dataset identifier on MDC. |
-| `task` | `str` | ✓ | Task type: determines which loader is used (e.g. `"ASR"`, `"TTS"`). |
+| `task` | `str` | ✓ | Task type: determines which loader is used (`"ASR"`, `"TTS"`, `"OTH"`). |
 
 ### Loading strategies
 
@@ -68,6 +68,7 @@ strategy is inferred from the fields present in the schema:
 | **Index-based** (default) | A metadata file (CSV / TSV / pipe-delimited) lists each sample.     | `index_file`, `columns` |
 | **Multi-split** | Multiple split files (train, dev, test, …) each containing samples. | `root_strategy: "multi_split"`, `splits` |
 | **Paired-glob** | Each audio file has a matching `.txt` file, no index file at all.   | `root_strategy: "paired_glob"`, `file_pattern`, `audio_extension` |
+| **Glob** | Directory-structured dataset with metadata encoded in the path hierarchy. | `root_strategy: "glob"`, `file_pattern` |
 
 ### Index-based fields
 
@@ -98,6 +99,22 @@ strategy is inferred from the fields present in the schema:
 | `root_strategy` | — | ✓ | Must be `"paired_glob"`. |
 | `file_pattern` | — | ✓ | Glob pattern to find text files (e.g. `"**/*.txt"`). |
 | `audio_extension` | — | ✓ | Extension of the matching audio files (e.g. `".webm"`). |
+
+### Glob fields
+
+| Field | Default | Required | Description |
+|---|---|---|---|
+| `root_strategy` | — | ✓ | Must be `"glob"`. |
+| `file_pattern` | — | ✓ | Glob pattern to match files (e.g. `"**/*.wav"`). |
+| `splits` | — | ✗ | List of subdirectory names to glob through. Each becomes a value in the `split` column. When omitted, the glob runs from the dataset root. |
+
+### Inner archive extraction
+
+| Field | Default | Required | Description |
+|---|---|---|---|
+| `extract_files` | — | ✗ | List of archive paths (relative to dataset root) to extract before loading. Supports `.tar.gz`, `.tar.bz2`, `.tar.xz`, and `.zip`. Extraction is skipped on subsequent runs. |
+
+This field is task-agnostic — it works with any loader.
 
 
 ## Column mapping

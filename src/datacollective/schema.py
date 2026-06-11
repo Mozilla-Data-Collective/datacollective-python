@@ -137,6 +137,15 @@ class DatasetSchema(BaseModel):
     sections: list[str] | None = None
     section_root: str | None = None
 
+    # --- Inner archive extraction ---
+    extract_files: list[str] | None = Field(
+        default=None,
+        description=(
+            "List of archive paths (relative to dataset root) that must be "
+            "extracted before loading, e.g. ['Train.tar.gz', 'Dev.tar.gz']"
+        ),
+    )
+
     # --- Schema versioning ---
     checksum: str | None = Field(
         default=None, description="archive checksum for cache validation"
@@ -262,6 +271,7 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         "splits_file_pattern",
         "sections",
         "section_root",
+        "extract_files",
         "checksum",
     }
     extra = {k: v for k, v in data.items() if k not in known_keys}
@@ -284,6 +294,7 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         splits_file_pattern=data.get("splits_file_pattern"),
         sections=data.get("sections"),
         section_root=data.get("section_root"),
+        extract_files=data.get("extract_files"),
         checksum=data.get("checksum"),
         extra=extra,
     )

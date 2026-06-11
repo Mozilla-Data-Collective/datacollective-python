@@ -97,9 +97,33 @@ class TestLoadDatasetFromSchema:
         assert list(df.columns) == ["id", "sentence", "lang"]
         assert df["lang"].dtype.name == "category"
 
+    def test_dispatches_oth_glob(self, tmp_path: Path) -> None:
+        """An OTH glob schema should load via OTHLoader and derive metadata from the path."""
+        _write(tmp_path / "spk1" / "en" / "a.wav", "")
+        _write(tmp_path / "spk2" / "fr" / "b.wav", "")
+
+        schema = DatasetSchema(
+            dataset_id="test-oth",
+            task="OTH",
+            root_strategy="glob",
+            file_pattern="**/*.wav",
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert len(df) == 2
+        assert list(df.columns) == ["audio_path", "language", "speaker_id"]
+        assert set(df["language"]) == {"en", "fr"}
+        assert set(df["speaker_id"]) == {"spk1", "spk2"}
+
+    def test_oth_glob_requires_file_pattern(self, tmp_path: Path) -> None:
+        schema = DatasetSchema(
+            dataset_id="test-oth", task="OTH", root_strategy="glob"
+        )
+        with pytest.raises(ValueError, match="must specify 'file_pattern'"):
+            _load_dataset_from_schema(schema, tmp_path)
+
     def test_oth_requires_index_file(self, tmp_path: Path) -> None:
         schema = DatasetSchema(dataset_id="test-oth", task="OTH")
-        with pytest.raises(ValueError, match="OTH schema must specify 'index_file'"):
+        with pytest.raises(ValueError, match="'root_strategy: glob'.*or an 'index_file'"):
             _load_dataset_from_schema(schema, tmp_path)
 
     def test_unknown_task_raises(self, tmp_path: Path) -> None:
