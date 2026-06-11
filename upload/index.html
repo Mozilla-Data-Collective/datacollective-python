@@ -493,6 +493,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tuning-the-part-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning the Part Size
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#resumable-uploads" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1202,6 +1213,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#tuning-the-part-size" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tuning the Part Size
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#resumable-uploads" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1378,7 +1400,6 @@
 <li>An API key from the Mozilla Data Collective <a href="https://mozilladatacollective.com/api-reference">dashboard</a></li>
 <li>Your dataset packaged as an archive file (<code>.tar.gz</code>, uploads use <code>application/gzip</code>)</li>
 <li>All the required metadata for the dataset submission</li>
-<li>Dataset archives must be <strong>150GB or less</strong></li>
 </ul>
 <h3 id="configuration">Configuration</h3>
 <p>Set your API key as an environment variable:</p>
@@ -1443,9 +1464,33 @@
 </span></code></pre></div>
 <p>For predefined licenses, pass <code>licenseAbbreviation=License.&lt;VALUE&gt;</code> and leave <code>licenseUrl</code> and <code>license</code> unset. For a custom license, pass a custom string to <code>license</code> and optionally include <code>licenseUrl</code> and <code>licenseAbbreviation</code>.</p>
 <h3 id="visibility">Visibility</h3>
-<ul>
-<li><code>visibility</code> controls who can access the dataset and must be one of the <code>Visibility</code> enum values: <code>Visibility.PUBLIC</code>, <code>Visibility.PRIVATE</code>, or <code>Visibility.RESTRICTED</code>.</li>
-</ul>
+<p><code>visibility</code> controls who can access the dataset and must be one of the <code>Visibility</code> enum values: </p>
+<table>
+<thead>
+<tr>
+<th>Value</th>
+<th>Visible to:</th>
+<th>Who can download:</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Visibility.PUBLIC</code></td>
+<td>Everyone</td>
+<td>Everyone</td>
+</tr>
+<tr>
+<td><code>Visibility.PRIVATE</code></td>
+<td>Everyone</td>
+<td>Your organization &amp; Approved requesters only</td>
+</tr>
+<tr>
+<td><code>Visibility.RESTRICTED</code></td>
+<td>Your organization</td>
+<td>Your organization (via SDK)</td>
+</tr>
+</tbody>
+</table>
 <h2 id="upload-a-new-file-version-to-an-approved-dataset">Upload a New File Version to an Approved Dataset</h2>
 <p>Use <code>upload_dataset_file</code> when the dataset already exists on the platform and is already in the <strong>Published / Approved</strong> state.</p>
 <ol>
@@ -1565,6 +1610,25 @@ You can also find your submission ID by going to your <a href="https://mozillada
 </span><span id="__span-8-8"><a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">submission</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;submission&quot;</span><span class="p">]</span>
 </span><span id="__span-8-9"><a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Submission status: </span><span class="si">{</span><span class="n">submission</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
+<h2 id="tuning-the-part-size">Tuning the Part Size</h2>
+<p>Uploads are <strong>multipart</strong>: the file is split into fixed-size chunks ("parts") that are uploaded one by one. Both <code>upload_dataset_file</code> and <code>create_submission_with_upload</code> accept a <code>part_size</code> argument (in bytes) to control this. It defaults to <strong>10 MB</strong>.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">upload_dataset_file</span><span class="p">(</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/dataset.tar.gz&quot;</span><span class="p">,</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">part_size</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>  <span class="c1"># 20 MB parts</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="p">)</span>
+</span></code></pre></div>
+<p><strong>Why change it?</strong></p>
+<ul>
+<li><strong>Larger parts</strong> mean fewer parts overall, so fewer requests and less per-part overhead — useful on fast, reliable connections and for very large files (see the limit below).</li>
+<li><strong>Smaller parts</strong> give finer-grained resume: after an interruption only the unfinished part is re-uploaded, not a large chunk. Handy on slow or flaky connections. Note that the storage backend requires every part except the last to be at least <strong>5 MB</strong>, so that is the practical lower bound.</li>
+</ul>
+<p><strong>The <code>MAX_UPLOAD_PARTS</code> limit</strong></p>
+<p>A single upload can have at most <strong>10,000 parts</strong>. This means <code>part_size</code> must be large enough that <code>ceil(file_size / part_size) ≤ 10,000</code>. The SDK checks this up front and raises a <code>ValueError</code> telling you the minimum <code>part_size</code> to use, rather than failing partway through the upload. For example, a 1 TB file needs parts of at least ~100 MB.</p>
+<blockquote>
+<p>[!NOTE]
+When <strong>resuming</strong> an interrupted upload, <code>part_size</code> is ignored — the SDK reuses the part size recorded in the state file so the already-uploaded parts stay valid.</p>
+</blockquote>
 <h2 id="resumable-uploads">Resumable Uploads</h2>
 <p>The SDK automatically handles interrupted uploads using a state file.</p>
 <h3 id="how-it-works">How It Works</h3>
@@ -1577,41 +1641,41 @@ You can also find your submission ID by going to your <a href="https://mozillada
 <h3 id="automatic-resume">Automatic Resume</h3>
 <p>Simply rerun the same upload call after an interruption.</p>
 <h4 id="using-create_submission_with_upload">Using create_submission_with_upload</h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_submission_with_upload</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># First attempt (interrupted)</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/dataset.tar.gz&quot;</span><span class="p">,</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">)</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="c1"># Second attempt (resumes automatically)</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/dataset.tar.gz&quot;</span><span class="p">,</span>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="p">)</span>
-</span></code></pre></div>
-<h4 id="using-upload_dataset_file">Using upload_dataset_file</h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload_dataset_file</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_submission_with_upload</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="c1"># First attempt (interrupted)</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
-</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/your/dataset.tar.gz&quot;</span><span class="p">,</span>
-</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/dataset.tar.gz&quot;</span><span class="p">,</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
 </span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="p">)</span>
-</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
-</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="c1"># Second attempt (resumes automatically)</span>
-</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
-</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/your/dataset.tar.gz&quot;</span><span class="p">,</span>
-</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
-</span><span id="__span-10-13"><a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="p">)</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="c1"># Second attempt (resumes automatically)</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/dataset.tar.gz&quot;</span><span class="p">,</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="p">)</span>
+</span></code></pre></div>
+<h4 id="using-upload_dataset_file">Using upload_dataset_file</h4>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload_dataset_file</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># First attempt (interrupted)</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/your/dataset.tar.gz&quot;</span><span class="p">,</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="p">)</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="c1"># Second attempt (resumes automatically)</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/your/dataset.tar.gz&quot;</span><span class="p">,</span>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="custom-state-file-location">Custom State File Location</h3>
 <p>You can specify a custom location for the state file:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/dataset.tar.gz&quot;</span><span class="p">,</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span><span class="p">,</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">state_path</span><span class="o">=</span><span class="s2">&quot;/custom/path/upload-state.json&quot;</span><span class="p">,</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/dataset.tar.gz&quot;</span><span class="p">,</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span><span class="p">,</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">state_path</span><span class="o">=</span><span class="s2">&quot;/custom/path/upload-state.json&quot;</span><span class="p">,</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="disabling-resume">Disabling Resume</h3>
 <p>To force a fresh upload (ignoring any existing state), simply delete the state file 
