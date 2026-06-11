@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 from pathlib import Path
 
@@ -61,4 +62,38 @@ def test_upload_dataset_file_updates_approved_dataset_version(
     assert upload_state.filename == example_dataset_archive_path.name
     assert upload_state.parts
     assert upload_state.checksum
+    assert not state_path.exists(), "Upload state should be cleaned up after success"
+
+
+def test_upload_dataset_file_with_non_default_part_size(
+    tmp_path: Path,
+    live_api_env: None,
+    approved_dataset_submission_id: str,
+) -> None:
+    # The storage backend requires every part except the last to be >= 5 MB,
+    # so use a 5 MB part size (different from the 10 MB default) on a file just
+    # over that threshold to force a genuine two-part multipart upload.
+    part_size = 5 * 1024 * 1024  # 5 MB
+    file_size = int(part_size * 1.5)  # 7.5 MB
+    file_path = tmp_path / "custom-part-size-dataset.tar.gz"
+    file_path.write_bytes(b"\0" * file_size)
+    expected_parts = math.ceil(file_path.stat().st_size / part_size)
+    assert expected_parts == 2
+
+    state_path = tmp_path / "custom-part-size-upload-state.json"
+    upload_state = None
+    try:
+        upload_state = upload_dataset_file(
+            file_path=str(file_path),
+            submission_id=approved_dataset_submission_id,
+            state_path=str(state_path),
+            show_progress=False,
+            part_size=part_size,
+        )
+    except Exception as exc:  # noqa: BLE001
+        skip_if_rate_limited(exc)
+
+    assert upload_state is not None
+    assert upload_state.partSize == part_size
+    assert len(upload_state.parts) == expected_parts
     assert not state_path.exists(), "Upload state should be cleaned up after success"

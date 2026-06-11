@@ -22,7 +22,6 @@ Before uploading, ensure you have:
 - An API key from the Mozilla Data Collective [dashboard](https://mozilladatacollective.com/api-reference)
 - Your dataset packaged as an archive file (`.tar.gz`, uploads use `application/gzip`)
 - All the required metadata for the dataset submission
-- Dataset archives must be **150GB or less**
 
 ### Configuration
 
@@ -99,7 +98,14 @@ print(response)
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
 ### Visibility
-- `visibility` controls who can access the dataset and must be one of the `Visibility` enum values: `Visibility.PUBLIC`, `Visibility.PRIVATE`, or `Visibility.RESTRICTED`.
+
+`visibility` controls who can access the dataset and must be one of the `Visibility` enum values: 
+
+| Value                   | Visible to:       | Who can download:                            |
+|-------------------------|-------------------|----------------------------------------------|
+| `Visibility.PUBLIC`     | Everyone          | Everyone                                     |
+| `Visibility.PRIVATE`    | Everyone          | Your organization & Approved requesters only |
+| `Visibility.RESTRICTED` | Your organization | Your organization (via SDK)                  |
 
 ## Upload a New File Version to an Approved Dataset
 
@@ -245,6 +251,30 @@ response = submit_submission(
 submission = response["submission"]
 print(f"Submission status: {submission['status']}")
 ```
+
+## Tuning the Part Size
+
+Uploads are **multipart**: the file is split into fixed-size chunks ("parts") that are uploaded one by one. Both `upload_dataset_file` and `create_submission_with_upload` accept a `part_size` argument (in bytes) to control this. It defaults to **10 MB**.
+
+```python
+upload_dataset_file(
+    file_path="/path/to/dataset.tar.gz",
+    submission_id=submission_id,
+    part_size=20 * 1024 * 1024,  # 20 MB parts
+)
+```
+
+**Why change it?**
+
+- **Larger parts** mean fewer parts overall, so fewer requests and less per-part overhead — useful on fast, reliable connections and for very large files (see the limit below).
+- **Smaller parts** give finer-grained resume: after an interruption only the unfinished part is re-uploaded, not a large chunk. Handy on slow or flaky connections. Note that the storage backend requires every part except the last to be at least **5 MB**, so that is the practical lower bound.
+
+**The `MAX_UPLOAD_PARTS` limit**
+
+A single upload can have at most **10,000 parts**. This means `part_size` must be large enough that `ceil(file_size / part_size) ≤ 10,000`. The SDK checks this up front and raises a `ValueError` telling you the minimum `part_size` to use, rather than failing partway through the upload. For example, a 1 TB file needs parts of at least ~100 MB.
+
+> [!NOTE]
+> When **resuming** an interrupted upload, `part_size` is ignored — the SDK reuses the part size recorded in the state file so the already-uploaded parts stay valid.
 
 ## Resumable Uploads
 
