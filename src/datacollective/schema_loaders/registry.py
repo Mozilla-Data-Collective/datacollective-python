@@ -21,7 +21,6 @@ _TASK_REGISTRY: dict[str, Type[BaseSchemaLoader]] = {
     "ASR": ASRLoader,
     "OTH": OTHLoader,
     "TTS": TTSLoader,
-    "OTH": OTHLoader,
 }
 
 

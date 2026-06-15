@@ -115,15 +115,15 @@ class TestLoadDatasetFromSchema:
         assert set(df["speaker_id"]) == {"spk1", "spk2"}
 
     def test_oth_glob_requires_file_pattern(self, tmp_path: Path) -> None:
-        schema = DatasetSchema(
-            dataset_id="test-oth", task="OTH", root_strategy="glob"
-        )
+        schema = DatasetSchema(dataset_id="test-oth", task="OTH", root_strategy="glob")
         with pytest.raises(ValueError, match="must specify 'file_pattern'"):
             _load_dataset_from_schema(schema, tmp_path)
 
     def test_oth_requires_index_file(self, tmp_path: Path) -> None:
         schema = DatasetSchema(dataset_id="test-oth", task="OTH")
-        with pytest.raises(ValueError, match="'root_strategy: glob'.*or an 'index_file'"):
+        with pytest.raises(
+            ValueError, match="'root_strategy: glob'.*or an 'index_file'"
+        ):
             _load_dataset_from_schema(schema, tmp_path)
 
     def test_unknown_task_raises(self, tmp_path: Path) -> None:
