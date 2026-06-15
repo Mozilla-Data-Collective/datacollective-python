@@ -455,10 +455,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-2-upload-the-dataset-file" class="md-nav__link">
+  <a href="#step-2-update-submission-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Upload the Dataset File
+        Step 2: Update Submission Metadata
       
     </span>
   </a>
@@ -466,10 +466,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-3-update-submission-metadata" class="md-nav__link">
+  <a href="#step-3-upload-the-dataset-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Update Submission Metadata
+        Step 3: Upload the Dataset File
       
     </span>
   </a>
@@ -1175,10 +1175,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-2-upload-the-dataset-file" class="md-nav__link">
+  <a href="#step-2-update-submission-metadata" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 2: Upload the Dataset File
+        Step 2: Update Submission Metadata
       
     </span>
   </a>
@@ -1186,10 +1186,10 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#step-3-update-submission-metadata" class="md-nav__link">
+  <a href="#step-3-upload-the-dataset-file" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Step 3: Update Submission Metadata
+        Step 3: Upload the Dataset File
       
     </span>
   </a>
@@ -1388,8 +1388,8 @@
 <p>The SDK provides a complete workflow for uploading datasets:</p>
 <ol>
 <li><strong>Create a draft submission</strong> - Initialize a new dataset submission</li>
-<li><strong>Upload the dataset file</strong> - Upload your archive using resumable multipart uploads</li>
 <li><strong>Update submission metadata</strong> - Add required metadata fields to the submission</li>
+<li><strong>Upload the dataset file</strong> - Upload your archive using resumable multipart uploads</li>
 <li><strong>Submit for review</strong> - Finalize the submission for review</li>
 </ol>
 <p>Additionally, the functionality of uploading a dataset file can be used independently to upload a new archive version to an already approved and published dataset submission. Check the <a href="#upload-a-new-file-version-to-an-approved-dataset">Upload a New File Version to an Approved Dataset</a> section for more details.</p>
@@ -1553,52 +1553,54 @@ The value after <code>/profile/submissions/</code> is the <strong>submission ID<
 <p>Which should output something like:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>Created draft submission: cmmjpewijXXXXXXXXX
 </span></code></pre></div>
-<h3 id="step-2-upload-the-dataset-file">Step 2: Upload the Dataset File</h3>
+<h3 id="step-2-update-submission-metadata">Step 2: Update Submission Metadata</h3>
+<p>Fill in the datasheet fields for your submission. Set the metadata <strong>before</strong>
+uploading the file, so that if the upload is later interrupted or fails, the
+submission still has its metadata filled in.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">DatasetSubmission</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">License</span><span class="p">,</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">Task</span><span class="p">,</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">Visibility</span><span class="p">,</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">update_submission</span><span class="p">,</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">update_fields</span> <span class="o">=</span> <span class="n">DatasetSubmission</span><span class="p">(</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">task</span><span class="o">=</span><span class="n">Task</span><span class="o">.</span><span class="n">ASR</span><span class="p">,</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">licenseAbbreviation</span><span class="o">=</span><span class="n">License</span><span class="o">.</span><span class="n">CC_BY_4_0</span><span class="p">,</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">locale</span><span class="o">=</span><span class="s2">&quot;en-US&quot;</span><span class="p">,</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;TSV&quot;</span><span class="p">,</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="n">restrictions</span><span class="o">=</span><span class="s2">&quot;No restrictions.&quot;</span><span class="p">,</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="n">forbiddenUsage</span><span class="o">=</span><span class="s2">&quot;Do not use for unlawful purposes.&quot;</span><span class="p">,</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="n">pointOfContactFullName</span><span class="o">=</span><span class="s2">&quot;Jane Doe&quot;</span><span class="p">,</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>    <span class="n">pointOfContactEmail</span><span class="o">=</span><span class="s2">&quot;jane@example.com&quot;</span><span class="p">,</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="n">showContactInfo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="n">visibility</span><span class="o">=</span><span class="n">Visibility</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="c1"># ... other metadata fields ...</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="p">)</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="n">response</span> <span class="o">=</span> <span class="n">update_submission</span><span class="p">(</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">update_fields</span><span class="p">,</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="p">)</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata updated: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="step-3-upload-the-dataset-file">Step 3: Upload the Dataset File</h3>
 <p>Then, you can use the submission ID above to upload the dataset file:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload_dataset_file</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/your/dataset.tar.gz&quot;</span><span class="p">,</span>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="p">)</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Upload complete! File Upload ID: </span><span class="si">{</span><span class="n">upload_state</span><span class="o">.</span><span class="n">fileUploadId</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload_dataset_file</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">&quot;/path/to/your/dataset.tar.gz&quot;</span><span class="p">,</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="p">)</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Upload complete! File Upload ID: </span><span class="si">{</span><span class="n">upload_state</span><span class="o">.</span><span class="n">fileUploadId</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <blockquote>
 <p>[!TIP]
 You can also find your submission ID by going to your <a href="https://mozilladatacollective.com/profile/uploads">Uploads</a> in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., <code>https://mozilladatacollective.com/submissions/cmmjpewijXXXXXXXXX</code>).</p>
 </blockquote>
-<h3 id="step-3-update-submission-metadata">Step 3: Update Submission Metadata</h3>
-<p>Fill in the datasheet fields for your submission.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>    <span class="n">DatasetSubmission</span><span class="p">,</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">License</span><span class="p">,</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">Task</span><span class="p">,</span>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">Visibility</span><span class="p">,</span>
-</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">update_submission</span><span class="p">,</span>
-</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="p">)</span>
-</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>
-</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="n">update_fields</span> <span class="o">=</span> <span class="n">DatasetSubmission</span><span class="p">(</span>
-</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">task</span><span class="o">=</span><span class="n">Task</span><span class="o">.</span><span class="n">ASR</span><span class="p">,</span>
-</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">licenseAbbreviation</span><span class="o">=</span><span class="n">License</span><span class="o">.</span><span class="n">CC_BY_4_0</span><span class="p">,</span>
-</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    <span class="n">locale</span><span class="o">=</span><span class="s2">&quot;en-US&quot;</span><span class="p">,</span>
-</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;TSV&quot;</span><span class="p">,</span>
-</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>    <span class="n">restrictions</span><span class="o">=</span><span class="s2">&quot;No restrictions.&quot;</span><span class="p">,</span>
-</span><span id="__span-7-15"><a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>    <span class="n">forbiddenUsage</span><span class="o">=</span><span class="s2">&quot;Do not use for unlawful purposes.&quot;</span><span class="p">,</span>
-</span><span id="__span-7-16"><a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>    <span class="n">pointOfContactFullName</span><span class="o">=</span><span class="s2">&quot;Jane Doe&quot;</span><span class="p">,</span>
-</span><span id="__span-7-17"><a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>    <span class="n">pointOfContactEmail</span><span class="o">=</span><span class="s2">&quot;jane@example.com&quot;</span><span class="p">,</span>
-</span><span id="__span-7-18"><a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>    <span class="n">showContactInfo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="__span-7-19"><a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>    <span class="n">visibility</span><span class="o">=</span><span class="n">Visibility</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>
-</span><span id="__span-7-20"><a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a>    <span class="c1"># ... other metadata fields ...</span>
-</span><span id="__span-7-21"><a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a><span class="p">)</span>
-</span><span id="__span-7-22"><a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>
-</span><span id="__span-7-23"><a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a><span class="n">response</span> <span class="o">=</span> <span class="n">update_submission</span><span class="p">(</span>
-</span><span id="__span-7-24"><a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
-</span><span id="__span-7-25"><a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">update_fields</span><span class="p">,</span>
-</span><span id="__span-7-26"><a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a><span class="p">)</span>
-</span><span id="__span-7-27"><a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a>
-</span><span id="__span-7-28"><a id="__codelineno-7-28" name="__codelineno-7-28" href="#__codelineno-7-28"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Metadata updated: </span><span class="si">{</span><span class="n">response</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span></code></pre></div>
 <h3 id="step-4-submit-for-review">Step 4: Submit for Review</h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetSubmission</span><span class="p">,</span> <span class="n">submit_submission</span>
 </span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
