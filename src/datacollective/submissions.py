@@ -106,7 +106,7 @@ def create_submission_with_upload(
     part_size: int = DEFAULT_PART_SIZE,
 ) -> dict[str, Any]:
     """
-    Single point function to create a submission, upload a file, update metadata, and submit for review.
+    Single point function to create a submission, update metadata, upload a file, and submit for review.
     Allows for resuming an upload if interrupted by persisting state to a file.
 
     Args:
@@ -146,6 +146,10 @@ def create_submission_with_upload(
 
         logger.info(f"Draft created. Submission ID: {submission_id}")
 
+    logger.info("Updating submission metadata...")
+
+    update_submission(submission_id, submission)
+
     upload_state = upload_dataset_file(
         file_path=file_path,
         submission_id=submission_id,
@@ -160,10 +164,6 @@ def create_submission_with_upload(
     # the model to satisfy the local completeness check below.
     submission.fileUploadId = upload_state.fileUploadId
     _validate_final_submission_fields(submission, require_file_upload_id=True)
-
-    logger.info("Updating submission metadata...")
-
-    update_submission(submission_id, submission)
 
     logger.info("Submitting dataset for review...")
 
