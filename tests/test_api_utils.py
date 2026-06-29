@@ -71,3 +71,30 @@ def test_get_api_url_preserves_custom_url_without_warning(monkeypatch) -> None:
 
     assert api_url == "https://api.example.test/custom"
     assert not caught
+
+
+def test_redact_sensitive_masks_urls_tokens_and_emails() -> None:
+    payload = {
+        "downloadUrl": "https://signed.example.com/abc?sig=secret",
+        "presignedUrl": "https://signed.example.com/part",
+        "downloadToken": "tok_123",
+        "filename": "dataset.tar.gz",
+        "sizeBytes": 1000,
+        "parts": [{"partNumber": 1, "url": "https://signed.example.com/1"}],
+    }
+
+    redacted = api_utils._redact_sensitive(payload)
+
+    assert redacted["downloadUrl"] == api_utils._REDACTED
+    assert redacted["presignedUrl"] == api_utils._REDACTED
+    assert redacted["downloadToken"] == api_utils._REDACTED
+    # Non-sensitive fields are preserved, including nested ones.
+    assert redacted["filename"] == "dataset.tar.gz"
+    assert redacted["sizeBytes"] == 1000
+    assert redacted["parts"][0]["partNumber"] == 1
+    assert redacted["parts"][0]["url"] == api_utils._REDACTED
+
+
+def test_redact_sensitive_passes_through_non_dict_values() -> None:
+    assert api_utils._redact_sensitive(None) is None
+    assert api_utils._redact_sensitive("plain") == "plain"
