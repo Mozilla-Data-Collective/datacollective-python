@@ -111,13 +111,13 @@ class BaseSchemaLoader(abc.ABC):
         has its own index file. The section name is inferred from the parent directory of the index file.
         """
         sections = self._resolve_sections()
-        df = pd.DataFrame()
+        parts: list[pd.DataFrame] = []
         for section_path in sections:
             section_df = self._read_delimited_file(section_path)
             section_df["section"] = section_path.parents[0].name
-            df = pd.concat([df, section_df])
+            parts.append(section_df)
 
-        return df
+        return pd.concat(parts, ignore_index=True)
 
     def _resolve_sections(self) -> list:
         """
