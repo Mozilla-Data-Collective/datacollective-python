@@ -159,7 +159,7 @@ def _response_body_for_logging(resp: requests.Response, stream: bool = False) ->
     except Exception:
         return "<unavailable>"
     try:
-        # Redact secrets (e.g. presigned URLs) and PII from structured responses
+        # Redact sensitive info
         body: Any = _redact_sensitive(resp.json())
     except Exception:
         # Non-JSON body: no structured keys to redact, fall back to raw text
