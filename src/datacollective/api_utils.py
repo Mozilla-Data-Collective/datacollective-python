@@ -22,6 +22,12 @@ ENV_API_URL = "MDC_API_URL"
 ENV_DOWNLOAD_PATH = "MDC_DOWNLOAD_PATH"
 HTTP_TIMEOUT = (10, 60)  # (connect, read)
 _LEGACY_API_URL_NOTICE_EMITTED = False
+_SENSITIVE_KEY_SUBSTRINGS = (
+    "url",
+    "token",
+)
+_REDACTED = "***REDACTED***"
+
 
 load_dotenv(find_dotenv())
 
@@ -70,8 +76,8 @@ def _send_api_request(
 
     logger.debug(
         f"API request: {method.upper()} {url} (stream={stream})\n"
-        f"json_body: {json_body}"
-        f"params: {params}"
+        f"json_body: {_redact_sensitive(json_body)}"
+        f"params: {_redact_sensitive(params)}"
     )
 
     resp = requests.request(
@@ -149,9 +155,15 @@ def _response_body_for_logging(resp: requests.Response, stream: bool = False) ->
     if stream:
         return "<streamed response body omitted>"
     try:
-        status, body = resp.status_code, resp.text
+        status = resp.status_code
     except Exception:
         return "<unavailable>"
+    try:
+        # Redact secrets (e.g. presigned URLs) and PII from structured responses
+        body: Any = _redact_sensitive(resp.json())
+    except Exception:
+        # Non-JSON body: no structured keys to redact, fall back to raw text
+        body = resp.text
     return f"{status}: {body}"
 
 
@@ -227,3 +239,19 @@ def _format_bytes(bytes_val: int, base: int = 1024) -> str:
             return f"{value:.1f} {unit}"
         value /= base
     return ""
+
+
+def _redact_sensitive(value: Any) -> Any:
+    """Return a copy of *value* with sensitive dict keys redacted (recursively)."""
+    if isinstance(value, dict):
+        return {
+            key: (
+                _REDACTED
+                if any(sub in str(key).casefold() for sub in _SENSITIVE_KEY_SUBSTRINGS)
+                else _redact_sensitive(val)
+            )
+            for key, val in value.items()
+        }
+    if isinstance(value, list):
+        return [_redact_sensitive(item) for item in value]
+    return value
