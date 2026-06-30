@@ -260,17 +260,35 @@ def _state_matches(
     )
 
 
+def _uploaded_bytes(
+    parts_by_number: dict[int, str],
+    expected_parts: int,
+    part_size: int,
+    file_size: int,
+) -> int:
+    """Sum the byte size of already-uploaded parts.
+
+    Every part is ``part_size`` bytes except the final part, which holds the
+    remainder. Counting ``len(parts) * part_size`` over-counts when the final
+    (short) part has already been uploaded, so the last part is sized exactly.
+    """
+    last_part_size = file_size - (expected_parts - 1) * part_size
+    total = 0
+    for part_number in parts_by_number:
+        total += last_part_size if part_number == expected_parts else part_size
+    return total
+
+
 def _init_progress_bar(
     show_progress: bool,
     file_size: int,
-    part_size: int,
-    already_uploaded: int,
+    already_uploaded_bytes: int,
 ) -> ProgressBar | None:
     if not show_progress:
         return None
     progress_bar = ProgressBar(file_size)
-    if already_uploaded > 0:
-        progress_bar.update(already_uploaded * part_size)
+    if already_uploaded_bytes > 0:
+        progress_bar.update(already_uploaded_bytes)
         progress_bar._display()
     return progress_bar
 

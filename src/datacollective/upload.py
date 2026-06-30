@@ -13,6 +13,7 @@ from datacollective.upload_utils import (
     _expected_parts,
     _normalize_parts,
     _init_progress_bar,
+    _uploaded_bytes,
     _upload_missing_parts,
     _parts_from_mapping,
     _save_upload_state,
@@ -88,8 +89,12 @@ def upload_dataset_file(
     progress_bar = _init_progress_bar(
         show_progress=show_progress,
         file_size=state.fileSize,
-        part_size=state.partSize,
-        already_uploaded=len(parts_by_number),
+        already_uploaded_bytes=_uploaded_bytes(
+            parts_by_number=parts_by_number,
+            expected_parts=expected_parts,
+            part_size=state.partSize,
+            file_size=state.fileSize,
+        ),
     )
 
     bytes_read, checksum = _upload_missing_parts(
