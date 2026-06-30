@@ -5,6 +5,7 @@ import csv
 import re
 from enum import StrEnum
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 
@@ -111,13 +112,13 @@ class BaseSchemaLoader(abc.ABC):
         has its own index file. The section name is inferred from the parent directory of the index file.
         """
         sections = self._resolve_sections()
-        df = pd.DataFrame()
+        parts: list[pd.DataFrame] = []
         for section_path in sections:
             section_df = self._read_delimited_file(section_path)
             section_df["section"] = section_path.parents[0].name
-            df = pd.concat([df, section_df])
+            parts.append(section_df)
 
-        return df
+        return pd.concat(parts, ignore_index=True)
 
     def _resolve_sections(self) -> list:
         """
@@ -332,9 +333,9 @@ class BaseSchemaLoader(abc.ABC):
 
     def _resolve_file_path(
         self, value: object, col_map: ColumnMapping, row: pd.Series | None = None
-    ) -> str:
+    ) -> Any:
         if pd.isna(value):
-            return str(value)
+            return value
 
         source_value = str(value).strip()
         raw_value = source_value
@@ -376,10 +377,10 @@ class BaseSchemaLoader(abc.ABC):
 
     def _load_file_content(
         self, value: object, col_map: ColumnMapping, row: pd.Series | None = None
-    ) -> str:
+    ) -> Any:
         """Resolve a file path (like ``file_path`` dtype) and return its text content."""
         if pd.isna(value):  # if missing value, skip loading
-            return str(value)
+            return value
 
         # Remove whitespaces in the path
         raw = str(value).strip()
