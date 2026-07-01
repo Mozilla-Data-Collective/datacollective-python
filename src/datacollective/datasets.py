@@ -49,7 +49,7 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
     resp = _send_api_request(method="GET", url=url)
-    return dict(resp.json())
+    return resp.json()
 
 
 def download_dataset(
