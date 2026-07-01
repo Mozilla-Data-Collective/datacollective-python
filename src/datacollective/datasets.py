@@ -11,10 +11,8 @@ from datacollective.api_utils import (
 from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
     DOWNLOAD_SOURCE_SAVE,
+    _download_dataset,
     DOWNLOAD_SOURCE_LOAD,
-    _get_download_plan,
-    _resolve_download_dir,
-    _resolve_and_execute_download_plan,
 )
 from datacollective.logging_utils import (
     _enable_logging,
@@ -90,18 +88,18 @@ def download_dataset(
     _enable_logging(enable_logging)
     logger.info(f"Downloading dataset {dataset_id}")
 
-    _id = resolve_dataset_id(dataset_id)
-    download_plan = _get_download_plan(
-        _id,
-        download_directory,
-        download_source=DOWNLOAD_SOURCE_SAVE,
-    )
-    return _resolve_and_execute_download_plan(
-        download_plan=download_plan,
+    dataset_details = get_dataset_details(dataset_id)
+    _id = dataset_details["id"]
+
+    archive_path = _download_dataset(
+        dataset_id=_id,
+        archive_filename=dataset_details["filename"],
+        download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
         download_source=DOWNLOAD_SOURCE_SAVE,
     )
+    return archive_path
 
 
 def load_dataset(
@@ -147,31 +145,33 @@ def load_dataset(
         requests.HTTPError: For other non-2xx responses.
     """
     _enable_logging(enable_logging)
-    logger.info("Loading dataset `%s`", dataset_id)
+    logger.info(f"Loading dataset {dataset_id}")
 
-    _id = resolve_dataset_id(dataset_id)
+    dataset_details = get_dataset_details(dataset_id)
+    archive_filename = dataset_details["filename"]
+    _id = dataset_details["id"]
+    archive_checksum = dataset_details.get("checksum", "")
+
+    # try to fetch schema from registry
     schema = _get_dataset_schema(_id)
     if schema is None:
         raise RuntimeError(
             f"Dataset '{_id}' exists but is not supported by load_dataset yet. "
             f"You can download the raw archive with: download_dataset('{_id}'). "
-            f"If you are the data owner consider submitting a schema for your dataset via the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
+            f"If you are the data owner consider submitting a schema for your dataset via"
+            f" the registry: https://mozilla-data-collective.github.io/dataset-schema-registry/"
         )
 
-    download_plan = _get_download_plan(
-        _id,
-        download_directory,
-        download_source=DOWNLOAD_SOURCE_LOAD,
-    )
-    archive_checksum = download_plan.checksum
-
-    archive_path = _resolve_and_execute_download_plan(
-        download_plan=download_plan,
+    archive_path = _download_dataset(
+        dataset_id=_id,
+        archive_filename=archive_filename,
+        download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
         download_source=DOWNLOAD_SOURCE_LOAD,
     )
-    base_dir = _resolve_download_dir(download_directory)
+
+    base_dir = archive_path.parent
     extract_dir = _extract_archive(
         archive_path=archive_path,
         dest_dir=base_dir,
@@ -180,28 +180,6 @@ def load_dataset(
 
     schema = _resolve_schema(_id, extract_dir, archive_checksum)
     return _load_dataset_from_schema(schema, extract_dir)
-
-
-def resolve_dataset_id(dataset_id: str) -> str:
-    """
-    Resolves a dataset ID or slug to its canonical MDC ID.
-
-    Args:
-        dataset_id: The dataset ID (as shown in MDC platform) or slug.
-
-    Returns:
-        The canonical dataset ID.
-
-    Raises:
-        RuntimeError: If the dataset does not exist.
-    """
-    try:
-        dataset_details = get_dataset_details(dataset_id)
-        return dataset_details.get("id", "")
-    except FileNotFoundError:
-        raise RuntimeError(
-            f"Dataset '{dataset_id}' does not exist in MDC or the ID is mistyped."
-        )
 
 
 def save_dataset_to_disk(
