@@ -24,7 +24,6 @@ DOWNLOAD_SOURCE_LOAD = "load_dataset"
 
 class DownloadPlan(NonEmptyStrModel):
     download_url: str
-    filename: str
     target_filepath: Path
     tmp_filepath: Path
     size_bytes: int = Field(..., gt=0)
@@ -34,9 +33,90 @@ class DownloadPlan(NonEmptyStrModel):
     checksum_filepath: Path
 
 
+def _download_dataset(
+    dataset_id: str,
+    archive_filename: str,
+    download_directory: str | None,
+    show_progress: bool,
+    overwrite_existing: bool,
+    download_source: str | None = None,
+) -> Path:
+    """
+    Download a dataset archive from MDC to a local directory.
+
+    Flow:
+    1. Check if the dataset archive already exists in the download directory.
+        If it does and overwrite_existing is False, skip download.
+    2. Call the MDC API to get a download session URL and other necessary details.
+    3. If overwrite_existing is True, clean up any existing files.
+    4. Determine whether to resume download based on existing .checksum and .part files.
+        If not resuming, write a new .checksum file.
+    5. Execute the download plan, downloading to a temporary file.
+    6. Once download is complete, rename the temporary file to the target filename and remove the .checksum file.
+
+    Args:
+        dataset_id: The unique dataset ID.
+        archive_filename: The archive filename.
+        download_directory: The directory to download the dataset archive to.
+        show_progress: Show a progress bar when downloading the dataset.
+        overwrite_existing: If True, overwrite any existing dataset archive in the download directory.
+        download_source: Optional context appended to the User-Agent for download analytics.
+    Returns:
+        The full path to the downloaded dataset archive.
+    """
+    # Check for already fully downloaded cached version of the dataset archive
+    base_dir = _resolve_download_dir(download_directory)
+    target_filepath = base_dir / archive_filename
+    if target_filepath.exists() and not overwrite_existing:
+        logger.info(
+            f"Skipping download. Dataset archive already exists at `{str(target_filepath)}`"
+        )
+        return target_filepath
+
+    # Call MDC API to start download session
+    download_plan = _get_download_plan(
+        dataset_id=dataset_id,
+        target_filepath=target_filepath,
+        download_source=download_source,
+    )
+
+    # If overwriting, clean up any existing complete or partial download files
+    if overwrite_existing:
+        logger.info(
+            f"Overwriting existing file. Cleaning up any existing files at `{str(download_plan.target_filepath)}`"
+        )
+        _cleanup_partial_download(
+            download_plan.tmp_filepath, download_plan.checksum_filepath
+        )
+        if target_filepath.exists():
+            target_filepath.unlink()
+
+    # Determine whether to resume download based on existing .checksum and .part files
+    resume_checksum = _determine_resume_state(download_plan)
+
+    # Write checksum file before starting download (for potential resume later)
+    if download_plan.checksum and not resume_checksum:
+        download_plan.checksum_filepath.write_text(download_plan.checksum)
+
+    _execute_download_plan(
+        download_plan=download_plan,
+        resume_download_checksum=resume_checksum,
+        show_progress=show_progress,
+        download_source=download_source,
+    )
+
+    # Download complete. Rename temp file to target and remove checksum file
+    download_plan.tmp_filepath.replace(target_filepath)
+    if download_plan.checksum_filepath.exists():
+        download_plan.checksum_filepath.unlink()
+
+    logger.info(f"Saved dataset to `{target_filepath}`")
+    return target_filepath
+
+
 def _get_download_plan(
     dataset_id: str,
-    download_directory: str | None,
+    target_filepath: Path,
     download_source: str | None = None,
 ) -> DownloadPlan:
     """
@@ -44,18 +124,11 @@ def _get_download_plan(
 
     Args:
         dataset_id: The dataset ID (as shown in MDC platform).
-        download_directory: Directory where to save the downloaded dataset.
-            If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
+        target_filepath: Resolved, absolute full file path to save the downloaded dataset.
         download_source: Optional context appended to the User-Agent for download analytics.
 
     Returns:
-        a DownloadPlan containing:
-        - a download session URL created by the API
-        - the filename for the dataset archive defined by the API
-        - the final target filepath on disk where the archive will be saved
-        - a temporary path for atomic download
-        - the size of the dataset archive in bytes
-        - the checksum of the dataset
+        a DownloadPlan object
 
     Raises:
         ValueError: If dataset_id is empty.
@@ -64,44 +137,36 @@ def _get_download_plan(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
-    if not dataset_id or not dataset_id.strip():
-        raise ValueError("`dataset_id` must be a non-empty string")
-
-    base_dir = _resolve_download_dir(download_directory)
-
-    # Create a download session to get `downloadUrl` and `filename`
+    # Create a download session to get `downloadUrl` and `sizeBytes`
     session_url = f"{_get_api_url()}/datasets/{dataset_id}/download"
     resp = _send_api_request(
         method="POST", url=session_url, source_function=download_source
     )
 
-    payload: dict[str, Any] = dict(resp.json())
+    payload: dict[str, Any] = resp.json()
     download_url = payload.get("downloadUrl")
-    filename = payload.get("filename")
     size_bytes = payload.get("sizeBytes")
     checksum = payload.get("checksum")
 
-    if not download_url or not filename or not size_bytes:
+    if not download_url or not size_bytes:
         raise RuntimeError(f"Unexpected response format: {payload}")
-
-    target_filepath = base_dir / filename
 
     # Stream download to a temporary file for atomicity
     tmp_filepath = target_filepath.with_name(target_filepath.name + ".part")
 
     checksum_filepath = _get_checksum_filepath(target_filepath)
 
+    size_bytes = int(str(size_bytes))
     download_plan = DownloadPlan(
-        download_url=download_url,
-        filename=filename,
+        download_url=str(download_url),
         target_filepath=target_filepath,
         tmp_filepath=tmp_filepath,
-        size_bytes=int(size_bytes),
+        size_bytes=size_bytes,
         checksum=checksum,
         checksum_filepath=checksum_filepath,
     )
     logger.debug(
-        f"Download plan: filename={filename}, size={int(size_bytes)} bytes, target={target_filepath}",
+        f"Download plan: full path={target_filepath}, size={size_bytes} bytes, checksum={checksum}",
     )
     return download_plan
 
@@ -166,67 +231,6 @@ def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
     return None
 
 
-def _resolve_and_execute_download_plan(
-    download_plan: DownloadPlan,
-    show_progress: bool,
-    overwrite_existing: bool,
-    download_source: str | None = None,
-) -> Path:
-    """
-    Resolve the different scenarios / cases of the download plan and
-    execute the download through the API in the target directory.
-
-    Args:
-        download_plan: The DownloadPlan object with download details.
-        show_progress: Whether to show a progress bar during download.
-        overwrite_existing: Whether to overwrite existing complete archive file.
-        download_source: Optional context appended to the User-Agent for download analytics.
-    Returns:
-        Path to the downloaded dataset archive.
-    """
-
-    # Case 1: Skip download if complete dataset archive already exists
-    if download_plan.target_filepath.exists() and not overwrite_existing:
-        logger.info(
-            f"File already exists. "
-            f"Skipping download: `{str(download_plan.target_filepath)}`"
-        )
-        return Path(download_plan.target_filepath)
-
-    # If overwriting, clean up any existing complete or partial download files
-    if overwrite_existing:
-        logger.info(
-            f"Overwriting existing file. Cleaning up any existing files at `{str(download_plan.target_filepath)}`"
-        )
-        _cleanup_partial_download(
-            download_plan.tmp_filepath, download_plan.checksum_filepath
-        )
-        if download_plan.target_filepath.exists():
-            download_plan.target_filepath.unlink()
-
-    # Determine whether to resume download based on existing .checksum and .part files
-    resume_checksum = _determine_resume_state(download_plan)
-
-    # Write checksum file before starting download (for potential resume later)
-    if download_plan.checksum and not resume_checksum:
-        _write_checksum_file(download_plan.checksum_filepath, download_plan.checksum)
-
-    _execute_download_plan(
-        download_plan=download_plan,
-        resume_download_checksum=resume_checksum,
-        show_progress=show_progress,
-        download_source=download_source,
-    )
-
-    # Download complete. Rename temp file to target and remove checksum file
-    download_plan.tmp_filepath.replace(download_plan.target_filepath)
-    if download_plan.checksum_filepath.exists():
-        download_plan.checksum_filepath.unlink()
-
-    logger.info(f"Saved dataset to `{str(download_plan.target_filepath)}`")
-    return Path(download_plan.target_filepath)
-
-
 def _execute_download_plan(
     download_plan: DownloadPlan,
     resume_download_checksum: str | None,
@@ -253,7 +257,7 @@ def _execute_download_plan(
     progress_bar = None
     session_downloaded_bytes = 0
     total_downloaded_bytes = downloaded_bytes_so_far
-    logger.info(f"Downloading dataset: {download_plan.filename}")
+    logger.info(f"Downloading dataset: {download_plan.target_filepath}")
     if show_progress:
         progress_bar = ProgressBar(download_plan.size_bytes)
         progress_bar.update(downloaded_bytes_so_far)
@@ -317,11 +321,6 @@ def _resolve_download_dir(download_directory: str | None) -> Path:
 def _get_checksum_filepath(target_filepath: Path) -> Path:
     """Return the path to the .checksum file for a given target file."""
     return target_filepath.with_suffix(target_filepath.suffix + ".checksum")
-
-
-def _write_checksum_file(checksum_filepath: Path, checksum: str) -> None:
-    """Write the checksum to the .checksum file."""
-    checksum_filepath.write_text(checksum)
 
 
 def _read_checksum_file(checksum_filepath: Path) -> str | None:

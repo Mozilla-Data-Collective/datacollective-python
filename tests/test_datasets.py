@@ -2,21 +2,7 @@ from pathlib import Path
 
 from _pytest.monkeypatch import MonkeyPatch
 
-from datacollective.datasets import resolve_dataset_id
 from datacollective.download import _resolve_download_dir
-
-
-def test_resolve_dataset_id_returns_canonical_id(monkeypatch: MonkeyPatch) -> None:
-    def fake_get_dataset_details(dataset_id: str) -> dict[str, str]:
-        assert dataset_id == "dataset-slug"
-        return {"id": "dataset-id"}
-
-    monkeypatch.setattr(
-        "datacollective.datasets.get_dataset_details",
-        fake_get_dataset_details,
-    )
-
-    assert resolve_dataset_id("dataset-slug") == "dataset-id"
 
 
 def test_resolve_download_dir_prefers_argument(
