@@ -38,7 +38,6 @@ def _make_download_plan(
     target_filepath = tmp_path / "dataset.tar.gz"
     return DownloadPlan(
         download_url="https://example.com/download",
-        filename="dataset.tar.gz",
         target_filepath=target_filepath,
         tmp_filepath=target_filepath.with_name(target_filepath.name + ".part"),
         size_bytes=1000,
@@ -163,7 +162,6 @@ def test_get_download_plan_forwards_download_source(
         def json(self) -> dict[str, Any]:
             return {
                 "downloadUrl": "https://example.com/download",
-                "filename": "dataset.tar.gz",
                 "sizeBytes": 1000,
                 "checksum": "abc123",
             }
@@ -183,13 +181,12 @@ def test_get_download_plan_forwards_download_source(
         "datacollective.download._send_api_request", fake_send_api_request
     )
 
-    plan = _get_download_plan(
+    _get_download_plan(
         "dataset-id",
-        str(tmp_path),
+        tmp_path,
         download_source="load_dataset",
     )
 
-    assert plan.filename == "dataset.tar.gz"
     assert captured["method"] == "POST"
     assert captured["source_function"] == "load_dataset"
 
