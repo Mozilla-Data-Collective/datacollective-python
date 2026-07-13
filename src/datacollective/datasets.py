@@ -1,6 +1,5 @@
 import warnings
 from pathlib import Path
-from typing import Any
 
 import pandas as pd
 
@@ -8,6 +7,7 @@ from datacollective.api_utils import (
     _get_api_url,
     _send_api_request,
 )
+from datacollective.models import DatasetDetails, _require_archive_filename
 from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
     DOWNLOAD_SOURCE_SAVE,
@@ -25,15 +25,15 @@ from datacollective.schema import _get_dataset_schema
 logger = get_logger(__name__)
 
 
-def get_dataset_details(dataset_id: str) -> dict[str, Any]:
+def get_dataset_details(dataset_id: str) -> DatasetDetails:
     """
-    Return dataset details from the MDC API as a dictionary.
+    Return dataset details from the MDC API.
 
     Args:
         dataset_id: The dataset ID (as shown in MDC platform) or slug.
 
     Returns:
-        A dict with dataset details as returned by the API.
+        A DatasetDetails model with the dataset details as returned by the API.
 
     Raises:
         ValueError: If dataset_id is empty.
@@ -41,13 +41,14 @@ def get_dataset_details(dataset_id: str) -> dict[str, Any]:
         PermissionError: If access is denied (403).
         RuntimeError: If rate limit is exceeded (429).
         requests.HTTPError: For other non-2xx responses.
+        pydantic.ValidationError: If the API response is missing the `id` field.
     """
     if not dataset_id or not dataset_id.strip():
         raise ValueError("`dataset_id` must be a non-empty string")
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
     resp = _send_api_request(method="GET", url=url)
-    return resp.json()
+    return DatasetDetails.model_validate(resp.json())
 
 
 def download_dataset(
@@ -89,11 +90,10 @@ def download_dataset(
     logger.info(f"Downloading dataset {dataset_id}")
 
     dataset_details = get_dataset_details(dataset_id)
-    _id = dataset_details["id"]
 
     archive_path = _download_dataset(
-        dataset_id=_id,
-        archive_filename=dataset_details["filename"],
+        dataset_id=dataset_details.id,
+        archive_filename=_require_archive_filename(dataset_details),
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
@@ -148,9 +148,9 @@ def load_dataset(
     logger.info(f"Loading dataset {dataset_id}")
 
     dataset_details = get_dataset_details(dataset_id)
-    archive_filename = dataset_details["filename"]
-    _id = dataset_details["id"]
-    archive_checksum = dataset_details.get("checksum", "")
+    archive_filename = _require_archive_filename(dataset_details)
+    _id = dataset_details.id
+    archive_checksum = dataset_details.checksum or ""
 
     # try to fetch schema from registry
     schema = _get_dataset_schema(_id)
