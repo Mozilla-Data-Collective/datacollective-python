@@ -2,6 +2,7 @@ import pytest
 from pydantic import ValidationError
 
 from datacollective.models import (
+    DatasetDetails,
     DatasetSubmission,
     License,
     Task,
@@ -151,3 +152,61 @@ def test_visibility_rejects_invalid_value() -> None:
 def test_show_contact_info_accepts_boolean() -> None:
     assert DatasetSubmission(showContactInfo=True).showContactInfo is True
     assert DatasetSubmission(showContactInfo=False).showContactInfo is False
+
+
+def test_dataset_details_requires_id() -> None:
+    with pytest.raises(ValidationError):
+        DatasetDetails.model_validate({"filename": "dataset.tar.gz"})
+
+
+def test_dataset_details_missing_fields_default_to_none() -> None:
+    details = DatasetDetails.model_validate({"id": "abc"})
+    assert details.filename is None
+    assert details.checksum is None
+    assert details.name is None
+
+
+def test_dataset_details_keeps_unknown_fields() -> None:
+    details = DatasetDetails.model_validate(
+        {"id": "abc", "filename": "dataset.tar.gz", "brandNewField": 123}
+    )
+    assert details["brandNewField"] == 123
+    assert "brandNewField" in details
+    assert details.model_dump()["brandNewField"] == 123
+
+
+def test_dataset_details_accepts_unknown_enum_values() -> None:
+    details = DatasetDetails.model_validate(
+        {"id": "abc", "visibility": "hidden", "task": "BRAND_NEW_TASK"}
+    )
+    assert details.visibility == "hidden"
+    assert details.task == "BRAND_NEW_TASK"
+
+
+def test_dataset_details_dict_style_access() -> None:
+    details = DatasetDetails.model_validate({"id": "abc", "name": "My dataset"})
+    assert details["id"] == "abc"
+    assert details["name"] == "My dataset"
+    assert details.get("name") == "My dataset"
+    # keys the API did not return behave as absent, matching dict semantics,
+    # even for declared fields (which still read as None via attribute access)
+    assert details.get("checksum", "") == ""
+    assert details.get("missing") is None
+    assert "id" in details
+    assert "checksum" not in details
+    assert "missing" not in details
+    assert details.checksum is None
+    with pytest.raises(KeyError):
+        details["missing"]
+
+
+def test_submission_rejects_unknown_fields() -> None:
+    with pytest.raises(ValidationError):
+        DatasetSubmission.model_validate({"name": "My dataset", "brandNewField": 123})
+
+
+def test_submission_shared_fields_still_validated() -> None:
+    # NonEmptyStrModel validators must apply to fields inherited from DatasetFields
+    with pytest.raises(ValidationError):
+        DatasetSubmission(locale="   ")
+    assert DatasetSubmission(locale=" en-US ").locale == "en-US"
