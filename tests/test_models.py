@@ -206,7 +206,7 @@ def test_submission_rejects_unknown_fields() -> None:
 
 
 def test_submission_shared_fields_still_validated() -> None:
-    # NonEmptyStrModel validators must apply to fields inherited from DatasetFields
+    # NonEmptyStrModel validators must apply to fields inherited from Dataset
     with pytest.raises(ValidationError):
         DatasetSubmission(locale="   ")
     assert DatasetSubmission(locale=" en-US ").locale == "en-US"

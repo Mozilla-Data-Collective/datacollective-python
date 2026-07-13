@@ -191,7 +191,7 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
     DatasetSubmission schema aligned with the DB representation used
     for draft creation, metadata updates, and final submission.
 
-    Shared datasheet fields come from DatasetFields. This model overrides
+    Shared datasheet fields come from Dataset. This model overrides
     the enum-like ones with strict types so user input is validated before
     it is sent to the API.
     """
