@@ -98,15 +98,19 @@ class NonEmptyStrModel(BaseModel):
         return value
 
 
-class DatasetSubmission(NonEmptyStrModel):
+class Dataset(BaseModel):
     """
-    DatasetSubmission schema aligned with the backend DB representation used
-    for draft creation, metadata updates, and final submission.
+    Dataset fields shared by the platform's dataset and dataset-submission
+    API payloads.
+
+    DatasetDetails inherits this class and is tolerant to new fields that are
+    not declared here in order to prevent breaking changes when the API returns new fields.
+    DatasetSubmission inherits this class and overrides the enum-like fields with
+    strict types for validation.
 
     Note: Fields are camelCase to match the API payloads.
     """
 
-    # Defined by the user
     name: str | None = Field(None, description="Name of the dataset.")
     shortDescription: str | None = Field(
         None, description="Brief description of the dataset."
@@ -117,14 +121,10 @@ class DatasetSubmission(NonEmptyStrModel):
     locale: str | None = Field(
         None, description="Language/locale code (e.g., `en-US`, `de-DE`)."
     )
-    task: Task | None = Field(
-        None,
-        description="ML task type — must be one of the Task enum values listed in api.md.",
-    )
+    task: str | None = Field(None, description="ML task type.")
     format: str | None = Field(None, description="File format (e.g., `TSV`, `WAV`).")
-    licenseAbbreviation: License | str | None = Field(
-        None,
-        description="Either one of the predefined License enum values or, optionally, a custom abbreviated license name.",
+    licenseAbbreviation: str | None = Field(
+        None, description="Abbreviated license name."
     )
     license: str | None = Field(
         None,
@@ -152,8 +152,6 @@ class DatasetSubmission(NonEmptyStrModel):
     fundedByEmail: str | None = Field(None, description="Funder's email.")
     legalContactFullName: str | None = Field(None, description="Legal contact name.")
     legalContactEmail: str | None = Field(None, description="Legal contact email.")
-    createdByFullName: str | None = Field(None, description="Creator's name.")
-    createdByEmail: str | None = Field(None, description="Creator's email.")
     intendedUsage: str | None = Field(None, description="Intended use of the dataset.")
     ethicalReviewProcess: str | None = Field(
         None, description="Description of ethical review conducted."
@@ -162,10 +160,57 @@ class DatasetSubmission(NonEmptyStrModel):
         None,
         description="Whether to publicly display the dataset contact information.",
     )
+    visibility: str | None = Field(
+        None,
+        description="Dataset visibility (e.g., `public`, `private`, `restricted`).",
+    )
+    # Defined by the API and not user-editable
+    id: str | None = Field(
+        None, description="Unique identifier as returned by the API."
+    )
+    organizationId: str | None = Field(
+        None,
+        description="Identifier for the organization that owns the dataset.",
+    )
+    slug: str | None = Field(
+        None,
+        description="URL-friendly slug generated from the name. Determined by the API.",
+    )
+    createdAt: str | None = Field(
+        None,
+        description="Timestamp when the record was created. Set by the API upon creation.",
+    )
+    updatedAt: str | None = Field(
+        None,
+        description="Timestamp when the record was last updated. Updated by the API on changes.",
+    )
+
+
+class DatasetSubmission(NonEmptyStrModel, Dataset):
+    """
+    DatasetSubmission schema aligned with the DB representation used
+    for draft creation, metadata updates, and final submission.
+
+    Shared datasheet fields come from Dataset. This model overrides
+    the enum-like ones with strict types so user input is validated before
+    it is sent to the API.
+    """
+
+    task: Task | None = Field(
+        None,
+        description="ML task type — must be one of the Task enum values listed in api.md.",
+    )
+    licenseAbbreviation: License | str | None = Field(
+        None,
+        description="Either one of the predefined License enum values or, optionally, a custom abbreviated license name.",
+    )
     visibility: Visibility | None = Field(
         None,
         description="Dataset visibility: `public`, `private`, or `restricted`.",
     )
+    # Submission-specific fields defined by the user
+    createdByFullName: str | None = Field(None, description="Creator's name.")
+    createdByEmail: str | None = Field(None, description="Creator's email.")
     exclusivityOptOut: bool | None = Field(
         None,
         description="True if dataset is non-exclusive; False if hosted exclusively on Mozilla Data Collective (see https://mozilladatacollective.com/terms/providers#appendix-1).",
@@ -174,24 +219,13 @@ class DatasetSubmission(NonEmptyStrModel):
         None,
         description="You confirm that you have the right to submit this dataset and that all information provided in the datasheet is accurate. Required to be True to complete the submission process",
     )
-    # Defined by the API and not user-editable
-    id: str | None = Field(
-        None, description="Unique identifier for the submission as returned by the API."
-    )
-    organizationId: str | None = Field(
-        None,
-        description="Identifier for the organization associated with the submission.",
-    )
+    # Submission-specific fields defined by the API and not user-editable
     createdBy: str | None = Field(
         None, description="Identifier for the user who created the submission."
     )
     status: str | None = Field(
         None,
         description="Current status of the submission (e.g., 'draft', 'submitted'). Determined by the API.",
-    )
-    slug: str | None = Field(
-        None,
-        description="URL-friendly slug for the submission, generated from the name. Determined by the API.",
     )
     fileUploadId: str | None = Field(
         None,
@@ -203,14 +237,6 @@ class DatasetSubmission(NonEmptyStrModel):
     submittedAt: str | None = Field(
         None,
         description="Timestamp when the submission was finalized and submitted. Set by the API upon submission.",
-    )
-    createdAt: str | None = Field(
-        None,
-        description="Timestamp when the submission was created. Set by the API upon creation.",
-    )
-    updatedAt: str | None = Field(
-        None,
-        description="Timestamp when the submission was last updated. Updated by the API on changes.",
     )
 
     @model_validator(mode="after")
@@ -227,6 +253,50 @@ class DatasetSubmission(NonEmptyStrModel):
                 "`license` is required when providing a custom `licenseAbbreviation` or `licenseUrl`"
             )
         return self
+
+
+class DatasetDetails(Dataset):
+    """
+    Dataset details as returned by the MDC API (read model).
+
+    Tolerant of platform schema changes by design: fields the API adds are
+    kept as extra attributes, fields the API removes simply read as None,
+    and enum-like fields (`task`, `visibility`) are plain strings so new
+    platform values don't fail validation. Only `id` is required.
+
+    Dict-style access (`details["id"]`, `details.get("checksum")`) is
+    supported for backward compatibility with the previous dict return type.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    id: str = Field(..., description="Unique identifier of the dataset.")
+    filename: str | None = Field(
+        None, description="Archive filename of the current dataset file version."
+    )
+    checksum: str | None = Field(
+        None, description="Checksum of the current dataset file version."
+    )
+    publishedAt: str | None = Field(
+        None, description="Timestamp when the dataset was published."
+    )
+
+    def __contains__(self, key: object) -> bool:
+        # Mirrors the previous dict semantics: only keys the API actually
+        # returned are "present", even though declared fields always exist
+        # as attributes (defaulting to None).
+        return isinstance(key, str) and key in self.model_fields_set
+
+    def __getitem__(self, key: str) -> Any:
+        if key not in self:
+            raise KeyError(key)
+        return getattr(self, key)
+
+    def get(self, key: str, default: Any = None) -> Any:
+        try:
+            return self[key]
+        except KeyError:
+            return default
 
 
 FINAL_SUBMISSION_REQUIRED_FIELDS = (
@@ -347,3 +417,11 @@ def _should_validate_local_final_submission(
     submission: DatasetSubmission,
 ) -> bool:
     return bool(submission.model_fields_set & FINAL_SUBMISSION_LOCAL_FIELDS)
+
+
+def _require_archive_filename(details: DatasetDetails) -> str:
+    if not details.filename:
+        raise RuntimeError(
+            f"Dataset '{details.id}' details did not include an archive filename."
+        )
+    return details.filename
