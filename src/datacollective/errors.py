@@ -42,7 +42,8 @@ class DownloadError(Exception):
         return "Download failed. Unfortunately this dataset does not support resuming downloads — please try again."
 
 
-RATE_LIMIT_ERROR = "Rate limit exceeded. Please try again later."
+class MissingDependencyError(ImportError):
+    """Raised when an optional dependency required for a feature is not installed."""
 
 
 class RateLimitError(RuntimeError):
@@ -50,9 +51,8 @@ class RateLimitError(RuntimeError):
 
     def __init__(
         self,
-        message: str = RATE_LIMIT_ERROR,
         *,
         response: requests.Response | None = None,
     ) -> None:
         self.response = response
-        super().__init__(message)
+        super().__init__("Rate limit exceeded. Please try again later.")

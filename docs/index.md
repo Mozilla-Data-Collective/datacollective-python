@@ -7,7 +7,8 @@ This library helps you:
 
 - Authenticate with the Mozilla Data Collective.
 - Download datasets to local storage.
-- Load supported datasets into AI-friendly formats, such as pandas DataFrames.
+- Load supported datasets into AI-friendly formats, such as pandas DataFrames
+  and HuggingFace Datasets.
 
 ## Installation
 
@@ -195,6 +196,56 @@ to filter, aggregate, and analyze the data.
 
 > For details on how `schema.yaml` files drive the loading process, see
 > [Schema-Based Dataset Loading](schema_documentation.md).
+
+### Return as HuggingFace Dataset object
+
+You can also load supported datasets directly as HuggingFace
+[`datasets`](https://huggingface.co/docs/datasets) objects. This requires the
+optional `hf` dependency:
+
+```bash
+uv add "datacollective[hf]"  # or pip install "datacollective[hf]"
+```
+
+Then pass `return_format="hf"` to `load_dataset`:
+
+```python
+from datacollective import load_dataset
+
+ds = load_dataset("your-dataset-id", return_format="hf")
+```
+
+The returned object is a `Dataset`, or a `DatasetDict` keyed by split name
+(e.g. `ds["train"]`) if the dataset defines multiple splits. If you want an
+iterable variant to consume lazily in a training loop, call
+[`ds.to_iterable_dataset()`](https://huggingface.co/docs/datasets/main/en/package_reference/main_classes#datasets.Dataset.to_iterable_dataset)
+on the returned object.
+
+If you call `load_dataset(..., return_format="hf")` without the `hf` extra dependency
+installed, a `MissingDependencyError` is raised with installation instructions.
+
+#### Lazily decoding audio with HF's `Audio()`
+
+Audio columns (e.g. in ASR/TTS datasets) are returned as file path strings.
+To decode the audio lazily on access, cast the column to the
+[`Audio`](https://huggingface.co/docs/datasets/audio_load) feature type.
+Audio decoding requires extra dependencies, which you can install with
+`pip install "datasets[audio]"` or `uv add "datasets[audio]"`:
+
+```python
+from datasets import Audio
+
+ds = ds.cast_column("audio", Audio(sampling_rate=16_000))
+
+# Nothing is decoded yet, decoding happens on access, one example at a time:
+sample = ds[0]["audio"]
+print(sample["sampling_rate"])  # 16000
+print(sample["array"])          # numpy array with the decoded waveform
+```
+
+This keeps memory usage low: the dataset only stores the file paths, and each
+audio file is decoded (and resampled, if you specify a `sampling_rate`) at the
+moment you access it.
 
 ## Get dataset details
 
