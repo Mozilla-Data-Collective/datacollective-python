@@ -120,7 +120,7 @@ def test_convert_raises_without_datasets(
 
 def test_load_dataset_rejects_invalid_return_format() -> None:
     with pytest.raises(ValueError, match="Invalid return_format"):
-        load_dataset("some-dataset-id", return_format="parquet")  # type: ignore[arg-type]
+        load_dataset("some-dataset-id", return_format="parquet")  # type: ignore
 
 
 def test_load_dataset_hf_fails_fast_without_datasets(
