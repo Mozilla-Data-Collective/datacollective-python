@@ -1,5 +1,8 @@
+from __future__ import annotations
+
 import warnings
 from pathlib import Path
+from typing import TYPE_CHECKING, Literal, overload
 
 import pandas as pd
 
@@ -14,6 +17,7 @@ from datacollective.download import (
     _download_dataset,
     DOWNLOAD_SOURCE_LOAD,
 )
+from datacollective.hf_utils import _convert_to_hf, _require_datasets
 from datacollective.logging_utils import (
     _enable_logging,
     get_logger,
@@ -21,6 +25,11 @@ from datacollective.logging_utils import (
 from datacollective.schema_loaders.cache_schema import _resolve_schema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
 from datacollective.schema import _get_dataset_schema
+
+if TYPE_CHECKING:
+    from datasets import Dataset, DatasetDict
+
+RETURN_FORMATS = ("pandas", "hf")
 
 logger = get_logger(__name__)
 
@@ -102,6 +111,11 @@ def download_dataset(
     return archive_path
 
 
+# Added these two overload typing declarations in order to accurately type check
+# the return type of the function (DataFrame or Dataset | DatasetDict) depending
+# on the return_format value defined, otherwise type checkers would complaint since
+# the HF package is an optional dependency.
+@overload
 def load_dataset(
     dataset_id: str,
     download_directory: str | None = None,
@@ -109,9 +123,37 @@ def load_dataset(
     overwrite_existing: bool = False,
     overwrite_extracted: bool = False,
     enable_logging: bool = False,
-) -> pd.DataFrame:
+    return_format: Literal["pandas"] = "pandas",
+) -> pd.DataFrame: ...
+
+
+@overload
+def load_dataset(
+    dataset_id: str,
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
+    overwrite_extracted: bool = False,
+    enable_logging: bool = False,
+    *,
+    return_format: Literal["hf"],
+) -> Dataset | DatasetDict: ...
+
+
+def load_dataset(
+    dataset_id: str,
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
+    overwrite_extracted: bool = False,
+    enable_logging: bool = False,
+    return_format: Literal["pandas", "hf"] = "pandas",
+) -> pd.DataFrame | Dataset | DatasetDict:
     """
-    Download (if needed), extract (if not already extracted), and load the dataset into a pandas DataFrame.
+    Download (if needed), extract (if not already extracted), and load the dataset into memory.
+
+    By default, the dataset is returned as a pandas DataFrame. Pass `return_format="hf"`
+    to get a HuggingFace `datasets` object instead (requires the optional dependency datacollective[hf]).
 
     If the dataset archive already exists in the download directory, it will not be re-downloaded
     unless `overwrite_existing=True`.
@@ -134,16 +176,32 @@ def load_dataset(
             Only makes sense when overwrite_existing is False.
             Will check in the download directory for existing extracted files with the default naming of the folder.
         enable_logging: Whether to enable SDK logging to console and a local log file.
+        return_format: Format of the returned object. `"pandas"` (default) returns a
+            pandas DataFrame. `"hf"` returns a HuggingFace `Dataset`, or a `DatasetDict`
+            keyed by split name for datasets with multiple splits.
     Returns:
-        A pandas DataFrame with the loaded dataset.
+        A pandas DataFrame with the loaded dataset, or a HuggingFace `Dataset` /
+        `DatasetDict` when `return_format="hf"`.
 
     Raises:
-        ValueError: If dataset_id is empty or schema is unsupported.
+        ValueError: If dataset_id is empty, schema is unsupported, or `return_format`
+            is invalid.
+        MissingDependencyError: If `return_format="hf"` and the HuggingFace `datasets`
+            library is not installed.
         FileNotFoundError: If the dataset does not exist (404).
         PermissionError: If access is denied (403) or download directory is not writable.
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
+    if return_format not in RETURN_FORMATS:
+        raise ValueError(
+            f"Invalid return_format '{return_format}'. "
+            f"Supported formats: {', '.join(RETURN_FORMATS)}"
+        )
+    if return_format == "hf":
+        # Raise error here if the optional dependency is missing before any download
+        _require_datasets()
+
     _enable_logging(enable_logging)
     logger.info(f"Loading dataset {dataset_id}")
 
@@ -179,7 +237,11 @@ def load_dataset(
     )
 
     schema = _resolve_schema(_id, extract_dir, archive_checksum)
-    return _load_dataset_from_schema(schema, extract_dir)
+    df = _load_dataset_from_schema(schema, extract_dir)
+
+    if return_format == "hf":
+        return _convert_to_hf(df, schema)
+    return df
 
 
 def save_dataset_to_disk(

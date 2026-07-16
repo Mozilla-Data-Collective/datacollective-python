@@ -90,6 +90,16 @@ from datacollective import load_dataset
 dataset = load_dataset("your-dataset-id")
 ```
 
+7. **Or load it as a HuggingFace `Dataset` object** (requires the optional `hf` extra: `pip install / uv add "datacollective[hf]"`):
+
+```
+from datacollective import load_dataset
+
+dataset = load_dataset("your-dataset-id", return_format="hf")
+```
+
+Returns a `Dataset`, or a `DatasetDict` keyed by split name for datasets with multiple splits. See [our docs](https://Mozilla-Data-Collective.github.io/datacollective-python/#return-as-huggingface-dataset-object) for more details, including how to lazily decode audio with the `Audio()` feature.
+
 ## Programmatic submissions and uploads
 
 You can create dataset submissions and upload files with resumable uploads into the MDC platform programmatically using our Python SDK:

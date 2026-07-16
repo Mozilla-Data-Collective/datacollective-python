@@ -26,12 +26,18 @@ classifiers = [
 license = "MPL-2.0"
 license-files = ["LICENSE*"]
 
+[project.optional-dependencies]
+hf = [
+    "datasets>=5.0.0",
+]
+
 [dependency-groups]
 dev = [
     "pytest>=7.0.0",
     "pytest-cov>=4.0.0",
     "pre-commit>=3.0.0",
     "bump-my-version>=1.2.6",
+    "datasets>=5.0.0",
 ]
 
 docs = [

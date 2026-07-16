@@ -1,3 +1,4 @@
+import importlib.util
 from datacollective import get_dataset_details, download_dataset, load_dataset
 
 dataset_id_or_slug = "cmkfm9fbl00nto0070sdcrak2"
@@ -29,3 +30,19 @@ df = load_dataset(
 )
 
 print(df.head())
+
+if importlib.util.find_spec("datasets") is not None:
+    print(
+        f"Will load dataset as HuggingFace Dataset object from local directory: {path}"
+    )
+
+    ds = load_dataset(
+        dataset_id=dataset_id_or_slug,
+        download_directory=download_directory,
+        show_progress=True,
+        overwrite_existing=False,
+        overwrite_extracted=False,
+        enable_logging=True,
+        return_format="hf",
+    )
+    print(ds)
