@@ -433,6 +433,40 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Loading and Querying Datasets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#return-as-huggingface-dataset-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Return as HuggingFace Dataset object
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Return as HuggingFace Dataset object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lazily-decoding-audio-with-hfs-audio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lazily decoding audio with HF's Audio()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1074,6 +1108,40 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Loading and Querying Datasets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#return-as-huggingface-dataset-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Return as HuggingFace Dataset object
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Return as HuggingFace Dataset object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lazily-decoding-audio-with-hfs-audio" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Lazily decoding audio with HF's Audio()
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1175,7 +1243,8 @@
 <ul>
 <li>Authenticate with the Mozilla Data Collective.</li>
 <li>Download datasets to local storage.</li>
-<li>Load supported datasets into AI-friendly formats, such as pandas DataFrames.</li>
+<li>Load supported datasets into AI-friendly formats, such as pandas DataFrames
+  and HuggingFace Datasets.</li>
 </ul>
 <h2 id="installation">Installation</h2>
 <p>Install from PyPI:</p>
@@ -1330,12 +1399,48 @@ to filter, aggregate, and analyze the data.</p>
 <p>For details on how <code>schema.yaml</code> files drive the loading process, see
 <a href="schema_documentation/">Schema-Based Dataset Loading</a>.</p>
 </blockquote>
+<h3 id="return-as-huggingface-dataset-object">Return as HuggingFace Dataset object</h3>
+<p>You can also load supported datasets directly as HuggingFace
+<a href="https://huggingface.co/docs/datasets"><code>datasets</code></a> objects. This requires the
+optional <code>hf</code> dependency:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>add<span class="w"> </span><span class="s2">&quot;datacollective[hf]&quot;</span><span class="w">  </span><span class="c1"># or pip install &quot;datacollective[hf]&quot;</span>
+</span></code></pre></div>
+<p>Then pass <code>return_format="hf"</code> to <code>load_dataset</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;your-dataset-id&quot;</span><span class="p">,</span> <span class="n">return_format</span><span class="o">=</span><span class="s2">&quot;hf&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<p>The returned object is a <code>Dataset</code>, or a <code>DatasetDict</code> keyed by split name
+(e.g. <code>ds["train"]</code>) if the dataset defines multiple splits. If you want an
+iterable variant to consume lazily in a training loop, call
+<a href="https://huggingface.co/docs/datasets/main/en/package_reference/main_classes#datasets.Dataset.to_iterable_dataset"><code>ds.to_iterable_dataset()</code></a>
+on the returned object.</p>
+<p>If you call <code>load_dataset(..., return_format="hf")</code> without the <code>hf</code> extra dependency
+installed, a <code>MissingDependencyError</code> is raised with installation instructions.</p>
+<h4 id="lazily-decoding-audio-with-hfs-audio">Lazily decoding audio with HF's <code>Audio()</code></h4>
+<p>Audio columns (e.g. in ASR/TTS datasets) are returned as file path strings.
+To decode the audio lazily on access, cast the column to the
+<a href="https://huggingface.co/docs/datasets/audio_load"><code>Audio</code></a> feature type.
+Audio decoding requires extra dependencies, which you can install with
+<code>pip install "datasets[audio]"</code> or <code>uv add "datasets[audio]"</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Audio</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">cast_column</span><span class="p">(</span><span class="s2">&quot;audio&quot;</span><span class="p">,</span> <span class="n">Audio</span><span class="p">(</span><span class="n">sampling_rate</span><span class="o">=</span><span class="mi">16_000</span><span class="p">))</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Nothing is decoded yet, decoding happens on access, one example at a time:</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">sample</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;audio&quot;</span><span class="p">]</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;sampling_rate&quot;</span><span class="p">])</span>  <span class="c1"># 16000</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">&quot;array&quot;</span><span class="p">])</span>          <span class="c1"># numpy array with the decoded waveform</span>
+</span></code></pre></div>
+<p>This keeps memory usage low: the dataset only stores the file paths, and each
+audio file is decoded (and resampled, if you specify a <code>sampling_rate</code>) at the
+moment you access it.</p>
 <h2 id="get-dataset-details">Get dataset details</h2>
 <p>You can retrieve info from the datasheet of a dataset without downloading it:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_dataset_details</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">get_dataset_details</span><span class="p">(</span><span class="s2">&quot;your-dataset-id&quot;</span><span class="p">)</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_dataset_details</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">get_dataset_details</span><span class="p">(</span><span class="s2">&quot;your-dataset-id&quot;</span><span class="p">)</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="automatic-download-resume">Automatic Download Resume</h3>
 <p>The SDK automatically handles interrupted downloads. If a download is interrupted
@@ -1377,7 +1482,7 @@ The SDK identifies the data if the extracted folder name matches the archive nam
 </div>
 <h2 id="tests">Tests</h2>
 <p>Run the full test suite:
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>pytest<span class="w"> </span>-v
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>pytest<span class="w"> </span>-v
 </span></code></pre></div></p>
 <p>Internal SDK development workflows, including live E2E configuration and API
 endpoint overrides, are documented in <a href="library_development/">Internal Development</a>.</p>
