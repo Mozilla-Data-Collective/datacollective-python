@@ -9,6 +9,7 @@ from datasets import Dataset, DatasetDict
 
 from datacollective import load_dataset
 from datacollective.errors import MissingDependencyError
+from datacollective.models import DatasetDetails
 from datacollective.hf_utils import _convert_to_hf, _require_datasets
 from datacollective.schema import DatasetSchema
 
@@ -142,7 +143,7 @@ def _mock_load_pipeline(
     """Stub out the network/extract layers so load_dataset yields *df*."""
     monkeypatch.setattr(
         "datacollective.datasets.get_dataset_details",
-        lambda dataset_id: {"id": dataset_id, "filename": "data.tar.gz"},
+        lambda dataset_id: DatasetDetails(id=dataset_id, filename="data.tar.gz"),
     )
     monkeypatch.setattr(
         "datacollective.datasets._get_dataset_schema", lambda _id: schema
