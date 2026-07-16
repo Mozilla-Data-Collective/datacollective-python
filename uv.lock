@@ -457,7 +457,7 @@ provides-extras = ["hf"]
 [package.metadata.requires-dev]
 dev = [
     { name = "bump-my-version", specifier = ">=1.2.6" },
-    { name = "datasets", specifier = ">=2.14.0" },
+    { name = "datasets", specifier = ">=5.0.0" },
     { name = "pre-commit", specifier = ">=3.0.0" },
     { name = "pytest", specifier = ">=7.0.0" },
     { name = "pytest-cov", specifier = ">=4.0.0" },
