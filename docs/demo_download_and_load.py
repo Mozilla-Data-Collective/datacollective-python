@@ -1,5 +1,4 @@
 import importlib.util
-import json
 from datacollective import get_dataset_details, download_dataset, load_dataset
 
 dataset_id_or_slug = "cmkfm9fbl00nto0070sdcrak2"
@@ -8,7 +7,7 @@ download_directory = "downloads"
 details = get_dataset_details(dataset_id=dataset_id_or_slug)
 
 print(
-    f"Will download dataset with the following details: {json.dumps(details, indent=4)}"
+    f"Will download dataset with the following details: {details.model_dump_json(indent=4)}"
 )
 
 path = download_dataset(

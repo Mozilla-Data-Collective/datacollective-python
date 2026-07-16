@@ -8,7 +8,7 @@ import requests
 from datacollective.errors import DownloadError
 
 import datacollective.download as download_module
-from datacollective import download_dataset, get_dataset_details
+from datacollective import DatasetDetails, download_dataset, get_dataset_details
 from tests.e2e.conftest import skip_if_rate_limited
 
 
@@ -25,10 +25,11 @@ def test_get_dataset_details_live_api(
         skip_if_rate_limited(exc)
 
     assert details is not None
-    assert isinstance(details, dict)
-    assert details.get("id") == dev_dataset_id
-    dataset_name = details.get("name")
-    dataset_id = details.get("id")
+    assert isinstance(details, DatasetDetails)
+    assert details.id == dev_dataset_id
+    dataset_name = details.name
+    # dict-style access is kept for backward compatibility
+    dataset_id = details["id"]
     dataset_slug = details.get("slug")
     # verify they are non-empty strings
     assert isinstance(dataset_name, str)
