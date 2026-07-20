@@ -585,3 +585,139 @@ class TestASRMultiSplit:
         )
         with pytest.raises(RuntimeError, match="No split files"):
             ASRLoader(schema, tmp_path).load()
+
+
+def _write_json_sidecar(path: Path, filename: str, n_utts: int = 2) -> None:
+    import json
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    data = {
+        "audio": {"filename": filename, "duration_sec": 12.5, "sample_rate_hz": 44100},
+        "metadata": {"gender": "male", "id": "abc123"},
+        "transcriptions": [
+            {
+                "utt_id": f"{Path(filename).stem}_{i:04d}",
+                "speaker": f"SPEAKER{i % 2 + 1}",
+                "start_time": i * 2.0,
+                "end_time": i * 2.0 + 1.5,
+                "text": f"utterance {i}",
+            }
+            for i in range(1, n_utts + 1)
+        ],
+    }
+    path.write_text(json.dumps(data), encoding="utf-8")
+
+
+def _paired_glob_json_schema(**overrides) -> DatasetSchema:
+    fields = {
+        "dataset_id": "ds",
+        "task": "ASR",
+        "root_strategy": "paired_glob",
+        "format": "json",
+        "file_pattern": "**/*.merged.json",
+        "record_path": "transcriptions",
+        "columns": {
+            "audio_path": ColumnMapping(
+                source_column="audio.filename",
+                dtype="file_path",
+                path_match_strategy="exact",
+            ),
+            "transcription": ColumnMapping(source_column="text"),
+            "speaker_id": ColumnMapping(
+                source_column="speaker", dtype="category", optional=True
+            ),
+            "start_time": ColumnMapping(
+                source_column="start_time", dtype="float", optional=True
+            ),
+            "gender": ColumnMapping(
+                source_column="metadata.gender",
+                dtype="category",
+                optional=True,
+            ),
+        },
+    }
+    fields.update(overrides)
+    return DatasetSchema(**fields)
+
+
+class TestASRPairedGlobJSONValidation:
+    def test_requires_json_format(self, tmp_path: Path) -> None:
+        schema = _paired_glob_json_schema(format="tsv")
+        with pytest.raises(ValueError, match="format: json"):
+            ASRLoader(schema, tmp_path)
+
+    def test_requires_file_pattern(self, tmp_path: Path) -> None:
+        schema = _paired_glob_json_schema(file_pattern=None)
+        with pytest.raises(ValueError, match="file_pattern"):
+            ASRLoader(schema, tmp_path)
+
+    def test_requires_columns(self, tmp_path: Path) -> None:
+        schema = _paired_glob_json_schema(columns={})
+        with pytest.raises(ValueError, match="column mapping"):
+            ASRLoader(schema, tmp_path)
+
+
+class TestASRPairedGlobJSON:
+    def test_one_row_per_record_with_flattened_meta(self, tmp_path: Path) -> None:
+        _write_json_sidecar(tmp_path / "rec1.merged.json", "rec1.wav", n_utts=3)
+        _write_json_sidecar(tmp_path / "rec2.merged.json", "rec2.wav", n_utts=2)
+        (tmp_path / "rec1.wav").touch()
+        (tmp_path / "rec2.wav").touch()
+
+        df = ASRLoader(_paired_glob_json_schema(), tmp_path).load()
+
+        assert len(df) == 5
+        assert list(df.columns) == [
+            "audio_path",
+            "transcription",
+            "speaker_id",
+            "start_time",
+            "gender",
+        ]
+        # Per-recording fields repeat on every utterance row
+        assert set(Path(p).name for p in df["audio_path"]) == {"rec1.wav", "rec2.wav"}
+        assert (df["gender"] == "male").all()
+        assert df["start_time"].dtype == "float64"
+        assert df["transcription"].iloc[0] == "utterance 1"
+
+    def test_audio_resolved_via_exact_search(self, tmp_path: Path) -> None:
+        """Audio referenced by bare filename resolves even in nested layouts."""
+        _write_json_sidecar(tmp_path / "inner" / "rec1.merged.json", "rec1.wav")
+        (tmp_path / "inner" / "rec1.wav").touch()
+
+        df = ASRLoader(_paired_glob_json_schema(), tmp_path).load()
+        assert Path(df["audio_path"].iloc[0]).exists()
+
+    def test_without_record_path_one_row_per_file(self, tmp_path: Path) -> None:
+        _write_json_sidecar(tmp_path / "rec1.merged.json", "rec1.wav")
+        (tmp_path / "rec1.wav").touch()
+
+        schema = _paired_glob_json_schema(
+            record_path=None,
+            columns={
+                "audio_path": ColumnMapping(
+                    source_column="audio.filename",
+                    dtype="file_path",
+                    path_match_strategy="exact",
+                ),
+                "gender": ColumnMapping(
+                    source_column="metadata.gender", dtype="category"
+                ),
+            },
+        )
+        df = ASRLoader(schema, tmp_path).load()
+        assert len(df) == 1
+
+    def test_missing_record_path_key_raises(self, tmp_path: Path) -> None:
+        import json
+
+        (tmp_path / "rec1.merged.json").write_text(
+            json.dumps({"audio": {"filename": "rec1.wav"}}), encoding="utf-8"
+        )
+
+        with pytest.raises(KeyError, match="record_path 'transcriptions'"):
+            ASRLoader(_paired_glob_json_schema(), tmp_path).load()
+
+    def test_no_matching_files_raises(self, tmp_path: Path) -> None:
+        with pytest.raises(FileNotFoundError, match="No files matching"):
+            ASRLoader(_paired_glob_json_schema(), tmp_path).load()
