@@ -125,6 +125,13 @@ class DatasetSchema(BaseModel):
     content_mapping: ContentMapping | None = Field(
         default=None, description="Mapping for glob-based content extraction"
     )
+    record_path: str | None = Field(
+        default=None,
+        description=(
+            "for JSON sidecar files: top-level key holding the list of records "
+            '(e.g. "transcriptions"); one DataFrame row per record'
+        ),
+    )
 
     # --- Multi-split strategy (e.g. Common Voice) ---
     splits: list[str] | None = Field(
@@ -267,6 +274,7 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         "file_pattern",
         "audio_extension",
         "content_mapping",
+        "record_path",
         "splits",
         "splits_file_pattern",
         "sections",
@@ -290,6 +298,7 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         file_pattern=data.get("file_pattern"),
         audio_extension=data.get("audio_extension"),
         content_mapping=content_mapping,
+        record_path=data.get("record_path"),
         splits=data.get("splits"),
         splits_file_pattern=data.get("splits_file_pattern"),
         sections=data.get("sections"),
