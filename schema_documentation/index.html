@@ -514,6 +514,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#multi-sections-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-sections fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#glob-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1043,6 +1054,17 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#multi-sections-fields" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-sections fields
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#glob-fields" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1218,7 +1240,8 @@ column as audio file paths and the <code>sentence</code> column as transcription
 </table>
 <h3 id="loading-strategies">Loading strategies</h3>
 <p>The remaining fields depend on which <strong>strategy</strong> the dataset uses.  The
-strategy is inferred from the fields present in the schema:</p>
+strategy is selected with the <code>root_strategy</code> field; when it is omitted, the
+loader defaults to the index-based strategy:</p>
 <table>
 <thead>
 <tr>
@@ -1242,6 +1265,11 @@ strategy is inferred from the fields present in the schema:</p>
 <td><strong>Paired-glob</strong></td>
 <td>Each audio file has a matching sidecar file (<code>.txt</code> for TTS, JSON for ASR), no index file at all.</td>
 <td><code>root_strategy: "paired_glob"</code>, <code>file_pattern</code>, <code>audio_extension</code> (TTS) / <code>format: "json"</code>, <code>record_path</code>, <code>columns</code> (ASR)</td>
+</tr>
+<tr>
+<td><strong>Multi-sections</strong></td>
+<td>Multiple section directories, each with its own index file.</td>
+<td><code>root_strategy: "multi_sections"</code>, <code>sections</code>, <code>section_root</code>, <code>index_file</code></td>
 </tr>
 <tr>
 <td><strong>Glob</strong></td>
@@ -1433,6 +1461,45 @@ records:</p>
 </tbody>
 </table>
 <p>See <a href="../loaders/asr/">ASR loader</a> for a complete example.</p>
+<h3 id="multi-sections-fields">Multi-sections fields</h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>root_strategy</code></td>
+<td>—</td>
+<td>✓</td>
+<td>Must be <code>"multi_sections"</code>.</td>
+</tr>
+<tr>
+<td><code>sections</code></td>
+<td>—</td>
+<td>✓</td>
+<td>List of section directory names to load. Unlisted directories are ignored.</td>
+</tr>
+<tr>
+<td><code>section_root</code></td>
+<td>—</td>
+<td>✓</td>
+<td>Directory containing the section subdirectories, relative to the dataset root.</td>
+</tr>
+<tr>
+<td><code>index_file</code></td>
+<td>—</td>
+<td>✓</td>
+<td>Name of the per-section index file, resolved as <code>section_root/&lt;section&gt;/&lt;index_file&gt;</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Each section's index file is read as-is (no column mappings) and a <code>section</code>
+column with the directory name is added before concatenation.</p>
 <h3 id="glob-fields">Glob fields</h3>
 <table>
 <thead>
@@ -1591,8 +1658,9 @@ instead of a column name:</p>
 </tbody>
 </table>
 <h2 id="content-mapping">Content mapping</h2>
-<p>Used by <strong>glob-based</strong> strategies to describe how file contents become
-DataFrame columns:</p>
+<p><strong>Reserved for future use</strong> — <code>content_mapping</code> is accepted by the schema
+parser but not consumed by any current loader. It is intended for glob-based
+tasks (e.g. LM) to describe how file contents become DataFrame columns:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">content_mapping</span><span class="p">:</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_content&quot;</span><span class="w">     </span><span class="c1"># each file&#39;s text → &quot;text&quot; column</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">meta_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_name&quot;</span><span class="w"> </span><span class="c1"># filename → &quot;meta_source&quot; column</span>

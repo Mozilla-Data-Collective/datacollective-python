@@ -613,6 +613,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#multi-sections-strategy-root_strategy-multi_sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-sections strategy (root_strategy: "multi_sections")
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -646,6 +657,17 @@
     <span class="md-ellipsis">
       
         Paired-glob schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multi-sections-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-sections schema
       
     </span>
   </a>
@@ -878,6 +900,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#multi-sections-strategy-root_strategy-multi_sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-sections strategy (root_strategy: "multi_sections")
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -917,6 +950,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#multi-sections-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multi-sections schema
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -944,7 +988,7 @@
 
 <h1 id="tts-loader">TTS Loader</h1>
 <p>Loader for <strong>TTS</strong> (Text-to-Speech) datasets.</p>
-<p>There are two parsing strategies for TTS datasets, controlled by the <code>root_strategy</code> field in the schema.</p>
+<p>There are three parsing strategies for TTS datasets, controlled by the <code>root_strategy</code> field in the schema.</p>
 <h2 id="strategies">Strategies</h2>
 <h3 id="index-based-default">Index-based (default)</h3>
 <p>A CSV / TSV / pipe-delimited index file maps audio paths to transcriptions.</p>
@@ -1017,10 +1061,43 @@
 <td>✓</td>
 <td>Extension of the matching audio files (e.g. <code>".webm"</code>).</td>
 </tr>
+</tbody>
+</table>
+<h3 id="multi-sections-strategy-root_strategy-multi_sections">Multi-sections strategy (<code>root_strategy: "multi_sections"</code>)</h3>
+<p>For archives split into multiple section directories, each containing its own
+index file (e.g. <code>dataset/General/metadata.tsv</code>, <code>dataset/Chat/metadata.tsv</code>).
+The loader reads the index file of every listed section, adds a <code>section</code>
+column with the directory name, and concatenates the raw frames. Column
+mappings are <strong>not</strong> applied — the original index columns are returned as-is.</p>
+<p><strong>Controlled by:</strong></p>
+<table>
+<thead>
 <tr>
-<td><code>content_mapping</code></td>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>sections</code></td>
+<td>✓</td>
+<td>List of section directory names to load (e.g. <code>["General", "Chat"]</code>). Unlisted directories are ignored.</td>
+</tr>
+<tr>
+<td><code>section_root</code></td>
+<td>✓</td>
+<td>Directory containing the section subdirectories, relative to the dataset root.</td>
+</tr>
+<tr>
+<td><code>index_file</code></td>
+<td>✓</td>
+<td>Name of the per-section index file (e.g. <code>"metadata.tsv"</code>), resolved as <code>section_root/&lt;section&gt;/&lt;index_file&gt;</code>.</td>
+</tr>
+<tr>
+<td><code>format</code></td>
 <td>✗</td>
-<td>Optional mapping of file content to DataFrame columns.</td>
+<td>Optional file format hint (<code>"csv"</code>, <code>"tsv"</code>, <code>"pipe"</code>).</td>
 </tr>
 </tbody>
 </table>
@@ -1088,6 +1165,20 @@ hardcoding dataset-specific logic:</p>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;**/*.txt&quot;</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">audio_extension</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.webm&quot;</span>
 </span></code></pre></div>
+<h3 id="multi-sections-schema">Multi-sections schema</h3>
+<p>For a layout like <code>dataset/General/metadata.tsv</code>, <code>dataset/Chat/metadata.tsv</code>:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;example-tts-sections&quot;</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;TTS&quot;</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;multi_sections&quot;</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nt">section_root</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;dataset&quot;</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nt">sections</span><span class="p">:</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;General&quot;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Chat&quot;</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;metadata.tsv&quot;</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tsv&quot;</span>
+</span></code></pre></div>
+<p>The resulting DataFrame contains the raw index columns plus a <code>section</code>
+column (<code>General</code> / <code>Chat</code>).</p>
 
 
 

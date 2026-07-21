@@ -1120,17 +1120,22 @@
 <tr>
 <td><code>Strategy.MULTI_SPLIT</code></td>
 <td><code>"multi_split"</code></td>
-<td>Loads multiple files matching a pattern.</td>
+<td>Loads multiple split files matching a pattern (ASR).</td>
+</tr>
+<tr>
+<td><code>Strategy.MULTI_SECTIONS</code></td>
+<td><code>"multi_sections"</code></td>
+<td>Loads one index file per section directory, adding a <code>section</code> column (TTS).</td>
 </tr>
 <tr>
 <td><code>Strategy.PAIRED_GLOB</code></td>
 <td><code>"paired_glob"</code></td>
-<td>Pairs audio files with <code>.txt</code> files.</td>
+<td>Pairs audio files with sidecar files: <code>.txt</code> transcriptions (TTS) or JSON metadata/utterance files (ASR, with <code>format: "json"</code> and optional <code>record_path</code>).</td>
 </tr>
 <tr>
 <td><code>Strategy.GLOB</code></td>
 <td><code>"glob"</code></td>
-<td>Walks directory-structured datasets, deriving metadata from the path hierarchy.</td>
+<td>Walks directory-structured datasets, deriving metadata from the path hierarchy (OTH).</td>
 </tr>
 </tbody>
 </table>
@@ -1147,8 +1152,8 @@
 <li><strong><code>download_dataset()</code></strong>: Downloads the archive. (Skipped if already downloaded; previously called <code>save_dataset_to_disk()</code>)</li>
 <li><strong><code>_extract_archive()</code></strong>: Extracts it to a local directory. (Skipped if already extracted)</li>
 <li><strong><code>_resolve_schema()</code></strong>: Locates or downloads <code>schema.yaml</code>.</li>
-<li><strong><code>parse_schema()</code></strong>: Validates YAML into a <code>DatasetSchema</code> object.</li>
-<li><strong><code>load_dataset_from_schema()</code></strong>: <ul>
+<li><strong><code>_parse_schema()</code></strong>: Validates YAML into a <code>DatasetSchema</code> object.</li>
+<li><strong><code>_load_dataset_from_schema()</code></strong>: <ul>
 <li>If the schema specifies <code>extract_files</code>, extracts inner archives (skipped when already extracted).</li>
 <li>Finds the correct loader in the <strong>Registry</strong>.</li>
 <li>Calls <code>loader.load()</code>.</li>

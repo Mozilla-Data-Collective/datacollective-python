@@ -1016,7 +1016,8 @@
 <ul>
 <li><strong>Index-based</strong>: You have a central metadata file (CSV, TSV, or pipe-delimited) that lists paths to files and their transcriptions/metadata.</li>
 <li><strong>Multi-split</strong>: You have separate files for each split (e.g., <code>train.tsv</code>, <code>test.tsv</code>, <code>dev.tsv</code>).</li>
-<li><strong>Paired-glob</strong>: There is no index file; instead, each audio file has a matching <code>.txt</code> file with the same name.</li>
+<li><strong>Multi-sections</strong>: The archive is split into section directories, each with its own index file (e.g., <code>dataset/General/metadata.tsv</code>, <code>dataset/Chat/metadata.tsv</code>).</li>
+<li><strong>Paired-glob</strong>: There is no index file; instead, each audio file has a matching sidecar file — a <code>.txt</code> transcription with the same name (TTS), or a JSON file holding the audio filename, metadata, and time-aligned utterances (ASR, with <code>format: "json"</code>).</li>
 <li><strong>Glob</strong>: There is no index file or text pairing; metadata is encoded in the directory hierarchy (e.g., <code>speaker_id/language/utterance.wav</code>).</li>
 </ul>
 <h3 id="step-2-identify-the-task">Step 2: Identify the task</h3>
@@ -1024,7 +1025,7 @@
 <h3 id="step-3-write-the-schema">Step 3: Write the schema</h3>
 <p>Create a file named <code>schema.yaml</code>. Start with the basic required fields:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;your-dataset-id&quot;</span><span class="w">   </span><span class="c1"># The unique ID of the dataset on MDC</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ASR&quot;</span><span class="w">                    </span><span class="c1"># ASR or TTS</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ASR&quot;</span><span class="w">                    </span><span class="c1"># ASR, TTS, or OTH</span>
 </span></code></pre></div>
 <p>Then add the fields for your chosen strategy.</p>
 <h4 id="example-index-based-asr">Example: Index-based ASR</h4>
