@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../../docs/mdc_ccc.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -585,6 +585,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#paired-glob-json-strategy-root_strategy-paired_glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paired-glob JSON strategy (root_strategy: "paired_glob")
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -640,6 +651,17 @@
     <span class="md-ellipsis">
       
         Multi-split schema
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#paired-glob-json-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paired-glob JSON schema
       
     </span>
   </a>
@@ -900,6 +922,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#paired-glob-json-strategy-root_strategy-paired_glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paired-glob JSON strategy (root_strategy: "paired_glob")
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -961,6 +994,17 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#paired-glob-json-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Paired-glob JSON schema
+      
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -988,7 +1032,7 @@
 
 <h1 id="asr-loader">ASR Loader</h1>
 <p>Loader for <strong>ASR</strong> (Automatic Speech Recognition) datasets.</p>
-<p>There are two parsing strategies for ASR datasets, controlled by the <code>root_strategy</code> field in the schema.</p>
+<p>There are three parsing strategies for ASR datasets, controlled by the <code>root_strategy</code> field in the schema.</p>
 <h2 id="strategies">Strategies</h2>
 <h3 id="index-based-default">Index-based (default)</h3>
 <p>A CSV or TSV index file maps audio paths to transcriptions and other metadata columns.</p>
@@ -1055,6 +1099,56 @@
 <td><code>base_audio_path</code></td>
 <td>✗</td>
 <td><em>(optional)</em> Directory prefix or list of directories used to resolve <code>file_path</code> dtype columns.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="paired-glob-json-strategy-root_strategy-paired_glob">Paired-glob JSON strategy (<code>root_strategy: "paired_glob"</code>)</h3>
+<p>For datasets with <strong>no central index file</strong>, where each audio file is paired
+with a JSON sidecar (e.g. <code>recording.merged.json</code> + <code>recording.wav</code>). The
+loader globs for the JSON files, flattens each one into rows, and applies the
+regular column mappings.</p>
+<p>When <code>record_path</code> is set, the named top-level JSON key must hold a <strong>list of
+records</strong> (e.g. time-aligned utterances) and each record becomes one DataFrame
+row. The remaining top-level keys are flattened with dot notation
+(<code>audio.filename</code>, <code>metadata.speaker2_gender</code>, …) and repeated on every row of
+that file. Without <code>record_path</code>, each JSON file yields a single row.</p>
+<p>Audio pairing does not rely on filename-stem matching: source the <code>audio_path</code>
+column from a filename field inside the JSON and resolve it with
+<code>path_match_strategy: "exact"</code>.</p>
+<p><strong>Controlled by:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>format</code></td>
+<td>✓</td>
+<td>Must be <code>"json"</code>.</td>
+</tr>
+<tr>
+<td><code>file_pattern</code></td>
+<td>✓</td>
+<td>Glob pattern to find the JSON sidecars (e.g. <code>"**/*.merged.json"</code>).</td>
+</tr>
+<tr>
+<td><code>columns</code></td>
+<td>✓</td>
+<td>Mapping of logical column names to (dot-notation) source columns and dtypes.</td>
+</tr>
+<tr>
+<td><code>record_path</code></td>
+<td>✗</td>
+<td><em>(optional)</em> Top-level JSON key holding the list of records; one row per record.</td>
+</tr>
+<tr>
+<td><code>audio_extension</code></td>
+<td>✗</td>
+<td><em>(optional)</em> Extension of the paired audio files (e.g. <code>".wav"</code>), documentation / fallback.</td>
 </tr>
 </tbody>
 </table>
@@ -1280,6 +1374,67 @@ but returns the file's text content instead of the resolved path.</p>
 </span><span id="__span-5-62"><a id="__codelineno-5-62" name="__codelineno-5-62" href="#__codelineno-5-62"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;category&quot;</span>
 </span><span id="__span-5-63"><a id="__codelineno-5-63" name="__codelineno-5-63" href="#__codelineno-5-63"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
 </span></code></pre></div>
+<h3 id="paired-glob-json-schema">Paired-glob JSON schema</h3>
+<p>Each <code>*.merged.json</code> sidecar describes one WAV recording: an <code>audio</code> block
+(with the exact WAV filename), a flat <code>metadata</code> block, and a <code>transcriptions</code>
+array of time-aligned utterances. The schema below yields one row per
+utterance, with the per-recording <code>audio.*</code> / <code>metadata.*</code> fields repeated on
+every row:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;xxx&quot;</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ASR&quot;</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;paired_glob&quot;</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;json&quot;</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nt">file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;**/*.merged.json&quot;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nt">audio_extension</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.wav&quot;</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="nt">record_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;transcriptions&quot;</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;audio.filename&quot;</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">    </span><span class="nt">path_match_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;exact&quot;</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;text&quot;</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a><span class="w">  </span><span class="nt">utterance_id</span><span class="p">:</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;utt_id&quot;</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a><span class="w">  </span><span class="nt">speaker_id</span><span class="p">:</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;speaker&quot;</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;category&quot;</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a><span class="w">  </span><span class="nt">start_time</span><span class="p">:</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;start_time&quot;</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a><span class="w">  </span><span class="nt">end_time</span><span class="p">:</span>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;end_time&quot;</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span>
+</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-35"><a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a><span class="w">  </span><span class="nt">audio_duration_sec</span><span class="p">:</span>
+</span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;audio.duration_sec&quot;</span>
+</span><span id="__span-6-37"><a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;float&quot;</span>
+</span><span id="__span-6-38"><a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-39"><a id="__codelineno-6-39" name="__codelineno-6-39" href="#__codelineno-6-39"></a><span class="w">  </span><span class="nt">sample_rate_hz</span><span class="p">:</span>
+</span><span id="__span-6-40"><a id="__codelineno-6-40" name="__codelineno-6-40" href="#__codelineno-6-40"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;audio.sample_rate_hz&quot;</span>
+</span><span id="__span-6-41"><a id="__codelineno-6-41" name="__codelineno-6-41" href="#__codelineno-6-41"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;int&quot;</span>
+</span><span id="__span-6-42"><a id="__codelineno-6-42" name="__codelineno-6-42" href="#__codelineno-6-42"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-43"><a id="__codelineno-6-43" name="__codelineno-6-43" href="#__codelineno-6-43"></a><span class="w">  </span><span class="nt">gender</span><span class="p">:</span>
+</span><span id="__span-6-44"><a id="__codelineno-6-44" name="__codelineno-6-44" href="#__codelineno-6-44"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;metadata.speaker2_gender&quot;</span>
+</span><span id="__span-6-45"><a id="__codelineno-6-45" name="__codelineno-6-45" href="#__codelineno-6-45"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;category&quot;</span>
+</span><span id="__span-6-46"><a id="__codelineno-6-46" name="__codelineno-6-46" href="#__codelineno-6-46"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-47"><a id="__codelineno-6-47" name="__codelineno-6-47" href="#__codelineno-6-47"></a><span class="w">  </span><span class="nt">topic</span><span class="p">:</span>
+</span><span id="__span-6-48"><a id="__codelineno-6-48" name="__codelineno-6-48" href="#__codelineno-6-48"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;metadata.user_topic&quot;</span>
+</span><span id="__span-6-49"><a id="__codelineno-6-49" name="__codelineno-6-49" href="#__codelineno-6-49"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+</span><span id="__span-6-50"><a id="__codelineno-6-50" name="__codelineno-6-50" href="#__codelineno-6-50"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span><span id="__span-6-51"><a id="__codelineno-6-51" name="__codelineno-6-51" href="#__codelineno-6-51"></a><span class="w">  </span><span class="nt">validation_id</span><span class="p">:</span>
+</span><span id="__span-6-52"><a id="__codelineno-6-52" name="__codelineno-6-52" href="#__codelineno-6-52"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;metadata.val_id&quot;</span>
+</span><span id="__span-6-53"><a id="__codelineno-6-53" name="__codelineno-6-53" href="#__codelineno-6-53"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+</span><span id="__span-6-54"><a id="__codelineno-6-54" name="__codelineno-6-54" href="#__codelineno-6-54"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span></code></pre></div>
 
 
 
@@ -1334,7 +1489,7 @@ but returns the file's text content instead of the resolved path.</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["content.code.copy", "content.tabs.link"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>

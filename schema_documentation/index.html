@@ -19,7 +19,7 @@
       
       
       <link rel="icon" href="../docs/mdc_ccc.png">
-      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
       
@@ -27,7 +27,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.484c7ddc.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
@@ -1240,8 +1240,8 @@ strategy is inferred from the fields present in the schema:</p>
 </tr>
 <tr>
 <td><strong>Paired-glob</strong></td>
-<td>Each audio file has a matching <code>.txt</code> file, no index file at all.</td>
-<td><code>root_strategy: "paired_glob"</code>, <code>file_pattern</code>, <code>audio_extension</code></td>
+<td>Each audio file has a matching sidecar file (<code>.txt</code> for TTS, JSON for ASR), no index file at all.</td>
+<td><code>root_strategy: "paired_glob"</code>, <code>file_pattern</code>, <code>audio_extension</code> (TTS) / <code>format: "json"</code>, <code>record_path</code>, <code>columns</code> (ASR)</td>
 </tr>
 <tr>
 <td><strong>Glob</strong></td>
@@ -1349,6 +1349,8 @@ strategy is inferred from the fields present in the schema:</p>
 </tbody>
 </table>
 <h3 id="paired-glob-fields">Paired-glob fields</h3>
+<p><strong>TTS (text sidecars)</strong> — each audio file has a matching <code>.txt</code> file with the
+transcription; pairing is done on the filename stem:</p>
 <table>
 <thead>
 <tr>
@@ -1379,6 +1381,58 @@ strategy is inferred from the fields present in the schema:</p>
 </tr>
 </tbody>
 </table>
+<p><strong>ASR (JSON sidecars)</strong> — each audio file has a matching JSON file holding the
+audio filename, metadata, and (optionally) a list of time-aligned utterance
+records:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>root_strategy</code></td>
+<td>—</td>
+<td>✓</td>
+<td>Must be <code>"paired_glob"</code>.</td>
+</tr>
+<tr>
+<td><code>format</code></td>
+<td>—</td>
+<td>✓</td>
+<td>Must be <code>"json"</code>.</td>
+</tr>
+<tr>
+<td><code>file_pattern</code></td>
+<td>—</td>
+<td>✓</td>
+<td>Glob pattern to find the JSON sidecars (e.g. <code>"**/*.merged.json"</code>).</td>
+</tr>
+<tr>
+<td><code>columns</code></td>
+<td>—</td>
+<td>✓</td>
+<td>Column mappings over the flattened JSON; nested keys use dot notation (e.g. <code>audio.filename</code>, <code>metadata.speaker2_gender</code>).</td>
+</tr>
+<tr>
+<td><code>record_path</code></td>
+<td>—</td>
+<td>✗</td>
+<td>Top-level JSON key holding a list of records (e.g. <code>"transcriptions"</code>); each record becomes one row and the remaining top-level keys are repeated per row. When omitted, each JSON file yields one row.</td>
+</tr>
+<tr>
+<td><code>audio_extension</code></td>
+<td>—</td>
+<td>✗</td>
+<td>Extension of the paired audio files (e.g. <code>".wav"</code>). Pairing normally comes from a filename field inside the JSON, mapped as a <code>file_path</code> column with <code>path_match_strategy: "exact"</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../loaders/asr/">ASR loader</a> for a complete example.</p>
 <h3 id="glob-fields">Glob fields</h3>
 <table>
 <thead>
@@ -1614,7 +1668,7 @@ minimise API calls:</p>
       <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
       
     
   </body>
