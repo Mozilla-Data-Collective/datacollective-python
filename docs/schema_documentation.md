@@ -67,7 +67,7 @@ strategy is inferred from the fields present in the schema:
 |---|---------------------------------------------------------------------|---|
 | **Index-based** (default) | A metadata file (CSV / TSV / pipe-delimited) lists each sample.     | `index_file`, `columns` |
 | **Multi-split** | Multiple split files (train, dev, test, …) each containing samples. | `root_strategy: "multi_split"`, `splits` |
-| **Paired-glob** | Each audio file has a matching `.txt` file, no index file at all.   | `root_strategy: "paired_glob"`, `file_pattern`, `audio_extension` |
+| **Paired-glob** | Each audio file has a matching sidecar file (`.txt` for TTS, JSON for ASR), no index file at all. | `root_strategy: "paired_glob"`, `file_pattern`, `audio_extension` (TTS) / `format: "json"`, `record_path`, `columns` (ASR) |
 | **Glob** | Directory-structured dataset with metadata encoded in the path hierarchy. | `root_strategy: "glob"`, `file_pattern` |
 
 ### Index-based fields
@@ -94,11 +94,29 @@ strategy is inferred from the fields present in the schema:
 
 ### Paired-glob fields
 
+**TTS (text sidecars)** — each audio file has a matching `.txt` file with the
+transcription; pairing is done on the filename stem:
+
 | Field | Default | Required | Description |
 |---|---|---|---|
 | `root_strategy` | — | ✓ | Must be `"paired_glob"`. |
 | `file_pattern` | — | ✓ | Glob pattern to find text files (e.g. `"**/*.txt"`). |
 | `audio_extension` | — | ✓ | Extension of the matching audio files (e.g. `".webm"`). |
+
+**ASR (JSON sidecars)** — each audio file has a matching JSON file holding the
+audio filename, metadata, and (optionally) a list of time-aligned utterance
+records:
+
+| Field | Default | Required | Description |
+|---|---|---|---|
+| `root_strategy` | — | ✓ | Must be `"paired_glob"`. |
+| `format` | — | ✓ | Must be `"json"`. |
+| `file_pattern` | — | ✓ | Glob pattern to find the JSON sidecars (e.g. `"**/*.merged.json"`). |
+| `columns` | — | ✓ | Column mappings over the flattened JSON; nested keys use dot notation (e.g. `audio.filename`, `metadata.speaker2_gender`). |
+| `record_path` | — | ✗ | Top-level JSON key holding a list of records (e.g. `"transcriptions"`); each record becomes one row and the remaining top-level keys are repeated per row. When omitted, each JSON file yields one row. |
+| `audio_extension` | — | ✗ | Extension of the paired audio files (e.g. `".wav"`). Pairing normally comes from a filename field inside the JSON, mapped as a `file_path` column with `path_match_strategy: "exact"`. |
+
+See [ASR loader](./loaders/asr.md) for a complete example.
 
 ### Glob fields
 
