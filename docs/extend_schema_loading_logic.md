@@ -70,9 +70,10 @@ Strategies are defined in the `Strategy` enum in `src/datacollective/schema_load
 
 | Enum Member | YAML Value | Description |
 |---|---|---|
-| `Strategy.MULTI_SPLIT` | `"multi_split"` | Loads multiple files matching a pattern. |
-| `Strategy.PAIRED_GLOB` | `"paired_glob"` | Pairs audio files with `.txt` files. |
-| `Strategy.GLOB` | `"glob"` | Walks directory-structured datasets, deriving metadata from the path hierarchy. |
+| `Strategy.MULTI_SPLIT` | `"multi_split"` | Loads multiple split files matching a pattern (ASR). |
+| `Strategy.MULTI_SECTIONS` | `"multi_sections"` | Loads one index file per section directory, adding a `section` column (TTS). |
+| `Strategy.PAIRED_GLOB` | `"paired_glob"` | Pairs audio files with sidecar files: `.txt` transcriptions (TTS) or JSON metadata/utterance files (ASR, with `format: "json"` and optional `record_path`). |
+| `Strategy.GLOB` | `"glob"` | Walks directory-structured datasets, deriving metadata from the path hierarchy (OTH). |
 
 ### Adding a new strategy
 
@@ -89,8 +90,8 @@ When a user calls `load_dataset("id")`:
 1. **`download_dataset()`**: Downloads the archive. (Skipped if already downloaded; previously called `save_dataset_to_disk()`)
 2. **`_extract_archive()`**: Extracts it to a local directory. (Skipped if already extracted)
 3. **`_resolve_schema()`**: Locates or downloads `schema.yaml`.
-4. **`parse_schema()`**: Validates YAML into a `DatasetSchema` object.
-5. **`load_dataset_from_schema()`**: 
+4. **`_parse_schema()`**: Validates YAML into a `DatasetSchema` object.
+5. **`_load_dataset_from_schema()`**: 
     - If the schema specifies `extract_files`, extracts inner archives (skipped when already extracted).
     - Finds the correct loader in the **Registry**.
     - Calls `loader.load()`.

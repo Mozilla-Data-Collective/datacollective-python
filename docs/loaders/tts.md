@@ -2,7 +2,7 @@
 
 Loader for **TTS** (Text-to-Speech) datasets.
 
-There are two parsing strategies for TTS datasets, controlled by the `root_strategy` field in the schema.
+There are three parsing strategies for TTS datasets, controlled by the `root_strategy` field in the schema.
 
 ## Strategies
 
@@ -32,7 +32,23 @@ Each audio file has a matching `.txt` file with the same stem. The loader recurs
 |---|---|---|
 | `file_pattern` | ✓ | Glob pattern used to find text files (e.g. `"**/*.txt"`). |
 | `audio_extension` | ✓ | Extension of the matching audio files (e.g. `".webm"`). |
-| `content_mapping` | ✗ | Optional mapping of file content to DataFrame columns. |
+
+### Multi-sections strategy (`root_strategy: "multi_sections"`)
+
+For archives split into multiple section directories, each containing its own
+index file (e.g. `dataset/General/metadata.tsv`, `dataset/Chat/metadata.tsv`).
+The loader reads the index file of every listed section, adds a `section`
+column with the directory name, and concatenates the raw frames. Column
+mappings are **not** applied — the original index columns are returned as-is.
+
+**Controlled by:**
+
+| Field | Required | Description |
+|---|---|---|
+| `sections` | ✓ | List of section directory names to load (e.g. `["General", "Chat"]`). Unlisted directories are ignored. |
+| `section_root` | ✓ | Directory containing the section subdirectories, relative to the dataset root. |
+| `index_file` | ✓ | Name of the per-section index file (e.g. `"metadata.tsv"`), resolved as `section_root/<section>/<index_file>`. |
+| `format` | ✗ | Optional file format hint (`"csv"`, `"tsv"`, `"pipe"`). |
 
 ---
 
@@ -112,3 +128,22 @@ root_strategy: "paired_glob"
 file_pattern: "**/*.txt"
 audio_extension: ".webm"
 ```
+
+### Multi-sections schema
+
+For a layout like `dataset/General/metadata.tsv`, `dataset/Chat/metadata.tsv`:
+
+```yaml
+dataset_id: "example-tts-sections"
+task: "TTS"
+root_strategy: "multi_sections"
+section_root: "dataset"
+sections:
+  - "General"
+  - "Chat"
+index_file: "metadata.tsv"
+format: "tsv"
+```
+
+The resulting DataFrame contains the raw index columns plus a `section`
+column (`General` / `Chat`).

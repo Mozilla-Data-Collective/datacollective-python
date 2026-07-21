@@ -61,13 +61,15 @@ Every schema **must** have:
 ### Loading strategies
 
 The remaining fields depend on which **strategy** the dataset uses.  The
-strategy is inferred from the fields present in the schema:
+strategy is selected with the `root_strategy` field; when it is omitted, the
+loader defaults to the index-based strategy:
 
 | Strategy | When to use                                                         | Key fields |
 |---|---------------------------------------------------------------------|---|
 | **Index-based** (default) | A metadata file (CSV / TSV / pipe-delimited) lists each sample.     | `index_file`, `columns` |
 | **Multi-split** | Multiple split files (train, dev, test, …) each containing samples. | `root_strategy: "multi_split"`, `splits` |
 | **Paired-glob** | Each audio file has a matching sidecar file (`.txt` for TTS, JSON for ASR), no index file at all. | `root_strategy: "paired_glob"`, `file_pattern`, `audio_extension` (TTS) / `format: "json"`, `record_path`, `columns` (ASR) |
+| **Multi-sections** | Multiple section directories, each with its own index file. | `root_strategy: "multi_sections"`, `sections`, `section_root`, `index_file` |
 | **Glob** | Directory-structured dataset with metadata encoded in the path hierarchy. | `root_strategy: "glob"`, `file_pattern` |
 
 ### Index-based fields
@@ -117,6 +119,18 @@ records:
 | `audio_extension` | — | ✗ | Extension of the paired audio files (e.g. `".wav"`). Pairing normally comes from a filename field inside the JSON, mapped as a `file_path` column with `path_match_strategy: "exact"`. |
 
 See [ASR loader](./loaders/asr.md) for a complete example.
+
+### Multi-sections fields
+
+| Field | Default | Required | Description |
+|---|---|---|---|
+| `root_strategy` | — | ✓ | Must be `"multi_sections"`. |
+| `sections` | — | ✓ | List of section directory names to load. Unlisted directories are ignored. |
+| `section_root` | — | ✓ | Directory containing the section subdirectories, relative to the dataset root. |
+| `index_file` | — | ✓ | Name of the per-section index file, resolved as `section_root/<section>/<index_file>`. |
+
+Each section's index file is read as-is (no column mappings) and a `section`
+column with the directory name is added before concatenation.
 
 ### Glob fields
 
@@ -237,8 +251,9 @@ columns:
 
 ## Content mapping
 
-Used by **glob-based** strategies to describe how file contents become
-DataFrame columns:
+**Reserved for future use** — `content_mapping` is accepted by the schema
+parser but not consumed by any current loader. It is intended for glob-based
+tasks (e.g. LM) to describe how file contents become DataFrame columns:
 
 ```yaml
 content_mapping:

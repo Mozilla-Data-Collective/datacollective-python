@@ -14,7 +14,8 @@ Extract your dataset and understand its file layout. This determines which **str
 
 - **Index-based**: You have a central metadata file (CSV, TSV, or pipe-delimited) that lists paths to files and their transcriptions/metadata.
 - **Multi-split**: You have separate files for each split (e.g., `train.tsv`, `test.tsv`, `dev.tsv`).
-- **Paired-glob**: There is no index file; instead, each audio file has a matching `.txt` file with the same name.
+- **Multi-sections**: The archive is split into section directories, each with its own index file (e.g., `dataset/General/metadata.tsv`, `dataset/Chat/metadata.tsv`).
+- **Paired-glob**: There is no index file; instead, each audio file has a matching sidecar file — a `.txt` transcription with the same name (TTS), or a JSON file holding the audio filename, metadata, and time-aligned utterances (ASR, with `format: "json"`).
 - **Glob**: There is no index file or text pairing; metadata is encoded in the directory hierarchy (e.g., `speaker_id/language/utterance.wav`).
 
 ### Step 2: Identify the task
@@ -27,7 +28,7 @@ Create a file named `schema.yaml`. Start with the basic required fields:
 
 ```yaml
 dataset_id: "your-dataset-id"   # The unique ID of the dataset on MDC
-task: "ASR"                    # ASR or TTS
+task: "ASR"                    # ASR, TTS, or OTH
 ```
 
 Then add the fields for your chosen strategy.
