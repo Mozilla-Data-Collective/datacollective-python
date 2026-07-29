@@ -19,6 +19,7 @@ The SDK also supports **resumable uploads**, meaning if an upload is interrupted
 
 Before uploading, ensure you have:
 
+- Your Request Access to Upload **approved** in your MDC [profile](https://mozilladatacollective.com/profile/uploads). 
 - An API key from the Mozilla Data Collective [dashboard](https://mozilladatacollective.com/api-reference)
 - Your dataset packaged as an archive file (`.tar.gz`, uploads use `application/gzip`)
 - All the required metadata for the dataset submission

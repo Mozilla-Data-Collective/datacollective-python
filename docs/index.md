@@ -112,6 +112,11 @@ The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets
 The SDK supports creating dataset submissions and uploading files with resumable uploads. 
 The upload state is stored in a JSON file alongside the archive so interrupted uploads can resume automatically.
 
+> [!ΝΟΤΕ]
+> In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
+> navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab.
+
+
 ```python
 from datacollective import (
     DatasetSubmission,

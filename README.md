@@ -102,6 +102,10 @@ Returns a `Dataset`, or a `DatasetDict` keyed by split name for datasets with mu
 
 ## Programmatic submissions and uploads
 
+> [!ΝΟΤΕ]
+> In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
+> navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab.
+
 You can create dataset submissions and upload files with resumable uploads into the MDC platform programmatically using our Python SDK:
 
 ```python
