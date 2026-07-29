@@ -87,7 +87,7 @@ export MDC_LOG_PATH=/path/to/save/the/log/files
 **IMPORTANT NOTE:** Before trying to access any dataset, make sure you have thoroughly **read and agreed** to the specific dataset's conditions & licensing terms.
 
 !!! tip
-    You can find the `dataset-id` by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the `/datasets/` path. For example, for URL `https://mozilladatacollective.com/datasets/cmflnuzw6lrt9e6ui4kwcshvn` dataset id will be `cmflnuzw6lrt9e6ui4kwcshvn`.
+    You can find the dataset's **ID** and/or **slug** from its page on the MDC platform. Click the **Download** button and select **API / Python Access**, then switch to the **Python Library** tab on the pop-up modal. The **Dataset ID** and **Dataset Slug** appear at the bottom of the modal. Both can be used interchangeably in the Python library, but the slug is a more user-friendly identifier.
 
 ### Download a dataset
 
@@ -111,6 +111,11 @@ The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets
 
 The SDK supports creating dataset submissions and uploading files with resumable uploads. 
 The upload state is stored in a JSON file alongside the archive so interrupted uploads can resume automatically.
+
+> [!ΝΟΤΕ]
+> In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
+> navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab.
+
 
 ```python
 from datacollective import (
