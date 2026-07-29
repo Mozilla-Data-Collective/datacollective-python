@@ -1,6 +1,5 @@
 import os
 import platform
-import warnings
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +12,6 @@ logger = get_logger(__name__)
 
 
 DEFAULT_API_URL = "https://mozilladatacollective.com/api"
-LEGACY_API_URL = "https://datacollective.mozillafoundation.org/api"
 SCHEMA_REGISTRY_RAW_BASE_URL = (
     "https://raw.githubusercontent.com/Mozilla-Data-Collective/dataset-schema-registry"
 )
@@ -21,7 +19,6 @@ ENV_API_KEY = "MDC_API_KEY"
 ENV_API_URL = "MDC_API_URL"
 ENV_DOWNLOAD_PATH = "MDC_DOWNLOAD_PATH"
 HTTP_TIMEOUT = (10, 60)  # (connect, read)
-_LEGACY_API_URL_NOTICE_EMITTED = False
 _SENSITIVE_KEY_SUBSTRINGS = (
     "url",
     "token",
@@ -115,30 +112,7 @@ def _send_api_request(
 
 
 def _get_api_url() -> str:
-    configured_url = os.getenv(ENV_API_URL, DEFAULT_API_URL).rstrip("/")
-    # Overwrite legacy URL during runtime
-    if configured_url == LEGACY_API_URL:
-        _warn_legacy_api_url_once()
-        return DEFAULT_API_URL
-    return configured_url
-
-
-def _warn_legacy_api_url_once() -> None:
-    global _LEGACY_API_URL_NOTICE_EMITTED
-
-    if _LEGACY_API_URL_NOTICE_EMITTED:
-        return None
-
-    _LEGACY_API_URL_NOTICE_EMITTED = True
-    message = (
-        f"`{ENV_API_URL}` is set to the legacy API URL `{LEGACY_API_URL}`. "
-        f"The SDK is using `{DEFAULT_API_URL}` instead. "
-        f"Update the variable `{ENV_API_URL}` in your `.env` file to the new URL"
-        f", or completely remove `{ENV_API_URL}` to use the SDK default."
-    )
-    warnings.warn(message, FutureWarning, stacklevel=3)
-    logger.warning(message)
-    return None
+    return os.getenv(ENV_API_URL, DEFAULT_API_URL).rstrip("/")
 
 
 def _extract_error_detail(resp: requests.Response) -> str:

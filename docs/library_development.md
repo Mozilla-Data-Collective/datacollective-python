@@ -25,9 +25,6 @@ MDC_API_URL=https://your-dev-environment.example/api
 Notes:
 
 - The override applies to the SDK API requests.
-- The cutover compatibility shim rewrites the legacy production host
-  `https://datacollective.mozillafoundation.org/api` to
-  `https://mozilladatacollective.com/api`.
 - Custom non-production URLs are passed through unchanged.
 
 ## Live E2E tests
