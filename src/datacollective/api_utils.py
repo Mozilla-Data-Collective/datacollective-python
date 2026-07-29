@@ -60,6 +60,7 @@ def _send_api_request(
 
     Raises:
         FileNotFoundError: If the resource is not found (404).
+        AuthenticationError: If the API key is not accepted (401).
         PermissionError: If access is denied (403).
         RateLimitError: If rate limit is exceeded (429).
         ValueError: If API key is missing when authentication is required.
@@ -95,12 +96,23 @@ def _send_api_request(
             f"Resource not found: {method.upper()} {url}"
             + (f" — {detail}" if detail else "")
         )
+    if resp.status_code == 401:
+        from datacollective.errors import AuthenticationError
+
+        detail = _extract_error_detail(resp)
+        raise AuthenticationError(
+            f"Authentication failed. The API key in `{ENV_API_KEY}` is invalid, expired or revoked."
+            " Create a new key on the MDC platform (https://mozilladatacollective.com/api-reference)."
+            + (f"\n{detail}" if detail else "")
+        )
     if resp.status_code == 403:
         detail = _extract_error_detail(resp)
         raise PermissionError(
-            f"Access denied. If the dataset is public, make sure you have read thoroughly and agreed"
-            " to the dataset's Terms & Conditions in its respective page on the MDC platform before downloading. \n"
-            f"{detail}"
+            "Access denied. When downloading, make sure you have read thoroughly and agreed to the dataset's"
+            " Terms & Conditions in its respective page on the MDC platform before downloading."
+            "When uploading, this means your organization is not approved to upload"
+            " datasets yet, or the API key was created before the approval was granted."
+            + (f"\n{detail}" if detail else "")
         )
     if resp.status_code == 429:
         from datacollective.errors import RateLimitError
