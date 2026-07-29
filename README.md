@@ -104,7 +104,9 @@ Returns a `Dataset`, or a `DatasetDict` keyed by split name for datasets with mu
 
 > [!ΝΟΤΕ]
 > In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
-> navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab.
+> navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab. 
+> Only the credentials (API keys) created **_after_** your request has been approved will be able to upload datasets. 
+> Any credentials created before your request was approved will not be able to upload datasets.
 
 You can create dataset submissions and upload files with resumable uploads into the MDC platform programmatically using our Python SDK:
 

@@ -115,7 +115,8 @@ The upload state is stored in a JSON file alongside the archive so interrupted u
 > [!ΝΟΤΕ]
 > In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
 > navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab.
-
+> Only the credentials (API keys) created **_after_** your request has been approved will be able to upload datasets. 
+> Any credentials created before your request was approved will not be able to upload datasets.
 
 ```python
 from datacollective import (
