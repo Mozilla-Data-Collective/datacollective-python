@@ -1301,7 +1301,7 @@ either through the <code>.env</code> file or by executing on your terminal:</p>
 <p><strong>IMPORTANT NOTE:</strong> Before trying to access any dataset, make sure you have thoroughly <strong>read and agreed</strong> to the specific dataset's conditions &amp; licensing terms.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>You can find the <code>dataset-id</code> by looking at the URL of the dataset's page on MDC platform. The ID is the unique string of characters located at the very end of the URL, after the <code>/datasets/</code> path. For example, for URL <code>https://mozilladatacollective.com/datasets/cmflnuzw6lrt9e6ui4kwcshvn</code> dataset id will be <code>cmflnuzw6lrt9e6ui4kwcshvn</code>.</p>
+<p>You can find the dataset's <strong>ID</strong> and/or <strong>slug</strong> from its page on the MDC platform. Click the <strong>Download</strong> button and select <strong>API / Python Access</strong>, then switch to the <strong>Python Library</strong> tab on the pop-up modal. The <strong>Dataset ID</strong> and <strong>Dataset Slug</strong> appear at the bottom of the modal. Both can be used interchangeably in the Python library, but the slug is a more user-friendly identifier.</p>
 </div>
 <h3 id="download-a-dataset">Download a dataset</h3>
 <p>Use <code>download_dataset</code> to download a dataset to the configured download path:</p>
@@ -1320,6 +1320,11 @@ either through the <code>.env</code> file or by executing on your terminal:</p>
 <h2 id="programmatic-submissions-and-uploads">Programmatic submissions and uploads</h2>
 <p>The SDK supports creating dataset submissions and uploading files with resumable uploads. 
 The upload state is stored in a JSON file alongside the archive so interrupted uploads can resume automatically.</p>
+<blockquote>
+<p>[!ΝΟΤΕ]
+In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
+navigating to your <a href="https://mozilladatacollective.com/profile/uploads">profile</a> under the <code>Upload</code> tab.</p>
+</blockquote>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">DatasetSubmission</span><span class="p">,</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">License</span><span class="p">,</span>
