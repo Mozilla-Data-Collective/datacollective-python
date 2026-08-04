@@ -29,6 +29,11 @@ RETRY_BACKOFF_SECONDS = 2
 DEFAULT_PART_SIZE = 10 * 1024 * 1024  # 10 MB default part size to upload chunk by chunk
 DEFAULT_MIME_TYPE = "application/gzip"
 
+# Suffixes of the resumable state files, kept separate so that uploading a
+# dataset archive and a sample file never share the same state file.
+STATE_FILE_SUFFIX = ".mdc-upload.json"
+SAMPLE_STATE_FILE_SUFFIX = ".mdc-sample-upload.json"
+
 # Storage requires every part except the last to be at least 5 MB
 MINIMUM_PART_SIZE = 5 * 1024 * 1024
 # Storage caps a multipart upload at 10.000 presigned parts
@@ -81,6 +86,7 @@ class UploadState(NonEmptyStrModel):
     mimeType: str
     parts: list[UploadPart] = Field(default_factory=list)
     checksum: str | None = None
+    isSample: bool = False
 
 
 class PresignedPartUrl(NonEmptyStrModel):
@@ -108,8 +114,30 @@ class _CompleteUploadPayload(NonEmptyStrModel):
     checksum: str
 
 
+def _upload_base_url(submission_id: str, is_sample: bool) -> str:
+    """
+    Base URL of the multipart upload endpoints.
+
+    The dataset archive and the optional sample file are uploaded the same way,
+    only through different endpoints.
+
+    Args:
+        submission_id: Dataset submission ID.
+        is_sample: Whether the upload targets the sample file endpoints instead
+            of the dataset archive ones.
+    """
+    if is_sample:
+        return f"{_get_api_url()}/submissions/{submission_id}/sample"
+    return f"{_get_api_url()}/uploads"
+
+
 def _initiate_upload(
-    submission_id: str, filename: str, file_size: int, mime_type: str, part_size: int
+    submission_id: str,
+    filename: str,
+    file_size: int,
+    mime_type: str,
+    part_size: int,
+    is_sample: bool = False,
 ) -> UploadSession:
     """
     Start a multipart upload for a dataset submission.
@@ -120,6 +148,7 @@ def _initiate_upload(
         file_size: Size of the file in bytes.
         mime_type: MIME type for the file.
         part_size: Multipart part size in bytes to use for this upload.
+        is_sample: Whether to upload the file as the submission's sample file.
     """
     payload = _UploadInitiatePayload(
         submissionId=submission_id,
@@ -127,7 +156,7 @@ def _initiate_upload(
         fileSize=file_size,
         mimeType=mime_type,
     )
-    url = f"{_get_api_url()}/uploads"
+    url = _upload_base_url(submission_id, is_sample)
     resp = _send_api_request("POST", url, json_body=payload.model_dump())
     data = dict(resp.json())
     session_payload = {
@@ -141,16 +170,24 @@ def _initiate_upload(
         raise RuntimeError("Upload initiation did not return expected fields") from exc
 
 
-def _get_presigned_part_url(file_upload_id: str, part_number: int) -> PresignedPartUrl:
+def _get_presigned_part_url(
+    file_upload_id: str,
+    part_number: int,
+    submission_id: str,
+    is_sample: bool = False,
+) -> PresignedPartUrl:
     """
     Request a presigned URL for a specific multipart part.
 
     Args:
         file_upload_id: File upload ID.
         part_number: 1-based multipart part number.
+        submission_id: Dataset submission ID.
+        is_sample: Whether the part belongs to a sample file upload.
     """
     request = _PresignedPartRequest(fileUploadId=file_upload_id, partNumber=part_number)
-    url = f"{_get_api_url()}/uploads/{request.fileUploadId}/parts/{request.partNumber}"
+    base_url = _upload_base_url(submission_id, is_sample)
+    url = f"{base_url}/{request.fileUploadId}/parts/{request.partNumber}"
     resp = _send_api_request("GET", url)
     data = dict(resp.json())
     presigned_url = data.get("url") or data.get("presignedUrl")
@@ -167,6 +204,8 @@ def _complete_upload(
     upload_id: str | None,
     parts: list[UploadPart],
     checksum: str,
+    submission_id: str,
+    is_sample: bool = False,
 ) -> dict[str, Any]:
     """
     Complete a multipart upload and persist the checksum.
@@ -178,7 +217,8 @@ def _complete_upload(
         checksum=checksum,
     )
 
-    url = f"{_get_api_url()}/uploads/{request.fileUploadId}"
+    base_url = _upload_base_url(submission_id, is_sample)
+    url = f"{base_url}/{request.fileUploadId}"
     payload = {
         "parts": [part.model_dump() for part in request.parts],
         "checksum": request.checksum,
@@ -205,8 +245,9 @@ def _save_upload_state(path: Path, state: UploadState) -> None:
     path.write_text(json.dumps(state.model_dump(), indent=2))
 
 
-def _default_state_path(file_path: Path) -> Path:
-    return file_path.with_name(file_path.name + ".mdc-upload.json")
+def _default_state_path(file_path: Path, is_sample: bool = False) -> Path:
+    suffix = SAMPLE_STATE_FILE_SUFFIX if is_sample else STATE_FILE_SUFFIX
+    return file_path.with_name(file_path.name + suffix)
 
 
 def _load_or_create_state(
@@ -215,10 +256,13 @@ def _load_or_create_state(
     final_filename: str,
     file_size: int,
     part_size: int,
+    is_sample: bool = False,
 ) -> UploadState:
     state = _load_upload_state(state_file)
     if state:
-        if not _state_matches(state, submission_id, final_filename, file_size):
+        if not _state_matches(
+            state, submission_id, final_filename, file_size, is_sample
+        ):
             logger.warning(
                 "Upload state does not match file or submission. Restarting upload."
             )
@@ -231,7 +275,12 @@ def _load_or_create_state(
             f"Initiating upload for '{final_filename}' ({_format_bytes(file_size)})..."
         )
         session = _initiate_upload(
-            submission_id, final_filename, file_size, DEFAULT_MIME_TYPE, part_size
+            submission_id,
+            final_filename,
+            file_size,
+            DEFAULT_MIME_TYPE,
+            part_size,
+            is_sample,
         )
         state = UploadState(
             submissionId=submission_id,
@@ -243,6 +292,7 @@ def _load_or_create_state(
             mimeType=DEFAULT_MIME_TYPE,
             parts=[],
             checksum=None,
+            isSample=is_sample,
         )
         _save_upload_state(state_file, state)
 
@@ -250,13 +300,18 @@ def _load_or_create_state(
 
 
 def _state_matches(
-    state: UploadState, submission_id: str, filename: str, file_size: int
+    state: UploadState,
+    submission_id: str,
+    filename: str,
+    file_size: int,
+    is_sample: bool = False,
 ) -> bool:
     return (
         state.fileSize == file_size
         and state.filename == filename
         and state.submissionId == submission_id
         and state.mimeType == DEFAULT_MIME_TYPE
+        and state.isSample == is_sample
     )
 
 
@@ -297,7 +352,12 @@ def _upload_missing_parts(
             if part_number in parts_by_number:
                 continue
 
-            presigned = _get_presigned_part_url(state.fileUploadId, part_number)
+            presigned = _get_presigned_part_url(
+                state.fileUploadId,
+                part_number,
+                state.submissionId,
+                state.isSample,
+            )
             response = _upload_part_with_retry(presigned.url, chunk)
             etag = _extract_etag(response)
             parts_by_number[part_number] = etag
@@ -342,10 +402,12 @@ def _upload_part(presigned_url: str, payload: bytes) -> requests.Response:
 
 
 def _resolve_upload_state(
-    file_path: str, state_path: str | None
+    file_path: str, state_path: str | None, is_sample: bool = False
 ) -> tuple[Path, Any | None]:
     state_file = (
-        Path(state_path) if state_path else _default_state_path(Path(file_path))
+        Path(state_path)
+        if state_path
+        else _default_state_path(Path(file_path), is_sample)
     )
     return state_file, _load_upload_state(state_file)
 

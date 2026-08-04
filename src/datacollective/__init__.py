@@ -19,7 +19,7 @@ from datacollective.submissions import (
     submit_submission,
     update_submission,
 )
-from datacollective.upload import upload_dataset_file
+from datacollective.upload import upload_dataset_file, upload_sample_file
 
 __all__ = [
     "download_dataset",
@@ -31,6 +31,7 @@ __all__ = [
     "submit_submission",
     "create_submission_with_upload",
     "upload_dataset_file",
+    "upload_sample_file",
     "DatasetDetails",
     "DatasetSubmission",
     "License",
