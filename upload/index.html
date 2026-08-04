@@ -1706,8 +1706,12 @@ When <strong>resuming</strong> an interrupted upload, <code>part_size</code> is 
 <td>Missing or invalid required parameter</td>
 </tr>
 <tr>
+<td><code>AuthenticationError</code></td>
+<td>The API key is invalid, expired or revoked</td>
+</tr>
+<tr>
 <td><code>PermissionError</code></td>
-<td>API key is invalid or lacks permissions</td>
+<td>When downloading: You have not agreed to the T&amp;C of the dataset. When uploading: your organization is not approved to upload datasets, or the API key was created before the approval was granted</td>
 </tr>
 <tr>
 <td><code>RuntimeError</code></td>
