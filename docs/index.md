@@ -157,6 +157,8 @@ submission = DatasetSubmission(
                          "or considerations related to data collection and usage.",
     showContactInfo=False,  # Whether to publicly display the contact information above
     visibility=Visibility.PUBLIC,  # public | private | restricted
+    isPaid=False,  # True = the dataset is compensated and requires `basePriceCents`,
+                   # False (default) = the dataset is free to access
     exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
                               # False = Dataset is exclusively hosted in Mozilla Data Collective
     agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and 
@@ -173,6 +175,8 @@ print(response)
 ```
 
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
+
+To publish a compensated dataset instead of a free one, set `isPaid=True` and a `basePriceCents` price in **USD cents** (between `10_000` = $100 and `5_000_000` = $50,000). See [Pricing](upload.md#pricing) for details.
 
 > [!TIP]
 > To upload a new `.tar.gz` version to an already approved and published dataset, call `upload_dataset_file(file_path=..., submission_id=...)` directly. Get the submission ID from **Profile → Uploads** by opening the approved dataset and copying the value after `/profile/submissions/` in the URL. This submission ID is different from the dataset ID.

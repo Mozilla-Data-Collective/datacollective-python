@@ -141,6 +141,8 @@ submission = DatasetSubmission(
     ethicalReviewProcess="Describe the ethical review process that was "
                          "followed for this dataset, including any approvals "
                          "or considerations related to data collection and usage.",
+    isPaid=False,  # True = the dataset is compensated and requires `basePriceCents`,
+                   # False (default) = the dataset is free to access
     exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
                               # False = Dataset is exclusively hosted in Mozilla Data Collective
     agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and 
@@ -157,6 +159,8 @@ print(response)
 ```
 
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For custom licenses, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
+
+To publish a compensated dataset, set `isPaid=True` and a `basePriceCents` price in **USD cents** (US Dollars), e.g. `basePriceCents=100_000` for $1,000.00. The platform only accepts prices between `10_000` ($100) and `5_000_000` ($50,000), and the SDK validates the range locally before any request is sent.
 
 > [!TIP]
 > To upload a new `.tar.gz` version to an already approved dataset, call `upload_dataset_file(file_path=..., submission_id=...)` directly. Find the submission under **Profile → Uploads**, open the approved dataset, and copy the value after `/profile/submissions/` in the URL. Note that this value is the submission ID, which is different from the public dataset ID.
