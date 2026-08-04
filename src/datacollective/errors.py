@@ -46,6 +46,10 @@ class MissingDependencyError(ImportError):
     """Raised when an optional dependency required for a feature is not installed."""
 
 
+class AuthenticationError(RuntimeError):
+    """Raised when the MDC API responds with HTTP 401."""
+
+
 class RateLimitError(RuntimeError):
     """Raised when the MDC API responds with HTTP 429."""
 
