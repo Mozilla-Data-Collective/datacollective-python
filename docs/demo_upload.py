@@ -36,6 +36,8 @@ submission = DatasetSubmission(
     "or considerations related to data collection and usage.",
     showContactInfo=False,  # Whether to publicly display the contact information above
     visibility=Visibility.PUBLIC,  # public | private | restricted
+    isPaid=False,  # If True then compensated dataset and requires basePriceCents, If False (default) = free dataset
+    # basePriceCents=100_000,  # Required if isPaid=True. Price in USD cents between 10_000 = $100 and 5_000_000 = $50,000.
     exclusivityOptOut=True,  # True = dataset is not exclusive to Data Collective (can be found elsewhere),
     # False = dataset is exclusively shared in Mozilla Data Collective
     agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and that all information provided in the datasheet is accurate. Required to be true to complete the submission
