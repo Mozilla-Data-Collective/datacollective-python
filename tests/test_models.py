@@ -2,8 +2,6 @@ import pytest
 from pydantic import ValidationError
 
 from datacollective.models import (
-    MAX_DATASET_PRICE_CENTS,
-    MIN_DATASET_PRICE_CENTS,
     DatasetDetails,
     DatasetSubmission,
     License,
@@ -168,32 +166,6 @@ def test_paid_dataset_accepts_price_within_platform_bounds() -> None:
     model = DatasetSubmission(isPaid=True, basePriceCents=25_000)
     assert model.isPaid is True
     assert model.basePriceCents == 25_000
-
-
-def test_paid_dataset_accepts_price_bounds() -> None:
-    assert (
-        DatasetSubmission(
-            isPaid=True, basePriceCents=MIN_DATASET_PRICE_CENTS
-        ).basePriceCents
-        == MIN_DATASET_PRICE_CENTS
-    )
-    assert (
-        DatasetSubmission(
-            isPaid=True, basePriceCents=MAX_DATASET_PRICE_CENTS
-        ).basePriceCents
-        == MAX_DATASET_PRICE_CENTS
-    )
-
-
-def test_paid_dataset_rejects_price_outside_platform_bounds() -> None:
-    with pytest.raises(ValidationError):
-        DatasetSubmission(isPaid=True, basePriceCents=MIN_DATASET_PRICE_CENTS - 1)
-    with pytest.raises(ValidationError):
-        DatasetSubmission(isPaid=True, basePriceCents=MAX_DATASET_PRICE_CENTS + 1)
-    with pytest.raises(ValidationError):
-        DatasetSubmission(isPaid=True, basePriceCents=0)
-    with pytest.raises(ValidationError):
-        DatasetSubmission(isPaid=True, basePriceCents=-25_000)
 
 
 def test_paid_dataset_requires_price() -> None:

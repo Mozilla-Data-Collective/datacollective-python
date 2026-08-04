@@ -160,8 +160,7 @@ print(response)
 
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For custom licenses, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
-To publish a compensated dataset, set `isPaid=True` and a `basePriceCents` price in **USD cents** (US Dollars), e.g. `basePriceCents=100_000` for $1,000.00. The platform only accepts prices between `10_000` ($100) and `5_000_000` ($50,000), and the SDK validates the range locally before any request is sent.
-
+To publish a compensated dataset, set `isPaid=True` and a `basePriceCents` price in **USD cents** (US Dollars), e.g. `basePriceCents=100_000` for $1,000.00.
 > [!TIP]
 > To upload a new `.tar.gz` version to an already approved dataset, call `upload_dataset_file(file_path=..., submission_id=...)` directly. Find the submission under **Profile → Uploads**, open the approved dataset, and copy the value after `/profile/submissions/` in the URL. Note that this value is the submission ID, which is different from the public dataset ID.
 

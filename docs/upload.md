@@ -130,21 +130,11 @@ submission = DatasetSubmission(
 > `basePriceCents` is expressed in **USD cents** (US Dollars), not in dollars.
 > For example, `basePriceCents=100_000` sets the price to **$1,000.00 USD**.
 
-The platform only accepts prices within the following range:
-
-| Bound   | Cents       | USD        |
-|---------|-------------|------------|
-| Minimum | `10_000`    | $100       |
-| Maximum | `5_000_000` | $50,000    |
-
-Both bounds are available as `MIN_DATASET_PRICE_CENTS` and `MAX_DATASET_PRICE_CENTS` in
-`datacollective.models`.
-
-The two fields are validated together as soon as the `DatasetSubmission` model is constructed,
-so invalid pricing raises a `ValidationError` locally, before any request reaches the API:
+> [!NOTE]
+> The platform validates that the price falls within an acceptable range and rejects the
+> submission otherwise.
 
 - `isPaid=True` requires `basePriceCents` to be set.
-- `basePriceCents` outside the range above is rejected.
 - `basePriceCents` cannot be set unless `isPaid=True`, since the price would otherwise be
   ignored and the dataset would stay uncompensated.
 

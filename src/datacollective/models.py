@@ -6,11 +6,6 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
-# Price bounds enforced by the platform for compensated datasets in USD cents
-MIN_DATASET_PRICE_CENTS = 10_000  # 100 USD
-MAX_DATASET_PRICE_CENTS = 5_000_000  # 50,000 USD
-
-
 class UploadPart(BaseModel):
     """A single multipart upload part."""
 
@@ -175,7 +170,11 @@ class Dataset(BaseModel):
     )
     basePriceCents: int | None = Field(
         None,
-        description="Price of the dataset in USD cents (e.g. `100_000` is $1,000.00). Required when `isPaid` is True.",
+        description=(
+            "Price of the dataset in USD cents (e.g. `100_000` is $1,000.00). Required when "
+            "`isPaid` is True. The platform validates that the price is within an acceptable "
+            "range and rejects the submission otherwise."
+        ),
     )
     # Defined by the API and not user-editable
     id: str | None = Field(
@@ -220,17 +219,6 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
     visibility: Visibility | None = Field(
         None,
         description="Dataset visibility: `public`, `private`, or `restricted`.",
-    )
-    basePriceCents: int | None = Field(
-        None,
-        ge=MIN_DATASET_PRICE_CENTS,
-        le=MAX_DATASET_PRICE_CENTS,
-        description=(
-            "Price of the dataset in USD cents (e.g. `100_000` is $1,000.00). Required when "
-            f"`isPaid` is True and must be between {MIN_DATASET_PRICE_CENTS} "
-            f"({MIN_DATASET_PRICE_CENTS // 100} USD) and {MAX_DATASET_PRICE_CENTS} "
-            f"({MAX_DATASET_PRICE_CENTS // 100} USD) cents."
-        ),
     )
     # Submission-specific fields defined by the user
     createdByFullName: str | None = Field(None, description="Creator's name.")
@@ -282,8 +270,8 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
     def _validate_pricing(self) -> DatasetSubmission:
         if self.isPaid and self.basePriceCents is None:
             raise ValueError(
-                "`basePriceCents` is required when `isPaid` is True and must be between "
-                f"{MIN_DATASET_PRICE_CENTS} and {MAX_DATASET_PRICE_CENTS} USD cents"
+                "`basePriceCents` is required when `isPaid` is True. The platform only "
+                "accepts prices within its allowed range, in USD cents"
             )
         if self.basePriceCents is not None and not self.isPaid:
             raise ValueError(
