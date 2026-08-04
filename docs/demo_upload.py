@@ -44,6 +44,8 @@ submission = DatasetSubmission(
 response = create_submission_with_upload(
     file_path="example_dataset.tar.gz",
     submission=submission,
+    # Optional: a small, representative excerpt of the dataset
+    # sample_file_path="example_dataset_sample.tar.gz",
 )
 
 print(response)
