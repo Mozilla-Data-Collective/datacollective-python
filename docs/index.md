@@ -179,6 +179,9 @@ For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `l
 To publish a compensated dataset instead of a free one, set `isPaid=True` and a `basePriceCents` price in **USD cents** (US Dollars). See [Pricing](upload.md#pricing) for details.
 
 > [!TIP]
+> To also attach an optional sample of your dataset, pass `sample_file_path="/path/to/dataset-sample.tar.gz"` to `create_submission_with_upload`, or upload it separately with `upload_sample_file(file_path=..., submission_id=...)`.
+
+> [!TIP]
 > To upload a new `.tar.gz` version to an already approved and published dataset, call `upload_dataset_file(file_path=..., submission_id=...)` directly. Get the submission ID from **Profile → Uploads** by opening the approved dataset and copying the value after `/profile/submissions/` in the URL. This submission ID is different from the dataset ID.
 
 > [!TIP]

@@ -9,7 +9,8 @@ The SDK provides a complete workflow for uploading datasets:
 1. **Create a draft submission** - Initialize a new dataset submission
 2. **Update submission metadata** - Add required metadata fields to the submission
 3. **Upload the dataset file** - Upload your archive using resumable multipart uploads
-4. **Submit for review** - Finalize the submission for review
+4. **Upload a sample file** (optional) - Upload a small, representative excerpt of the dataset
+5. **Submit for review** - Finalize the submission for review
 
 Additionally, the functionality of uploading a dataset file can be used independently to upload a new archive version to an already approved and published dataset submission. Check the [Upload a New File Version to an Approved Dataset](#upload-a-new-file-version-to-an-approved-dataset) section for more details.
 
@@ -100,6 +101,18 @@ print(response)
 
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
+To also attach an **optional** sample file, pass `sample_file_path`:
+
+```python
+response = create_submission_with_upload(
+    file_path="/path/to/dataset.tar.gz",
+    submission=submission,
+    sample_file_path="/path/to/dataset-sample.tar.gz",
+)
+```
+
+See [Uploading a Sample File](#uploading-a-sample-file) for details.
+
 ### Visibility
 
 `visibility` controls who can access the dataset and must be one of the `Visibility` enum values: 
@@ -109,6 +122,7 @@ For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `l
 | `Visibility.PUBLIC`     | Everyone          | Everyone                                     |
 | `Visibility.PRIVATE`    | Everyone          | Your organization & Approved requesters only |
 | `Visibility.RESTRICTED` | Your organization | Your organization (via SDK)                  |
+
 
 ### Pricing
 
@@ -148,6 +162,58 @@ update_submission(
     submission=DatasetSubmission(isPaid=True, basePriceCents=250_000),  # $2,500.00
 )
 ```
+
+
+## Uploading a Sample File
+
+A **sample file** is a small, representative excerpt of your dataset that reviewers and
+potential users can inspect without downloading the full archive. It is **optional**: a
+submission can be submitted for review without one, and uploading a sample never replaces
+the dataset file itself.
+
+Sample files are uploaded exactly like the dataset archive — resumable multipart upload of
+a `.tar.gz` archive (`application/gzip`) — through the submission's sample endpoints.
+
+Either pass `sample_file_path` to `create_submission_with_upload`:
+
+```python
+from datacollective import create_submission_with_upload
+
+response = create_submission_with_upload(
+    file_path="/path/to/dataset.tar.gz",
+    submission=submission,
+    sample_file_path="/path/to/dataset-sample.tar.gz",
+    # Optional, defaults to `<filename>.mdc-sample-upload.json` next to the sample
+    sample_state_path="/custom/path/sample-upload-state.json",
+)
+
+print(response["submission"]["sampleFileReferenceId"])
+```
+
+Or upload it on its own with `upload_sample_file`, using the submission ID (this works for
+draft submissions as well as already approved ones):
+
+```python
+from datacollective import upload_sample_file
+
+upload_state = upload_sample_file(
+    file_path="/path/to/dataset-sample.tar.gz",
+    submission_id=submission_id,
+)
+
+print(f"Sample upload complete! File Upload ID: {upload_state.fileUploadId}")
+```
+
+`upload_sample_file` accepts the same arguments as `upload_dataset_file`
+(`state_path`, `show_progress`, `enable_logging`, `part_size`) and is equally resumable.
+Its state file uses a `.mdc-sample-upload.json` suffix, so a sample upload and a dataset
+upload never overwrite each other's resume state.
+
+> [!NOTE]
+> When using `create_submission_with_upload`, the dataset archive is uploaded first and the
+> sample file right after, before the submission is sent for review. A missing
+> `sample_file_path` raises `FileNotFoundError` up front, before anything is uploaded.
+
 
 ## Upload a New File Version to an Approved Dataset
 
@@ -282,7 +348,20 @@ print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 > [!TIP]
 > You can also find your submission ID by going to your [Uploads](https://mozilladatacollective.com/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://mozilladatacollective.com/submissions/cmmjpewijXXXXXXXXX`).
 
-### Step 4: Submit for Review
+### Step 4 (Optional): Upload a Sample File
+
+```python
+from datacollective import upload_sample_file
+
+sample_state = upload_sample_file(
+    file_path="/path/to/your/dataset-sample.tar.gz",
+    submission_id=submission_id,
+)
+
+print(f"Sample upload complete! File Upload ID: {sample_state.fileUploadId}")
+```
+
+### Step 5: Submit for Review
 
 ```python
 from datacollective import DatasetSubmission, submit_submission
@@ -416,4 +495,5 @@ For detailed API documentation, see the [API Reference](api.md) section.
 - [`create_submission_draft`](api.md) - Create a draft submission
 - [`update_submission`](api.md) - Update submission metadata
 - [`upload_dataset_file`](api.md) - Upload a file to a submission
+- [`upload_sample_file`](api.md) - Upload an optional sample file to a submission
 - [`submit_submission`](api.md) - Submit a draft for review
