@@ -82,6 +82,8 @@ submission = DatasetSubmission(
                          "or considerations related to data collection and usage.",
     showContactInfo=False,  # Whether to publicly display the contact information above
     visibility=Visibility.PUBLIC,  # public | private | restricted
+    isPaid=False,  # True = the dataset is compensated and requires `basePriceCents`,
+                   # False (default) = the dataset is free to access
     exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
                               # False = Dataset is exclusively hosted in Mozilla Data Collective
     agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and 
@@ -120,6 +122,47 @@ See [Uploading a Sample File](#uploading-a-sample-file) for details.
 | `Visibility.PUBLIC`     | Everyone          | Everyone                                     |
 | `Visibility.PRIVATE`    | Everyone          | Your organization & Approved requesters only |
 | `Visibility.RESTRICTED` | Your organization | Your organization (via SDK)                  |
+
+
+### Pricing
+
+Datasets are free by default (`isPaid` defaults to `False` on the platform when left unset). To
+publish a **compensated** dataset, set `isPaid=True` and provide a price in `basePriceCents`:
+
+```python
+from datacollective import DatasetSubmission
+
+submission = DatasetSubmission(
+    name="Dataset Name",
+    # ... other metadata fields ...
+    isPaid=True,
+    basePriceCents=100_000,  # $1,000.00
+)
+```
+
+> [!IMPORTANT]
+> `basePriceCents` is expressed in **USD cents** (US Dollars), not in dollars.
+> For example, `basePriceCents=100_000` sets the price to **$1,000.00 USD**.
+
+> [!NOTE]
+> The platform validates that the price falls within an acceptable range and rejects the
+> submission otherwise.
+
+- `isPaid=True` requires `basePriceCents` to be set.
+- `basePriceCents` cannot be set unless `isPaid=True`, since the price would otherwise be
+  ignored and the dataset would stay uncompensated.
+
+To change the price of an existing submission, pass both fields to `update_submission`:
+
+```python
+from datacollective import DatasetSubmission, update_submission
+
+update_submission(
+    submission_id=submission_id,
+    submission=DatasetSubmission(isPaid=True, basePriceCents=250_000),  # $2,500.00
+)
+```
+
 
 ## Uploading a Sample File
 
@@ -171,6 +214,7 @@ upload never overwrite each other's resume state.
 > sample file right after, before the submission is sent for review. A missing
 > `sample_file_path` raises `FileNotFoundError` up front, before anything is uploaded.
 
+
 ## Upload a New File Version to an Approved Dataset
 
 Use `upload_dataset_file` when the dataset already exists on the platform and is already in the **Published / Approved** state.
@@ -218,6 +262,8 @@ To complete the submission process, the submission **must** include at least all
 - `showContactInfo`
 - `visibility`
 - `agreeToSubmit=True`
+
+Pricing (`isPaid` and `basePriceCents`) is optional — see [Pricing](#pricing). Datasets are free unless `isPaid=True`.
 
 A completed file upload must also be attached to the submission before it can be submitted for review. The uploaded archive is linked to the submission automatically when the multipart upload completes (the upload is started with the submission's ID). 
 

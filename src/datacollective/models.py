@@ -164,6 +164,18 @@ class Dataset(BaseModel):
         None,
         description="Dataset visibility (e.g., `public`, `private`, `restricted`).",
     )
+    isPaid: bool | None = Field(
+        None,
+        description="Whether the dataset is compensated, i.e. has a price. Defaults to `False` on the platform when left unset.",
+    )
+    basePriceCents: int | None = Field(
+        None,
+        description=(
+            "Price of the dataset in USD cents (e.g. `100_000` is $1,000.00). Required when "
+            "`isPaid` is True. The platform validates that the price is within an acceptable "
+            "range and rejects the submission otherwise."
+        ),
+    )
     # Defined by the API and not user-editable
     id: str | None = Field(
         None, description="Unique identifier as returned by the API."
@@ -258,6 +270,20 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
             )
         return self
 
+    @model_validator(mode="after")
+    def _validate_pricing(self) -> DatasetSubmission:
+        if self.isPaid and self.basePriceCents is None:
+            raise ValueError(
+                "`basePriceCents` is required when `isPaid` is True. The platform only "
+                "accepts prices within its allowed range, in USD cents"
+            )
+        if self.basePriceCents is not None and not self.isPaid:
+            raise ValueError(
+                "`isPaid` must be True when providing `basePriceCents`, "
+                "otherwise the dataset stays uncompensated and the price is ignored"
+            )
+        return self
+
 
 class DatasetDetails(Dataset):
     """
@@ -349,6 +375,8 @@ UPDATE_FIELDS = {
     "showContactInfo",
     "visibility",
     "exclusivityOptOut",
+    "isPaid",
+    "basePriceCents",
 }
 SUBMIT_FIELDS = {"agreeToSubmit"}
 

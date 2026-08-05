@@ -157,6 +157,8 @@ submission = DatasetSubmission(
                          "or considerations related to data collection and usage.",
     showContactInfo=False,  # Whether to publicly display the contact information above
     visibility=Visibility.PUBLIC,  # public | private | restricted
+    isPaid=False,  # True = the dataset is compensated and requires `basePriceCents`,
+                   # False (default) = the dataset is free to access
     exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
                               # False = Dataset is exclusively hosted in Mozilla Data Collective
     agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and 
@@ -173,6 +175,8 @@ print(response)
 ```
 
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For a custom license, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
+
+To publish a compensated dataset instead of a free one, set `isPaid=True` and a `basePriceCents` price in **USD cents** (US Dollars). See [Pricing](upload.md#pricing) for details.
 
 > [!TIP]
 > To also attach an optional sample of your dataset, pass `sample_file_path="/path/to/dataset-sample.tar.gz"` to `create_submission_with_upload`, or upload it separately with `upload_sample_file(file_path=..., submission_id=...)`.

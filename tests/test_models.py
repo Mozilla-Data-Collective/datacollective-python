@@ -154,6 +154,36 @@ def test_show_contact_info_accepts_boolean() -> None:
     assert DatasetSubmission(showContactInfo=False).showContactInfo is False
 
 
+def test_pricing_defaults_to_unset_free_dataset() -> None:
+    model = DatasetSubmission(name="Dataset Name")
+    assert model.isPaid is None
+    assert model.basePriceCents is None
+    # Left out of the payload entirely, so the platform default (False) applies
+    assert "isPaid" not in model.model_dump(exclude_none=True)
+
+
+def test_paid_dataset_accepts_price_within_platform_bounds() -> None:
+    model = DatasetSubmission(isPaid=True, basePriceCents=25_000)
+    assert model.isPaid is True
+    assert model.basePriceCents == 25_000
+
+
+def test_paid_dataset_requires_price() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        DatasetSubmission(isPaid=True)
+    assert "`basePriceCents` is required when `isPaid` is True" in str(exc_info.value)
+
+
+def test_price_requires_paid_dataset() -> None:
+    with pytest.raises(ValidationError) as exc_info:
+        DatasetSubmission(basePriceCents=25_000)
+    assert "`isPaid` must be True when providing `basePriceCents`" in str(
+        exc_info.value
+    )
+    with pytest.raises(ValidationError):
+        DatasetSubmission(isPaid=False, basePriceCents=25_000)
+
+
 def test_dataset_details_requires_id() -> None:
     with pytest.raises(ValidationError):
         DatasetDetails.model_validate({"filename": "dataset.tar.gz"})
