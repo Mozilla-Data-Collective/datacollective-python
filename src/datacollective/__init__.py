@@ -6,6 +6,10 @@ from datacollective.datasets import (
     load_dataset,
     save_dataset_to_disk,
 )
+from datacollective.errors import (
+    AuthenticationError,
+    RateLimitError,
+)
 from datacollective.models import (
     DatasetDetails,
     DatasetSubmission,
@@ -37,6 +41,8 @@ __all__ = [
     "License",
     "Task",
     "Visibility",
+    "AuthenticationError",
+    "RateLimitError",
     "__version__",
 ]
 
