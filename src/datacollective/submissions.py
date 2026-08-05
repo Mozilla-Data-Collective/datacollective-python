@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from datacollective.api_utils import _get_api_url, _send_api_request
@@ -17,7 +18,7 @@ from datacollective.models import (
     _validate_final_submission_fields,
     SUBMIT_FIELDS,
 )
-from datacollective.upload import upload_dataset_file
+from datacollective.upload import upload_dataset_file, upload_sample_file
 from datacollective.upload_utils import _resolve_upload_state, DEFAULT_PART_SIZE
 
 logger = get_logger(__name__)
@@ -104,6 +105,8 @@ def create_submission_with_upload(
     state_path: str | None = None,
     enable_logging: bool = False,
     part_size: int = DEFAULT_PART_SIZE,
+    sample_file_path: str | None = None,
+    sample_state_path: str | None = None,
 ) -> dict[str, Any]:
     """
     Single point function to create a submission, update metadata, upload a file, and submit for review.
@@ -116,12 +119,19 @@ def create_submission_with_upload(
         enable_logging: Whether to enable detailed logging during the process.
         part_size: Multipart part size in bytes. Ignored when resuming an existing upload,
             which keeps the part size recorded in its state file.
+        sample_file_path: Optional path to a sample archive to upload alongside the
+            dataset archive. A sample file is not required to submit a dataset.
+        sample_state_path: Optional path to persist the sample upload state.
     """
     _enable_logging(enable_logging)
 
     submission = _ensure_submission_model(submission)
 
     _validate_final_submission_fields(submission, require_file_upload_id=False)
+
+    # Fail fast on a missing sample file, before uploading the dataset archive
+    if sample_file_path and not Path(sample_file_path).exists():
+        raise FileNotFoundError(f"Sample file not found: `{sample_file_path}`")
 
     state_file, existing_upload_state = _resolve_upload_state(file_path, state_path)
 
@@ -157,6 +167,16 @@ def create_submission_with_upload(
         enable_logging=enable_logging,
         part_size=part_size,
     )
+
+    if sample_file_path:
+        logger.info("Uploading sample file...")
+        upload_sample_file(
+            file_path=sample_file_path,
+            submission_id=submission_id,
+            state_path=sample_state_path,
+            enable_logging=enable_logging,
+            part_size=part_size,
+        )
 
     # The uploaded file is linked to the submission automatically when the
     # multipart upload completes (the upload was started with `submissionId`),

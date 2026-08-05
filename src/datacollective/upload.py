@@ -51,6 +51,76 @@ def upload_dataset_file(
         part_size: Multipart part size in bytes. Ignored when resuming an
             existing upload, which keeps the part size recorded in its state file.
     """
+    return _upload_file(
+        file_path=file_path,
+        submission_id=submission_id,
+        state_path=state_path,
+        show_progress=show_progress,
+        enable_logging=enable_logging,
+        part_size=part_size,
+        is_sample=False,
+    )
+
+
+def upload_sample_file(
+    file_path: str,
+    submission_id: str,
+    state_path: str | None = None,
+    show_progress: bool = True,
+    enable_logging: bool = False,
+    part_size: int = DEFAULT_PART_SIZE,
+) -> UploadState:
+    """
+    Upload an **optional** sample file for a dataset submission.
+
+    A sample file is a small, representative excerpt of the dataset that
+    users can inspect without downloading the full archive. It is uploaded
+    exactly like the dataset archive (resumable multipart upload,
+    `application/gzip` MIME type) but through the submission's sample endpoints,
+    and it does not replace the dataset file.
+
+    Args:
+        file_path: Path to the sample archive on disk.
+        submission_id: Dataset submission ID (not the dataset ID).
+        state_path: Optional path to persist upload state. Defaults to
+            `<filename>.mdc-sample-upload.json` alongside the archive.
+        enable_logging: Whether to enable detailed logging during the upload.
+        show_progress: Whether to show a progress bar during upload.
+        part_size: Multipart part size in bytes. Ignored when resuming an
+            existing upload, which keeps the part size recorded in its state file.
+    """
+    return _upload_file(
+        file_path=file_path,
+        submission_id=submission_id,
+        state_path=state_path,
+        show_progress=show_progress,
+        enable_logging=enable_logging,
+        part_size=part_size,
+        is_sample=True,
+    )
+
+
+def _upload_file(
+    file_path: str,
+    submission_id: str,
+    state_path: str | None,
+    show_progress: bool,
+    enable_logging: bool,
+    part_size: int,
+    is_sample: bool,
+) -> UploadState:
+    """
+    Shared multipart upload function for the dataset archive and the sample file.
+
+    Args:
+        file_path: Path to the archive on disk.
+        submission_id: Dataset submission ID (not the dataset ID).
+        state_path: Optional path to persist upload state.
+        show_progress: Whether to show a progress bar during upload.
+        enable_logging: Whether to enable detailed logging during the upload.
+        part_size: Multipart part size in bytes.
+        is_sample: Whether to upload the file as the submission's sample file.
+    """
     path = Path(file_path)
     _enable_logging(enable_logging)
 
@@ -65,7 +135,9 @@ def upload_dataset_file(
 
     final_filename = path.name
 
-    state_file = Path(state_path) if state_path else _default_state_path(path)
+    state_file = (
+        Path(state_path) if state_path else _default_state_path(path, is_sample)
+    )
 
     state = _load_or_create_state(
         state_file=state_file,
@@ -73,6 +145,7 @@ def upload_dataset_file(
         final_filename=final_filename,
         file_size=file_size,
         part_size=part_size,
+        is_sample=is_sample,
     )
 
     expected_parts = _expected_parts(state.fileSize, state.partSize)
@@ -83,7 +156,7 @@ def upload_dataset_file(
             f"Resuming: {len(parts_by_number)}/{expected_parts} parts already uploaded."
         )
 
-    logger.info(f"Uploading file: {final_filename}")
+    logger.info(f"Uploading: {final_filename}")
 
     progress_bar = _init_progress_bar(
         show_progress=show_progress,
@@ -122,7 +195,14 @@ def upload_dataset_file(
 
     logger.info("Completing upload...")
 
-    _complete_upload(state.fileUploadId, state.uploadId, state.parts, state.checksum)
+    _complete_upload(
+        state.fileUploadId,
+        state.uploadId,
+        state.parts,
+        state.checksum,
+        state.submissionId,
+        state.isSample,
+    )
 
     logger.info(f"Upload complete. File upload ID: {state.fileUploadId}")
 

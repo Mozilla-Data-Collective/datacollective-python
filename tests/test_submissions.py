@@ -121,3 +121,118 @@ def test_create_submission_with_upload_rejects_missing_required_metadata_before_
     assert "`longDescription`" in message
     assert "either `licenseAbbreviation` or `license`" in message
     assert "`fileUploadId`" not in message
+
+
+def _stub_submission_workflow(
+    monkeypatch, sample_uploads: list[dict[str, object]]
+) -> None:
+    """Stub out every network step of `create_submission_with_upload`."""
+
+    class FakeUploadState:
+        fileUploadId = "file-upload-id"
+
+    monkeypatch.setattr(
+        submissions_module,
+        "create_submission_draft",
+        lambda submission: {"submission": {"id": "submission-id"}},
+    )
+    monkeypatch.setattr(
+        submissions_module,
+        "update_submission",
+        lambda submission_id, submission: {"submission": {"id": submission_id}},
+    )
+    monkeypatch.setattr(
+        submissions_module,
+        "upload_dataset_file",
+        lambda **kwargs: FakeUploadState(),
+    )
+
+    def fake_upload_sample_file(**kwargs: object) -> FakeUploadState:
+        sample_uploads.append(kwargs)
+        return FakeUploadState()
+
+    monkeypatch.setattr(
+        submissions_module, "upload_sample_file", fake_upload_sample_file
+    )
+    monkeypatch.setattr(
+        submissions_module,
+        "submit_submission",
+        lambda submission_id, submission: {
+            "submission": {"id": submission_id, "status": "submitted"}
+        },
+    )
+
+
+def test_create_submission_with_upload_uploads_optional_sample_file(
+    tmp_path: Path, monkeypatch
+) -> None:
+    archive_path = tmp_path / "dataset.tar.gz"
+    archive_path.write_bytes(bytearray(b"dataset-payload"))
+    sample_path = tmp_path / "sample.tar.gz"
+    sample_path.write_bytes(bytearray(b"sample-payload"))
+    sample_state_path = tmp_path / "sample-upload-state.json"
+    sample_uploads: list[dict[str, object]] = []
+    _stub_submission_workflow(monkeypatch, sample_uploads)
+
+    response = submissions_module.create_submission_with_upload(
+        file_path=str(archive_path),
+        submission=_build_complete_submission(file_upload_id=None),
+        sample_file_path=str(sample_path),
+        sample_state_path=str(sample_state_path),
+    )
+
+    assert response["submission"]["status"] == "submitted"
+    assert sample_uploads == [
+        {
+            "file_path": str(sample_path),
+            "submission_id": "submission-id",
+            "state_path": str(sample_state_path),
+            "enable_logging": False,
+            "part_size": submissions_module.DEFAULT_PART_SIZE,
+        }
+    ]
+
+
+def test_create_submission_with_upload_skips_sample_upload_by_default(
+    tmp_path: Path, monkeypatch
+) -> None:
+    archive_path = tmp_path / "dataset.tar.gz"
+    archive_path.write_bytes(bytearray(b"dataset-payload"))
+    sample_uploads: list[dict[str, object]] = []
+    _stub_submission_workflow(monkeypatch, sample_uploads)
+
+    submissions_module.create_submission_with_upload(
+        file_path=str(archive_path),
+        submission=_build_complete_submission(file_upload_id=None),
+    )
+
+    assert sample_uploads == []
+
+
+def test_create_submission_with_upload_rejects_missing_sample_file_before_upload(
+    tmp_path: Path, monkeypatch
+) -> None:
+    archive_path = tmp_path / "dataset.tar.gz"
+    archive_path.write_bytes(bytearray(b"dataset-payload"))
+
+    monkeypatch.setattr(
+        submissions_module,
+        "create_submission_draft",
+        lambda submission: pytest.fail(
+            "create_submission_with_upload should fail before creating a draft"
+        ),
+    )
+    monkeypatch.setattr(
+        submissions_module,
+        "upload_dataset_file",
+        lambda *args, **kwargs: pytest.fail(
+            "create_submission_with_upload should fail before uploading"
+        ),
+    )
+
+    with pytest.raises(FileNotFoundError, match="Sample file not found"):
+        submissions_module.create_submission_with_upload(
+            file_path=str(archive_path),
+            submission=_build_complete_submission(file_upload_id=None),
+            sample_file_path=str(tmp_path / "missing-sample.tar.gz"),
+        )
