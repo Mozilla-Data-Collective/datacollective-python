@@ -3,7 +3,14 @@ from __future__ import annotations
 from enum import Enum
 from typing import Any, ClassVar
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
 
 class UploadPart(BaseModel):
@@ -284,6 +291,13 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
             )
         return self
 
+    @computed_field(  # type: ignore[prop-decorator]
+        description="Currency for `basePriceCents`. Always `usd`, the only currency the platform currently supports."
+    )
+    @property
+    def currency(self) -> str | None:
+        return "usd" if self.isPaid else None
+
 
 class DatasetDetails(Dataset):
     """
@@ -377,6 +391,7 @@ UPDATE_FIELDS = {
     "exclusivityOptOut",
     "isPaid",
     "basePriceCents",
+    "currency",
 }
 SUBMIT_FIELDS = {"agreeToSubmit"}
 

@@ -184,6 +184,21 @@ def test_price_requires_paid_dataset() -> None:
         DatasetSubmission(isPaid=False, basePriceCents=25_000)
 
 
+def test_currency_is_set_only_when_paid() -> None:
+    free = DatasetSubmission(name="Free")
+    assert free.currency is None
+    assert "currency" not in free.model_dump(exclude_none=True)
+
+    paid = DatasetSubmission(isPaid=True, basePriceCents=25_000)
+    assert paid.currency == "usd"
+    assert paid.model_dump(mode="json", exclude_none=True)["currency"] == "usd"
+
+
+def test_currency_is_not_a_settable_field() -> None:
+    with pytest.raises(ValidationError):
+        DatasetSubmission(isPaid=True, basePriceCents=25_000, currency="eur")
+
+
 def test_dataset_details_requires_id() -> None:
     with pytest.raises(ValidationError):
         DatasetDetails.model_validate({"filename": "dataset.tar.gz"})
