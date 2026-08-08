@@ -67,13 +67,13 @@ class DatasetSchema(BaseModel):
     """
     Task-agnostic representation of a dataset schema, as defined by a ``schema.yaml`` file.
 
-    Every schema **must** have ``dataset_id`` and ``task``.  The remaining
-    fields depend on the task type and the ``root_strategy``
-    (``"index"`` vs ``"glob"``).
+    Every schema **must** have ``dataset_id``.  The remaining fields depend on
+    the ``root_strategy`` (``"index"`` by default); the loader registered for
+    that strategy decides which fields are required at load time.
 
-    New task types only need to populate the fields they care about;
-    the loader registered for that task will decide which fields are
-    required at load time.
+    ``task`` is optional.  When set to a task with a known contract (e.g. ASR,
+    TTS), the loaded DataFrame is validated to contain the task's required
+    logical columns.
     """
 
     model_config = ConfigDict(frozen=False)
@@ -81,8 +81,13 @@ class DatasetSchema(BaseModel):
     dataset_id: str = Field(
         description="Unique identifier for the dataset in the registry"
     )
-    task: str = Field(
-        description="A task as defined in the MDC Platform e.g. ASR, TTS etc"
+    task: str | None = Field(
+        default=None,
+        description=(
+            "Optional task as defined in the MDC Platform e.g. ASR, TTS etc. "
+            "When set to a task with a known contract, the loaded dataset is "
+            "validated against it."
+        ),
     )
 
     # --- Index-based strategy (ASR / TTS) ---
@@ -114,9 +119,13 @@ class DatasetSchema(BaseModel):
         default="utf-8", description='file encoding (e.g. "utf-8-sig" for BOM)'
     )
 
-    # --- Glob-based strategy (LM, paired-file TTS) ---
+    # --- Loading strategy ---
     root_strategy: str | None = Field(
-        default=None, description='"glob" | "paired_glob" | "multi_split"'
+        default=None,
+        description=(
+            '"index" (default) | "glob" | "paired_glob" | "multi_split" | '
+            '"multi_sections"'
+        ),
     )
     file_pattern: str | None = Field(default=None, description='e.g. "**/*.txt"')
     audio_extension: str | None = Field(
@@ -230,9 +239,9 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
     data: dict[str, Any] = raw
 
     dataset_id = data.get("dataset_id")
+    if not dataset_id:
+        raise ValueError("schema.yaml must contain 'dataset_id'")
     task = data.get("task")
-    if not dataset_id or not task:
-        raise ValueError("schema.yaml must contain 'dataset_id' and 'task'")
 
     # Columns (index-based)
     columns: dict[str, ColumnMapping] = {}
@@ -286,7 +295,7 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
 
     return DatasetSchema(
         dataset_id=str(dataset_id),
-        task=str(task).upper(),
+        task=str(task).upper() if task else None,
         format=data.get("format"),
         index_file=data.get("index_file"),
         base_audio_path=data.get("base_audio_path"),

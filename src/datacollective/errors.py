@@ -42,6 +42,10 @@ class DownloadError(Exception):
         return "Download failed. Unfortunately this dataset does not support resuming downloads — please try again."
 
 
+class TaskValidationError(ValueError):
+    """Raised when a loaded dataset does not satisfy its task's column contract."""
+
+
 class MissingDependencyError(ImportError):
     """Raised when an optional dependency required for a feature is not installed."""
 

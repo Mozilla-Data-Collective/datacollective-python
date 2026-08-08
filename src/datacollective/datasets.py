@@ -161,7 +161,7 @@ def load_dataset(
     If there is a directory with the same name as the archive file without the suffix extension, we assume
     it has already been extracted, and it will not be re-extracted unless `overwrite_extracted=True`.
 
-    Uses the dataset schema to determine task-specific loading logic.
+    Uses the dataset schema to determine the loading strategy.
 
     Automatically resumes interrupted downloads if a .checksum file exists from a
     previous attempt.

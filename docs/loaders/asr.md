@@ -1,5 +1,10 @@
 # ASR Loader
 
+> **Note:** since v0.6 loading strategies are **task-agnostic** — the schema's
+> `root_strategy` selects the loader, and any strategy can be used with any
+> task. This page describes the strategies commonly used for ASR datasets.
+> The `task` field now only validates that the loaded DataFrame contains the
+> task's required columns (`audio_path` + `transcription`).
 Loader for **ASR** (Automatic Speech Recognition) datasets.
 
 There are three parsing strategies for ASR datasets, controlled by the `root_strategy` field in the schema.
