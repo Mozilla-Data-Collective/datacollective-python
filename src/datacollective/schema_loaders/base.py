@@ -33,6 +33,7 @@ SUFFIX_SEP: dict[str, str] = {
 class Strategy(StrEnum):
     """Loading strategies recognised by schema loaders."""
 
+    INDEX = "index"
     MULTI_SPLIT = "multi_split"
     MULTI_SECTIONS = "multi_sections"
     PAIRED_GLOB = "paired_glob"
@@ -41,7 +42,7 @@ class Strategy(StrEnum):
 
 class BaseSchemaLoader(abc.ABC):
     """
-    Interface that every task-specific loader must implement.
+    Interface that every strategy loader must implement.
 
     Args:
         schema (DatasetSchema): The parsed schema for the dataset.
@@ -69,8 +70,8 @@ class BaseSchemaLoader(abc.ABC):
         ``schema.format`` via `FORMAT_SEP`, then delegates the file
         lookup to `_resolve_index_file`.
 
-        Used by all index-based loaders (ASR, TTS, ...) so that each loader
-        only needs to call `_apply_column_mappings` on the result.
+        Used by index-based strategies so that each loader only needs to call
+        `_apply_column_mappings` on the result.
 
         Returns:
             A raw (unmapped) DataFrame exactly as read from the index file.
@@ -105,43 +106,6 @@ class BaseSchemaLoader(abc.ABC):
             self._resolved_index_file, self.schema.index_file
         )
         return self._resolved_index_file
-
-    def _load_multi_sections(self) -> pd.DataFrame:
-        """
-        Parsing logic for archives with multiple directories, and each directory
-        has its own index file. The section name is inferred from the parent directory of the index file.
-        """
-        sections = self._resolve_sections()
-        parts: list[pd.DataFrame] = []
-        for section_path in sections:
-            section_df = self._read_delimited_file(section_path)
-            section_df["section"] = section_path.parents[0].name
-            parts.append(section_df)
-
-        return pd.concat(parts, ignore_index=True)
-
-    def _resolve_sections(self) -> list:
-        """
-        Get a list of valid sections, i.e. subdirectories that include an index file.
-        """
-
-        assert self.schema.sections is not None
-        assert self.schema.index_file is not None
-        assert self.schema.section_root is not None
-        sections = self.schema.sections
-        section_paths = []
-        for section in sections:
-            section_path = (
-                self.extract_dir
-                / Path(self.schema.section_root)
-                / Path(section)
-                / self.schema.index_file
-            )
-            if not section_path.exists():
-                raise FileNotFoundError(f"Index file '{section_path}' not found ")
-            section_paths.append(section_path)
-
-        return section_paths
 
     def _apply_column_mappings(self, raw_df: pd.DataFrame) -> pd.DataFrame:
         """Select and rename columns according to the schema, applying dtype conversions.
@@ -414,12 +378,12 @@ class BaseSchemaLoader(abc.ABC):
             if relative_candidate.is_absolute():
                 path_candidates = [relative_candidate]
             else:
-                path_candidates = list(
+                path_candidates = [
                     root / relative_candidate
                     for root in self._get_audio_search_roots(
                         row=row, template_value=template_value or raw_value
                     )
-                )
+                ]
                 dataset_root = self._get_dataset_root()
                 path_candidates.append(dataset_root / relative_candidate)
                 if dataset_root != self.extract_dir:

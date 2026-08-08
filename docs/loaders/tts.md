@@ -1,5 +1,10 @@
 # TTS Loader
 
+> **Note:** since v0.6 loading strategies are **task-agnostic** — the schema's
+> `root_strategy` selects the loader, and any strategy can be used with any
+> task. This page describes the strategies commonly used for TTS datasets.
+> The `task` field now only validates that the loaded DataFrame contains the
+> task's required columns (`audio_path` + `transcription`).
 Loader for **TTS** (Text-to-Speech) datasets.
 
 There are three parsing strategies for TTS datasets, controlled by the `root_strategy` field in the schema.

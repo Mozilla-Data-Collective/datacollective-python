@@ -28,8 +28,11 @@ Create a file named `schema.yaml`. Start with the basic required fields:
 
 ```yaml
 dataset_id: "your-dataset-id"   # The unique ID of the dataset on MDC
-task: "ASR"                    # ASR, TTS, or OTH
+task: "ASR"                    # e.g. ASR, TTS, or OTH
 ```
+
+The `task` is used to validate that the loaded DataFrame contains 
+the task's required columns (e.g. ASR/TTS: `audio_path` + `transcription`).
 
 Then add the fields for your chosen strategy.
 

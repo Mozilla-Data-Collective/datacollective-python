@@ -14,6 +14,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from datacollective.errors import TaskValidationError
 from datacollective.schema import DatasetSchema, _parse_schema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
 
@@ -28,7 +29,7 @@ def _schema_from_dict(d: dict) -> DatasetSchema:
 
 
 class TestASRIndexE2E:
-    """Full pipeline: TSV/CSV index -> ASRLoader -> DataFrame."""
+    """Full pipeline: TSV/CSV index -> IndexLoader (+ ASR contract) -> DataFrame."""
 
     def test_tsv_basic(self, tmp_path: Path) -> None:
         _write(
@@ -69,8 +70,8 @@ class TestASRIndexE2E:
                 "format": "csv",
                 "index_file": "data.csv",
                 "columns": {
-                    "audio": {"source_column": "path", "dtype": "file_path"},
-                    "text": {"source_column": "sentence"},
+                    "audio_path": {"source_column": "path", "dtype": "file_path"},
+                    "transcription": {"source_column": "sentence"},
                     "missing": {
                         "source_column": "nonexistent",
                         "dtype": "string",
@@ -96,8 +97,8 @@ class TestASRIndexE2E:
                 "format": "tsv",
                 "index_file": "meta.tsv",
                 "columns": {
-                    "audio": {"source_column": "path", "dtype": "file_path"},
-                    "text": {"source_column": "sentence"},
+                    "audio_path": {"source_column": "path", "dtype": "file_path"},
+                    "transcription": {"source_column": "sentence"},
                 },
             }
         )
@@ -116,8 +117,8 @@ class TestASRIndexE2E:
                 "format": "tsv",
                 "index_file": "meta.tsv",
                 "columns": {
-                    "audio": {"source_column": "path", "dtype": "file_path"},
-                    "text": {"source_column": "sentence"},
+                    "audio_path": {"source_column": "path", "dtype": "file_path"},
+                    "transcription": {"source_column": "sentence"},
                     "age": {"source_column": "age", "dtype": "int"},
                     "score": {"source_column": "score", "dtype": "float"},
                 },
@@ -228,8 +229,8 @@ class TestASRMultiSplitE2E:
                 "root_strategy": "multi_split",
                 "splits": ["train", "dev", "test"],
                 "columns": {
-                    "audio": {"source_column": "path", "dtype": "file_path"},
-                    "text": {"source_column": "sentence"},
+                    "audio_path": {"source_column": "path", "dtype": "file_path"},
+                    "transcription": {"source_column": "sentence"},
                 },
             }
         )
@@ -245,7 +246,6 @@ class TestASRMultiSplitE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-ms2",
-                "task": "ASR",
                 "root_strategy": "multi_split",
                 "splits": ["train", "dev"],
             }
@@ -259,7 +259,6 @@ class TestASRMultiSplitE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-ms-csv",
-                "task": "ASR",
                 "root_strategy": "multi_split",
                 "splits": ["train"],
                 "splits_file_pattern": "**/*.csv",
@@ -307,8 +306,8 @@ class TestTTSIndexE2E:
                 "format": "tsv",
                 "index_file": "meta.tsv",
                 "columns": {
-                    "audio": {"source_column": "audio", "dtype": "file_path"},
-                    "text": {"source_column": "text"},
+                    "audio_path": {"source_column": "audio", "dtype": "file_path"},
+                    "transcription": {"source_column": "text"},
                 },
             }
         )
@@ -321,7 +320,6 @@ class TestTTSIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "tts-raw",
-                "task": "TTS",
                 "format": "csv",
                 "index_file": "meta.csv",
             }
@@ -342,13 +340,13 @@ class TestTTSIndexE2E:
                 "index_file": "meta.tsv",
                 "encoding": "utf-8-sig",
                 "columns": {
-                    "audio": {"source_column": "audio", "dtype": "file_path"},
-                    "text": {"source_column": "text"},
+                    "audio_path": {"source_column": "audio", "dtype": "file_path"},
+                    "transcription": {"source_column": "text"},
                 },
             }
         )
         df = _load_dataset_from_schema(schema, tmp_path)
-        assert df["text"].iloc[0] == "grüezi"
+        assert df["transcription"].iloc[0] == "grüezi"
 
 
 class TestTTSPairedGlobE2E:
@@ -454,7 +452,6 @@ class TestTTSMultiSectionsE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "tts-ms",
-                "task": "TTS",
                 "root_strategy": "multi_sections",
                 "section_root": "dataset",
                 "sections": ["General", "Chat"],
@@ -467,13 +464,36 @@ class TestTTSMultiSectionsE2E:
         assert set(df["section"]) == {"General", "Chat"}
         assert df["text"].tolist() == ["Text General", "Text Chat"]
 
+    def test_with_column_mappings_and_task_contract(self, tmp_path: Path) -> None:
+        """multi_sections applies declared mappings and satisfies the TTS contract."""
+        self._create_multi_sections_dataset(tmp_path, ["General", "Chat"])
+
+        schema = _schema_from_dict(
+            {
+                "dataset_id": "tts-ms-mapped",
+                "task": "TTS",
+                "root_strategy": "multi_sections",
+                "section_root": "dataset",
+                "sections": ["General", "Chat"],
+                "index_file": "metadata.tsv",
+                "format": "tsv",
+                "columns": {
+                    "audio_path": {"source_column": "audio", "dtype": "file_path"},
+                    "transcription": {"source_column": "text"},
+                },
+            }
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert len(df) == 2
+        assert list(df.columns) == ["audio_path", "transcription", "section"]
+        assert set(df["section"]) == {"General", "Chat"}
+
     def test_ignores_unlisted_sections(self, tmp_path: Path) -> None:
         self._create_multi_sections_dataset(tmp_path, ["General", "Chat", "Other"])
 
         schema = _schema_from_dict(
             {
                 "dataset_id": "tts-ms-subset",
-                "task": "TTS",
                 "root_strategy": "multi_sections",
                 "section_root": "dataset",
                 "sections": ["General", "Chat"],
@@ -487,9 +507,9 @@ class TestTTSMultiSectionsE2E:
 
 
 class TestErrorPaths:
-    def test_unknown_task_raises(self, tmp_path: Path) -> None:
-        schema = DatasetSchema(dataset_id="ds", task="UNKNOWN_TASK")
-        with pytest.raises(ValueError, match="No schema loader registered"):
+    def test_unknown_strategy_raises(self, tmp_path: Path) -> None:
+        schema = DatasetSchema(dataset_id="ds", root_strategy="unknown_strategy")
+        with pytest.raises(ValueError, match="Unknown root_strategy"):
             _load_dataset_from_schema(schema, tmp_path)
 
     def test_asr_missing_index_file_raises(self, tmp_path: Path) -> None:
@@ -499,7 +519,10 @@ class TestErrorPaths:
                 "task": "ASR",
                 "format": "tsv",
                 "index_file": "missing.tsv",
-                "columns": {"a": {"source_column": "x"}},
+                "columns": {
+                    "audio_path": {"source_column": "path", "dtype": "file_path"},
+                    "transcription": {"source_column": "sentence"},
+                },
             }
         )
         with pytest.raises(FileNotFoundError, match="missing.tsv"):
@@ -513,10 +536,41 @@ class TestErrorPaths:
                 "task": "ASR",
                 "format": "tsv",
                 "index_file": "d.tsv",
-                "columns": {"audio": {"source_column": "nonexistent"}},
+                "columns": {
+                    "audio_path": {"source_column": "nonexistent"},
+                    "transcription": {"source_column": "sentence"},
+                },
             }
         )
         with pytest.raises(KeyError, match="nonexistent"):
+            _load_dataset_from_schema(schema, tmp_path)
+
+    def test_asr_contract_violation_fails_fast(self, tmp_path: Path) -> None:
+        """Declared mappings that cannot satisfy the ASR contract are rejected."""
+        schema = _schema_from_dict(
+            {
+                "dataset_id": "asr-contract",
+                "task": "ASR",
+                "format": "tsv",
+                "index_file": "missing.tsv",
+                "columns": {"a": {"source_column": "x"}},
+            }
+        )
+        with pytest.raises(TaskValidationError, match="audio_path"):
+            _load_dataset_from_schema(schema, tmp_path)
+
+    def test_asr_raw_load_contract_violation_raises(self, tmp_path: Path) -> None:
+        """A columns-less ASR schema loads raw, then fails the task contract."""
+        _write(tmp_path / "d.tsv", "path\tsentence\nc.mp3\thi\n")
+        schema = _schema_from_dict(
+            {
+                "dataset_id": "asr-raw",
+                "task": "ASR",
+                "format": "tsv",
+                "index_file": "d.tsv",
+            }
+        )
+        with pytest.raises(TaskValidationError, match="ASR"):
             _load_dataset_from_schema(schema, tmp_path)
 
     def test_tts_paired_glob_no_text_files_raises(self, tmp_path: Path) -> None:
@@ -537,7 +591,6 @@ class TestErrorPaths:
         schema = _schema_from_dict(
             {
                 "dataset_id": "tts-nf",
-                "task": "TTS",
                 "index_file": "meta.csv",
             }
         )

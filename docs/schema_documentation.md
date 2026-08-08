@@ -19,13 +19,13 @@ Under the hood, `load_dataset()` performs the following steps automatically:
 1. **Resolve the schema**: check local cache or the schema registry for `schema.yaml`. If the dataset is not registered this step raises a warning, so we never download an unsupported archive.
 2. **Download** the archive (with resume support). The schema we fetched in step 1 tells the loader how the files are structured.
 3. **Extract** the `.tar.gz` / `.zip` to a local directory.
-4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model) and dispatch to the task-specific loader (ASR, TTS, OTH, …), which returns the final **DataFrame**.
+4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model) and dispatch to the loader for the schema's `root_strategy` (index, glob, …), which returns the final **DataFrame**. When the schema declares a `task` with a known contract (ASR, TTS, LLM), the loaded DataFrame is validated to contain the task's required logical columns.
 
 The schema file describes:
 
-- **What task** the dataset is for (ASR, TTS, …).
 - **How to find** the data files (index file path, glob pattern, etc.).
 - **How to map** raw columns / files into a clean DataFrame.
+- Optionally, **what task** the dataset is for (ASR, TTS, …), which the loaded DataFrame is validated against.
 
 ### Minimal example
 
@@ -56,7 +56,8 @@ Every schema **must** have:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `dataset_id` | `str` | ✓ | Unique dataset identifier on MDC. |
-| `task` | `str` | ✓ | Task type: determines which loader is used (`"ASR"`, `"TTS"`, `"OTH"`). |
+| `task` | `str` | ✗ | *(optional)* Task type as defined on the MDC Platform (`"ASR"`, `"TTS"`, …). When set to a task with a known contract, the loaded DataFrame is validated to contain the task's required logical columns (e.g. ASR/TTS: `audio_path` + `transcription`; LLM: `text`). Tasks without a contract (e.g. `"OTH"`) load without validation. |
+
 
 ### Loading strategies
 
