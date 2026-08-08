@@ -1,5 +1,10 @@
 # OTH Loader
 
+> **Note:** since v0.6 loading strategies are **task-agnostic** — the schema's
+> `root_strategy` selects the loader, and any strategy can be used with any
+> task. This page describes the strategies commonly used for OTH datasets.
+> The `task` field now only validates that the loaded DataFrame contains the
+> task's required columns (no contract — OTH loads without validation).
 Loader for tasks classified as **OTH** (other).
 
 There are two parsing strategies, controlled by the `root_strategy` field in the schema.
