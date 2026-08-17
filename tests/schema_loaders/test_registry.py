@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import pytest
 
-from datacollective.errors import TaskValidationError
+from datacollective.errors import TaskValidationWarning
 from datacollective.schema import ColumnMapping, DatasetSchema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
 
@@ -15,8 +16,7 @@ def _write(path: Path, content: str) -> None:
 
 
 class TestStrategyDispatch:
-    def test_default_strategy_is_index(self, tmp_path: Path) -> None:
-        """Without a root_strategy the schema is loaded via the index strategy."""
+    def test_dispatches_index(self, tmp_path: Path) -> None:
         _write(
             tmp_path / "train.tsv",
             "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n",
@@ -24,6 +24,7 @@ class TestStrategyDispatch:
 
         schema = DatasetSchema(
             dataset_id="test",
+            root_strategy="index",
             format="tsv",
             index_file="train.tsv",
             columns={
@@ -125,8 +126,13 @@ class TestStrategyDispatch:
             _load_dataset_from_schema(schema, tmp_path)
 
     def test_index_requires_index_file(self, tmp_path: Path) -> None:
-        schema = DatasetSchema(dataset_id="test-idx")
+        schema = DatasetSchema(dataset_id="test-idx", root_strategy="index")
         with pytest.raises(ValueError, match="index_file"):
+            _load_dataset_from_schema(schema, tmp_path)
+
+    def test_missing_root_strategy_raises(self, tmp_path: Path) -> None:
+        schema = DatasetSchema(dataset_id="ds", index_file="train.tsv")
+        with pytest.raises(ValueError, match="must specify 'root_strategy'"):
             _load_dataset_from_schema(schema, tmp_path)
 
     def test_unknown_strategy_raises(self, tmp_path: Path) -> None:
@@ -141,6 +147,7 @@ class TestTaskContracts:
 
         schema = DatasetSchema(
             dataset_id="test-asr",
+            root_strategy="index",
             task="ASR",
             format="tsv",
             index_file="train.tsv",
@@ -152,41 +159,64 @@ class TestTaskContracts:
         df = _load_dataset_from_schema(schema, tmp_path)
         assert {"audio_path", "transcription"} <= set(df.columns)
 
-    def test_declared_columns_violating_contract_fail_fast(
-        self, tmp_path: Path
-    ) -> None:
-        """Misconfigured mappings are rejected before any file resolution."""
+    def test_contract_satisfied_emits_no_warning(self, tmp_path: Path) -> None:
+        _write(tmp_path / "train.tsv", "path\tsentence\nc1.mp3\thello\n")
+
         schema = DatasetSchema(
-            dataset_id="test-asr-bad",
+            dataset_id="test-asr-clean",
+            root_strategy="index",
             task="ASR",
             format="tsv",
-            index_file="missing.tsv",  # never touched: validation fails first
+            index_file="train.tsv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
+                "transcription": ColumnMapping(source_column="sentence"),
+            },
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", TaskValidationWarning)
+            _load_dataset_from_schema(schema, tmp_path)
+
+    def test_non_contract_columns_warn_and_still_load(self, tmp_path: Path) -> None:
+        """Mappings that don't produce the contract columns warn, but load."""
+        _write(tmp_path / "train.tsv", "path\tsentence\nc1.mp3\thello\n")
+
+        schema = DatasetSchema(
+            dataset_id="test-asr-bad",
+            root_strategy="index",
+            task="ASR",
+            format="tsv",
+            index_file="train.tsv",
             columns={
                 "audio": ColumnMapping(source_column="path", dtype="file_path"),
                 "text": ColumnMapping(source_column="sentence"),
             },
         )
-        with pytest.raises(TaskValidationError, match="audio_path"):
-            _load_dataset_from_schema(schema, tmp_path)
+        with pytest.warns(TaskValidationWarning, match="audio_path"):
+            df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["audio", "text"]
 
-    def test_raw_load_violating_contract_raises_post_load(self, tmp_path: Path) -> None:
-        """A columns-less index schema loads raw, then fails the task contract."""
+    def test_raw_load_violating_contract_warns_post_load(self, tmp_path: Path) -> None:
+        """A columns-less index schema loads raw and warns about the contract."""
         _write(tmp_path / "train.tsv", "path\tsentence\nc1.mp3\thello\n")
 
         schema = DatasetSchema(
             dataset_id="test-asr-raw",
+            root_strategy="index",
             task="ASR",
             format="tsv",
             index_file="train.tsv",
         )
-        with pytest.raises(TaskValidationError, match="ASR"):
-            _load_dataset_from_schema(schema, tmp_path)
+        with pytest.warns(TaskValidationWarning, match="ASR"):
+            df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["path", "sentence"]
 
     def test_unknown_task_loads_without_validation(self, tmp_path: Path) -> None:
         _write(tmp_path / "data.tsv", "a\tb\n1\t2\n")
 
         schema = DatasetSchema(
             dataset_id="test-unknown",
+            root_strategy="index",
             task="BRAND_NEW_TASK",
             format="tsv",
             index_file="data.tsv",
@@ -202,6 +232,7 @@ class TestTaskContracts:
 
         schema = DatasetSchema(
             dataset_id="test-oth",
+            root_strategy="index",
             task="OTH",
             format="tsv",
             index_file="data.tsv",
@@ -221,6 +252,7 @@ class TestTaskContracts:
 
         schema = DatasetSchema(
             dataset_id="test-no-task",
+            root_strategy="index",
             format="csv",
             index_file="data.csv",
         )

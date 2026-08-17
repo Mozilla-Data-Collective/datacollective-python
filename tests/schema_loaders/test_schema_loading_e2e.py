@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from datacollective.errors import TaskValidationError
+from datacollective.errors import TaskValidationWarning
 from datacollective.schema import DatasetSchema, _parse_schema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
 
@@ -41,6 +41,7 @@ class TestASRIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-tsv",
+                "root_strategy": "index",
                 "task": "ASR",
                 "format": "tsv",
                 "index_file": "train.tsv",
@@ -66,6 +67,7 @@ class TestASRIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-csv",
+                "root_strategy": "index",
                 "task": "ASR",
                 "format": "csv",
                 "index_file": "data.csv",
@@ -93,6 +95,7 @@ class TestASRIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-nested",
+                "root_strategy": "index",
                 "task": "ASR",
                 "format": "tsv",
                 "index_file": "meta.tsv",
@@ -113,6 +116,7 @@ class TestASRIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-types",
+                "root_strategy": "index",
                 "task": "ASR",
                 "format": "tsv",
                 "index_file": "meta.tsv",
@@ -148,6 +152,7 @@ class TestASRIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-audio-search",
+                "root_strategy": "index",
                 "task": "ASR",
                 "index_file": "data/metadata.csv",
                 "base_audio_path": ["data/recipes/", "data/giving_gift/"],
@@ -190,6 +195,7 @@ class TestASRIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-audio-search-dynamic-root",
+                "root_strategy": "index",
                 "task": "ASR",
                 "index_file": "data/metadata.csv",
                 "base_audio_path": "data/${Split}/",
@@ -279,6 +285,7 @@ class TestTTSIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "tts-pipe",
+                "root_strategy": "index",
                 "task": "TTS",
                 "format": "pipe",
                 "separator": "|",
@@ -302,6 +309,7 @@ class TestTTSIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "tts-tsv",
+                "root_strategy": "index",
                 "task": "TTS",
                 "format": "tsv",
                 "index_file": "meta.tsv",
@@ -320,6 +328,7 @@ class TestTTSIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "tts-raw",
+                "root_strategy": "index",
                 "format": "csv",
                 "index_file": "meta.csv",
             }
@@ -335,6 +344,7 @@ class TestTTSIndexE2E:
         schema = _schema_from_dict(
             {
                 "dataset_id": "tts-enc",
+                "root_strategy": "index",
                 "task": "TTS",
                 "format": "tsv",
                 "index_file": "meta.tsv",
@@ -516,6 +526,7 @@ class TestErrorPaths:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-err",
+                "root_strategy": "index",
                 "task": "ASR",
                 "format": "tsv",
                 "index_file": "missing.tsv",
@@ -533,6 +544,7 @@ class TestErrorPaths:
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-col",
+                "root_strategy": "index",
                 "task": "ASR",
                 "format": "tsv",
                 "index_file": "d.tsv",
@@ -545,33 +557,38 @@ class TestErrorPaths:
         with pytest.raises(KeyError, match="nonexistent"):
             _load_dataset_from_schema(schema, tmp_path)
 
-    def test_asr_contract_violation_fails_fast(self, tmp_path: Path) -> None:
-        """Declared mappings that cannot satisfy the ASR contract are rejected."""
+    def test_asr_contract_violation_warns(self, tmp_path: Path) -> None:
+        """Mappings that don't satisfy the ASR contract warn, but still load."""
+        _write(tmp_path / "d.tsv", "path\tsentence\nc.mp3\thi\n")
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-contract",
+                "root_strategy": "index",
                 "task": "ASR",
                 "format": "tsv",
-                "index_file": "missing.tsv",
-                "columns": {"a": {"source_column": "x"}},
+                "index_file": "d.tsv",
+                "columns": {"a": {"source_column": "path"}},
             }
         )
-        with pytest.raises(TaskValidationError, match="audio_path"):
-            _load_dataset_from_schema(schema, tmp_path)
+        with pytest.warns(TaskValidationWarning, match="audio_path"):
+            df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["a"]
 
-    def test_asr_raw_load_contract_violation_raises(self, tmp_path: Path) -> None:
-        """A columns-less ASR schema loads raw, then fails the task contract."""
+    def test_asr_raw_load_contract_violation_warns(self, tmp_path: Path) -> None:
+        """A columns-less ASR schema loads raw and warns about the contract."""
         _write(tmp_path / "d.tsv", "path\tsentence\nc.mp3\thi\n")
         schema = _schema_from_dict(
             {
                 "dataset_id": "asr-raw",
+                "root_strategy": "index",
                 "task": "ASR",
                 "format": "tsv",
                 "index_file": "d.tsv",
             }
         )
-        with pytest.raises(TaskValidationError, match="ASR"):
-            _load_dataset_from_schema(schema, tmp_path)
+        with pytest.warns(TaskValidationWarning, match="ASR"):
+            df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["path", "sentence"]
 
     def test_tts_paired_glob_no_text_files_raises(self, tmp_path: Path) -> None:
         schema = _schema_from_dict(
@@ -591,6 +608,7 @@ class TestErrorPaths:
         schema = _schema_from_dict(
             {
                 "dataset_id": "tts-nf",
+                "root_strategy": "index",
                 "index_file": "meta.csv",
             }
         )
