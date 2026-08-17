@@ -2,7 +2,7 @@
 
 This document is for **developers** who want to add new loading strategies or task contracts within the MDC Python SDK.
 
-Dispatch is **strategy-based**: the schema's `root_strategy` field (default: `"index"`) selects the loader class, and any strategy can be combined with any task. The optional `task` field only adds a validation step — the loaded DataFrame must contain the task's required logical columns.
+Dispatch is **strategy-based**: the schema's required `root_strategy` field selects the loader class, and any strategy can be combined with any task. The optional `task` field only adds a validation step — the loaded DataFrame is checked for the task's required logical columns, and a `TaskValidationWarning` is emitted when any are missing.
 
 ## 1. How to add a new strategy
 
@@ -68,15 +68,15 @@ _STRATEGY_REGISTRY: dict[Strategy, Type[BaseSchemaLoader]] = {
 
 | Enum Member | YAML Value | Description |
 |---|---|---|
-| `Strategy.INDEX` | `"index"` (default) | Loads a single delimited index file, optionally applying column mappings. |
+| `Strategy.INDEX` | `"index"` | Loads a single delimited index file, optionally applying column mappings. |
 | `Strategy.MULTI_SPLIT` | `"multi_split"` | Loads multiple split files matching a pattern, adding a `split` column. |
 | `Strategy.MULTI_SECTIONS` | `"multi_sections"` | Loads one index file per section directory, adding a `section` column. |
 | `Strategy.PAIRED_GLOB` | `"paired_glob"` | Pairs audio files with sidecar files: `.txt` transcriptions, or JSON metadata/utterance files (with `format: "json"` and optional `record_path`). |
-| `Strategy.GLOB` | `"glob"` | Walks directory-structured datasets, deriving metadata from the path hierarchy. |
+| `Strategy.GLOB` | `"glob"` | Walks directory-structured datasets, deriving metadata from each file's path — via `columns` mappings over path-derived sources, or a default output when omitted. |
 
 ## 2. How to add a task contract
 
-The optional `task` field validates the loaded DataFrame against the task's required logical columns. Contracts live in `src/datacollective/schema_loaders/contracts.py`:
+The optional `task` field checks the loaded DataFrame against the task's required logical columns. Contracts live in `src/datacollective/schema_loaders/contracts.py`:
 
 ```python
 TASK_CONTRACTS: dict[str, frozenset[str]] = {
@@ -88,7 +88,7 @@ TASK_CONTRACTS: dict[str, frozenset[str]] = {
 }
 ```
 
-A contract violation raises `TaskValidationError`. Schemas whose task has no contract (e.g. `OTH`), or with no task at all, load without validation.
+A contract violation emits a `TaskValidationWarning` (via Python's `warnings` module, so it is visible even when package logging is disabled) and the DataFrame is still returned. Schemas whose task has no contract (e.g. `OTH`), or with no task at all, load without validation.
 
 > **Note for registry schemas:** keep the `task` field in existing `schema.yaml`
 > files — older SDK versions still require it.
@@ -105,10 +105,9 @@ When a user calls `load_dataset("id")`:
 4. **`_parse_schema()`**: Validates YAML into a `DatasetSchema` object.
 5. **`_load_dataset_from_schema()`**:
     - If the schema specifies `extract_files`, extracts inner archives (skipped when already extracted).
-    - Resolves the strategy loader from the **Registry** (`root_strategy`, default `"index"`).
-    - If the task has a contract and the schema declares column mappings, fails fast when the declared logical columns cannot satisfy the contract.
+    - Resolves the strategy loader from the **Registry** via the required `root_strategy` field (missing or unknown values raise a `ValueError`).
     - Calls `loader.load()`.
-    - Validates the loaded DataFrame against the task contract (when one exists).
+    - Checks the loaded DataFrame against the task contract (when one exists) and emits a `TaskValidationWarning` on violations.
     - Returns the final **pandas DataFrame**.
 
 ### Module Map
