@@ -86,6 +86,12 @@ strategy is selected with the required `root_strategy` field:
 | `separator` | Inferred from `format` or `index_file` | ✗ | Explicit column separator override (e.g. `"\|"`). |
 | `has_header` | `true` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
 | `encoding` | `"utf-8"` | ✗ | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
+| `strict` | `false` | ✗ | Disable archive heuristics for deterministic loading: `index_file` must exist at its literal path relative to the dataset root (no recursive search), no separator sniffing, and source column names must match exactly (no fuzzy matching). Applies to every strategy that reads delimited files. |
+
+The `index_file` lookup is deterministic even without `strict`: the literal
+relative path wins when it exists; otherwise the tree is searched recursively
+and the shallowest match is used — multiple matches at the same depth raise an
+error instead of picking one arbitrarily.
 
 ### Multi-split fields
 

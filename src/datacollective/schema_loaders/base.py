@@ -82,29 +82,53 @@ class BaseSchemaLoader(abc.ABC):
     def _resolve_index_file(self) -> Path:
         """Find the index file inside the extracted directory.
 
-        The method searches recursively and returns the shallowest match.
+        Resolution is deterministic: the literal path relative to the dataset
+        root wins when it exists. Otherwise (non-strict schemas only) the tree
+        is searched recursively and the shallowest match is used; multiple
+        matches at the same depth are an error rather than an arbitrary pick.
 
         Used by index-based loaders.
 
         Raises:
-            FileNotFoundError: If no matching file is found.
+            FileNotFoundError: If no matching file is found (in strict mode,
+                if the literal relative path does not exist).
+            ValueError: If the recursive search is ambiguous.
         """
         if self._resolved_index_file is not None:
             return self._resolved_index_file
 
         assert self.schema.index_file is not None
-        candidates = list(self.extract_dir.rglob(self.schema.index_file))
-        if not candidates:
+        literal = self.extract_dir / self.schema.index_file
+        if literal.is_file():
+            resolved = literal
+        elif self.schema.strict:
             raise FileNotFoundError(
-                f"Index file '{self.schema.index_file}' not found "
-                f"under '{self.extract_dir}'"
+                f"Index file '{self.schema.index_file}' not found at "
+                f"'{literal}' (strict schema: no recursive search)"
             )
-        # Prefer the shallowest match
-        candidates.sort(key=lambda p: len(p.parts))
-        self._resolved_index_file = candidates[0]
-        self._dataset_root = self._derive_dataset_root(
-            self._resolved_index_file, self.schema.index_file
-        )
+        else:
+            candidates = list(self.extract_dir.rglob(self.schema.index_file))
+            if not candidates:
+                raise FileNotFoundError(
+                    f"Index file '{self.schema.index_file}' not found "
+                    f"under '{self.extract_dir}'"
+                )
+            # Prefer the shallowest match; equal-depth ties are ambiguous
+            candidates.sort(key=lambda p: (len(p.parts), str(p)))
+            min_depth = len(candidates[0].parts)
+            ties = [c for c in candidates if len(c.parts) == min_depth]
+            if len(ties) > 1:
+                raise ValueError(
+                    f"Ambiguous index_file '{self.schema.index_file}': "
+                    f"{len(ties)} matches at the same depth under "
+                    f"'{self.extract_dir}': {[str(t) for t in ties[:5]]}. "
+                    "Set 'index_file' to an explicit path relative to the "
+                    "dataset root."
+                )
+            resolved = candidates[0]
+
+        self._resolved_index_file = resolved
+        self._dataset_root = self._derive_dataset_root(resolved, self.schema.index_file)
         return self._resolved_index_file
 
     def _apply_column_mappings(self, raw_df: pd.DataFrame) -> pd.DataFrame:
@@ -213,6 +237,8 @@ class BaseSchemaLoader(abc.ABC):
     def _maybe_sniff_separator(
         self, file_path: Path, raw_df: pd.DataFrame, initial_sep: str | None
     ) -> str | None:
+        if self.schema.strict:
+            return None
         if self.schema.separator or len(raw_df.columns) != 1 or not self.schema.columns:
             return None
 
@@ -271,6 +297,9 @@ class BaseSchemaLoader(abc.ABC):
             return source
         if isinstance(source, int):
             return source if source in raw_df.columns else None
+        if self.schema.strict:
+            # Strict schemas require exact column names — no fuzzy matching
+            return None
 
         stripped_source = source.strip()
         if stripped_source in raw_df.columns:
@@ -626,6 +655,9 @@ class BaseSchemaLoader(abc.ABC):
             return source
         if isinstance(source, int):
             return source if source in row.index else None
+        if self.schema.strict:
+            # Strict schemas require exact column names — no fuzzy matching
+            return None
 
         stripped_source = source.strip()
         if stripped_source in row.index:

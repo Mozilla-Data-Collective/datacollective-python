@@ -19,6 +19,7 @@ the raw index file is returned as-is.
 | `separator` | ✗ | Explicit column separator (e.g. `"\|"`). |
 | `has_header` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
 | `encoding` | ✗ | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
+| `strict` | ✗ | Disable archive heuristics: `index_file` must exist at its literal relative path (no recursive search), no separator sniffing, exact column-name matching only. |
 
 ---
 

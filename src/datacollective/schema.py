@@ -103,6 +103,15 @@ class DatasetSchema(BaseModel):
     encoding: str = Field(
         default="utf-8", description='file encoding (e.g. "utf-8-sig" for BOM)'
     )
+    strict: bool = Field(
+        default=False,
+        description=(
+            "Disable archive heuristics for deterministic loading: "
+            "'index_file' must exist at its literal path relative to the "
+            "dataset root (no recursive search), no separator sniffing, and "
+            "source column names must match exactly (no fuzzy matching)."
+        ),
+    )
 
     # --- Loading strategy ---
     root_strategy: str | None = Field(
@@ -252,6 +261,7 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         "separator",
         "has_header",
         "encoding",
+        "strict",
         "root_strategy",
         "file_pattern",
         "audio_extension",
@@ -275,6 +285,7 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         separator=data.get("separator"),
         has_header=data.get("has_header", True),
         encoding=data.get("encoding", "utf-8"),
+        strict=data.get("strict", False),
         root_strategy=data.get("root_strategy"),
         file_pattern=data.get("file_pattern"),
         audio_extension=data.get("audio_extension"),
