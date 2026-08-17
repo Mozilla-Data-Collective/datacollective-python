@@ -37,6 +37,11 @@ def _resolve_schema(
     """
     schema_path = extract_dir / "schema.yaml"
 
+    # An empty checksum must never validate the cache (or be stamped into it):
+    # "" == "" would pin the cached schema forever for datasets whose API
+    # record has no checksum.
+    archive_checksum = archive_checksum or None
+
     # Try to load a cached schema first
     cached_schema = _load_cached_schema(schema_path)
 

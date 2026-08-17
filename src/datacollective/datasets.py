@@ -208,7 +208,7 @@ def load_dataset(
     dataset_details = get_dataset_details(dataset_id)
     archive_filename = _require_archive_filename(dataset_details)
     _id = dataset_details.id
-    archive_checksum = dataset_details.checksum or ""
+    archive_checksum = dataset_details.checksum or None
 
     # try to fetch schema from registry
     schema = _get_dataset_schema(_id)
