@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-import csv
 import re
 from enum import StrEnum
 from pathlib import Path
@@ -190,17 +189,6 @@ class BaseSchemaLoader(abc.ABC):
 
         logger.debug(f"Reading delimited file: {file_path} (sep={sep!r})")
         df = self._read_csv(file_path, sep=sep, header=header)
-
-        sniffed_sep = self._maybe_sniff_separator(file_path, df, sep)
-        if sniffed_sep is not None and sniffed_sep != sep:
-            logger.debug(
-                "Retrying %s with sniffed separator %r instead of %r",
-                file_path,
-                sniffed_sep,
-                sep,
-            )
-            df = self._read_csv(file_path, sep=sniffed_sep, header=header)
-
         return self._normalize_dataframe_columns(df)
 
     def _read_csv(
@@ -233,47 +221,6 @@ class BaseSchemaLoader(abc.ABC):
             if suffix in SUFFIX_SEP:
                 return SUFFIX_SEP[suffix]
         return None
-
-    def _maybe_sniff_separator(
-        self, file_path: Path, raw_df: pd.DataFrame, initial_sep: str | None
-    ) -> str | None:
-        if self.schema.strict:
-            return None
-        if self.schema.separator or len(raw_df.columns) != 1 or not self.schema.columns:
-            return None
-
-        required_sources = [
-            col_map.source_column
-            for col_map in self.schema.columns.values()
-            if not col_map.optional
-        ]
-        if not required_sources:
-            return None
-        if all(
-            self._resolve_source_column(raw_df, source) is not None
-            for source in required_sources
-        ):
-            return None
-
-        with file_path.open(
-            "r", encoding=self.schema.encoding, errors="ignore"
-        ) as handle:
-            sample = handle.read(4096)
-
-        delimiters = "".join(
-            delim
-            for delim in (",", "\t", "|", ";")
-            if delim in sample and delim != initial_sep
-        )
-        if not delimiters:
-            return None
-
-        try:
-            dialect = csv.Sniffer().sniff(sample, delimiters=delimiters)
-        except csv.Error:
-            return None
-
-        return dialect.delimiter
 
     def _normalize_dataframe_columns(self, raw_df: pd.DataFrame) -> pd.DataFrame:
         if raw_df.empty and not len(raw_df.columns):

@@ -108,8 +108,8 @@ class DatasetSchema(BaseModel):
         description=(
             "Disable archive heuristics for deterministic loading: "
             "'index_file' must exist at its literal path relative to the "
-            "dataset root (no recursive search), no separator sniffing, and "
-            "source column names must match exactly (no fuzzy matching)."
+            "dataset root (no recursive search) and source column names "
+            "must match exactly (no fuzzy matching)."
         ),
     )
 
