@@ -67,9 +67,10 @@ class DatasetSchema(BaseModel):
     """
     Task-agnostic representation of a dataset schema, as defined by a ``schema.yaml`` file.
 
-    Every schema **must** have ``dataset_id``.  The remaining fields depend on
-    the ``root_strategy`` (``"index"`` by default); the loader registered for
-    that strategy decides which fields are required at load time.
+    Every schema **must** have ``dataset_id`` and, to be loadable, a
+    ``root_strategy``.  The remaining fields depend on the strategy; the
+    loader registered for that strategy decides which fields are required
+    at load time.
 
     ``task`` is optional.  When set to a task with a known contract (e.g. ASR,
     TTS), the loaded DataFrame is validated to contain the task's required
@@ -123,8 +124,8 @@ class DatasetSchema(BaseModel):
     root_strategy: str | None = Field(
         default=None,
         description=(
-            '"index" (default) | "glob" | "paired_glob" | "multi_split" | '
-            '"multi_sections"'
+            'Loading strategy; required to load a dataset: "index" | "glob" | '
+            '"paired_glob" | "multi_split" | "multi_sections"'
         ),
     )
     file_pattern: str | None = Field(default=None, description='e.g. "**/*.txt"')

@@ -35,18 +35,20 @@ def _resolve_strategy(schema: DatasetSchema) -> Strategy:
     """
     Resolve the loading strategy for *schema*.
 
-    Defaults to `Strategy.INDEX` when ``root_strategy`` is not set.
-
     Raises:
-        ValueError: If ``root_strategy`` names an unknown strategy.
+        ValueError: If ``root_strategy`` is not set or names an unknown strategy.
     """
-    raw = schema.root_strategy or Strategy.INDEX
-    try:
-        return Strategy(raw)
-    except ValueError:
-        supported = ", ".join(member.value for member in Strategy)
+    supported = ", ".join(member.value for member in Strategy)
+    if not schema.root_strategy:
         raise ValueError(
-            f"Unknown root_strategy '{raw}'. Supported strategies: {supported}"
+            f"Schema must specify 'root_strategy'. Supported strategies: {supported}"
+        )
+    try:
+        return Strategy(schema.root_strategy)
+    except ValueError:
+        raise ValueError(
+            f"Unknown root_strategy '{schema.root_strategy}'. "
+            f"Supported strategies: {supported}"
         ) from None
 
 
