@@ -257,23 +257,6 @@ columns:
 | `int` | Numeric coercion → nullable `Int64`. |
 | `float` | Numeric coercion → `float64`. |
 
-## Content mapping
-
-**Deprecated / unused** — `content_mapping` is accepted by the schema parser
-but not consumed by any loader. Its intended use case (mapping file contents
-and filenames into DataFrame columns for glob-based text datasets) is covered
-by the glob strategy's `columns` mapping with the `content` / `name` sources:
-
-```yaml
-root_strategy: "glob"
-file_pattern: "**/*.txt"
-columns:
-  text:
-    source_column: "content"   # each file's text → "text" column
-  file_name:
-    source_column: "name"      # filename → "file_name" column
-```
-
 ---
 
 ## Complete examples

@@ -47,22 +47,6 @@ class ColumnMapping(BaseModel):
     )
 
 
-class ContentMapping(BaseModel):
-    """
-    Describes how file contents / metadata map to DataFrame columns.
-
-    Used by glob-based tasks (e.g. LM) to specify how to extract text and metadata
-    from files found via glob patterns.  For example, the text content might come
-    from the file contents, while metadata (e.g. language code) might come from
-    the file name or parent directory.
-    """
-
-    model_config = ConfigDict(frozen=True)
-
-    text: str | None = Field(default=None, description='e.g. "file_content"')
-    meta_source: str | None = Field(default=None, description='e.g. "file_name"')
-
-
 class DatasetSchema(BaseModel):
     """
     Task-agnostic representation of a dataset schema, as defined by a ``schema.yaml`` file.
@@ -131,9 +115,6 @@ class DatasetSchema(BaseModel):
     file_pattern: str | None = Field(default=None, description='e.g. "**/*.txt"')
     audio_extension: str | None = Field(
         default=None, description='for paired-file TTS: e.g. ".webm"'
-    )
-    content_mapping: ContentMapping | None = Field(
-        default=None, description="Mapping for glob-based content extraction"
     )
     record_path: str | None = Field(
         default=None,
@@ -260,15 +241,6 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
                 path_template=col_def.get("path_template"),
             )
 
-    # Content mapping (glob-based)
-    content_mapping: ContentMapping | None = None
-    raw_cm = data.get("content_mapping")
-    if isinstance(raw_cm, dict):
-        content_mapping = ContentMapping(
-            text=raw_cm.get("text"),
-            meta_source=raw_cm.get("meta_source"),
-        )
-
     # Recognised top-level keys
     known_keys = {
         "dataset_id",
@@ -283,7 +255,6 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         "root_strategy",
         "file_pattern",
         "audio_extension",
-        "content_mapping",
         "record_path",
         "splits",
         "splits_file_pattern",
@@ -307,7 +278,6 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         root_strategy=data.get("root_strategy"),
         file_pattern=data.get("file_pattern"),
         audio_extension=data.get("audio_extension"),
-        content_mapping=content_mapping,
         record_path=data.get("record_path"),
         splits=data.get("splits"),
         splits_file_pattern=data.get("splits_file_pattern"),
