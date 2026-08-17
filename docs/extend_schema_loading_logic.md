@@ -49,7 +49,7 @@ When implementing `load()`, you can leverage these methods from the base class:
 
 ### Step 3: Register the loader
 
-1. **Add to the Enum**: add your strategy to the `Strategy` enum in `src/datacollective/schema_loaders/base.py`.
+1. **Add to the Enum**: add your strategy to the `Strategy` enum in `src/datacollective/schema.py` (its values are the valid `root_strategy` entries, validated at parse time).
 2. **Register the class** in `src/datacollective/schema_loaders/registry.py`:
 
 ```python
@@ -114,8 +114,8 @@ When a user calls `load_dataset("id")`:
 
 | Module | Responsibility |
 |---|---|
-| `datacollective.schema` | Pydantic models and YAML parsing. |
-| `datacollective.schema_loaders.base` | Abstract base class, shared helpers, and strategy definitions. |
+| `datacollective.schema` | Pydantic models, the `Strategy` enum, and YAML parsing/validation. |
+| `datacollective.schema_loaders.base` | Abstract base class and shared helpers. |
 | `datacollective.schema_loaders.registry` | Strategy-to-loader mapping and load orchestration. |
 | `datacollective.schema_loaders.contracts` | Task contracts and their validation. |
 | `datacollective.schema_loaders.cache_schema` | Local schema caching and checksum validation. |

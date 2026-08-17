@@ -2,17 +2,35 @@ from __future__ import annotations
 
 import urllib.error
 import urllib.request
+import warnings
+from difflib import get_close_matches
+from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal
 
 import yaml
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from datacollective.api_utils import SCHEMA_REGISTRY_RAW_BASE_URL
+from datacollective.errors import SchemaValidationWarning
 from datacollective.logging_utils import get_logger
 
 logger = get_logger(__name__)
+
+
+class Strategy(StrEnum):
+    """Loading strategies recognised by schema loaders.
+
+    The values are the valid ``root_strategy`` schema field entries; the
+    registry maps each member to its loader class.
+    """
+
+    INDEX = "index"
+    MULTI_SPLIT = "multi_split"
+    MULTI_SECTIONS = "multi_sections"
+    PAIRED_GLOB = "paired_glob"
+    GLOB = "glob"
 
 
 class ColumnMapping(BaseModel):
@@ -21,14 +39,18 @@ class ColumnMapping(BaseModel):
 
     Used by index-based tasks to describe how columns in the
     index file map to logical fields and their data types.
+
+    Unknown keys and unknown ``dtype`` values are rejected at parse time.
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     source_column: str | int = Field(
         description="column name (str) or positional index (int) for headerless files"
     )
-    dtype: str = "string"
+    dtype: Literal[
+        "string", "file_path", "file_content", "category", "int", "float"
+    ] = "string"
     optional: bool = False
     path_match_strategy: Literal["direct", "exact", "contains"] = "direct"
     file_extension: str | None = Field(
@@ -163,6 +185,58 @@ class DatasetSchema(BaseModel):
         default_factory=dict, description="Catch-all for future / unknown keys"
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def _route_unknown_keys(cls, data: Any) -> Any:
+        """Route unknown top-level keys into ``extra``, warning about each.
+
+        Near-miss typos get a "did you mean" hint. The keys are preserved
+        under ``extra`` (not dropped) so that schemas written for newer SDK
+        versions keep round-tripping.
+        """
+        if not isinstance(data, dict):
+            return data
+        if not data.get("dataset_id"):
+            raise ValueError("schema.yaml must contain 'dataset_id'")
+
+        known = set(cls.model_fields)
+        unknown = [key for key in data if key not in known]
+        if not unknown:
+            return data
+
+        for key in unknown:
+            suggestion = get_close_matches(key, known - {"extra"}, n=1)
+            message = f"Unknown schema key '{key}'"
+            if suggestion:
+                message += f" — did you mean '{suggestion[0]}'?"
+            message += " The key is ignored by this SDK version (kept under 'extra')."
+            warnings.warn(message, SchemaValidationWarning, stacklevel=2)
+
+        cleaned = {key: value for key, value in data.items() if key in known}
+        cleaned["extra"] = dict(data.get("extra") or {}) | {
+            key: data[key] for key in unknown
+        }
+        return cleaned
+
+    @field_validator("task", mode="before")
+    @classmethod
+    def _normalize_task(cls, value: Any) -> str | None:
+        return str(value).upper() if value else None
+
+    @field_validator("root_strategy", mode="before")
+    @classmethod
+    def _validate_root_strategy(cls, value: Any) -> Any:
+        if value is None:
+            return value
+        try:
+            Strategy(value)
+        except ValueError:
+            supported = ", ".join(member.value for member in Strategy)
+            raise ValueError(
+                f"Unknown root_strategy '{value}'. Supported strategies: {supported}"
+            ) from None
+        return value
+
     def to_yaml_dict(self) -> dict[str, Any]:
         """
         Serialise the schema to a plain dict suitable for YAML output.
@@ -211,6 +285,11 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
     """
     Parse a schema from a YAML string, a dict, or a file path.
 
+    Validation is delegated entirely to the `DatasetSchema` model: unknown
+    top-level keys are routed into ``extra`` with a `SchemaValidationWarning`,
+    while unknown ``root_strategy`` values, unknown column ``dtype`` values,
+    and unknown keys inside a column mapping raise at parse time.
+
     Args:
         raw: YAML string, already-parsed dict, or ``Path`` to a YAML file.
 
@@ -218,7 +297,8 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
         A fully-populated `DatasetSchema`.
 
     Raises:
-        ValueError: If required fields are missing or the input cannot be parsed.
+        ValueError: If required fields are missing or the input cannot be
+            parsed (`pydantic.ValidationError` is a ``ValueError``).
     """
     if isinstance(raw, Path):
         raw = raw.read_text(encoding="utf-8")
@@ -227,74 +307,4 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
     if not isinstance(raw, dict):
         raise ValueError(f"Expected a dict after YAML parsing, got {type(raw)}")
 
-    data: dict[str, Any] = raw
-
-    dataset_id = data.get("dataset_id")
-    if not dataset_id:
-        raise ValueError("schema.yaml must contain 'dataset_id'")
-    task = data.get("task")
-
-    # Columns (index-based)
-    columns: dict[str, ColumnMapping] = {}
-    raw_columns = data.get("columns", {})
-    if isinstance(raw_columns, dict):
-        for col_name, col_def in raw_columns.items():
-            if not isinstance(col_def, dict):
-                continue
-            columns[col_name] = ColumnMapping(
-                source_column=col_def["source_column"],  # str or int
-                dtype=col_def.get("dtype", "string"),
-                optional=col_def.get("optional", False),
-                path_match_strategy=col_def.get("path_match_strategy", "direct"),
-                file_extension=col_def.get("file_extension"),
-                path_template=col_def.get("path_template"),
-            )
-
-    # Recognised top-level keys
-    known_keys = {
-        "dataset_id",
-        "task",
-        "format",
-        "index_file",
-        "base_audio_path",
-        "columns",
-        "separator",
-        "has_header",
-        "encoding",
-        "strict",
-        "root_strategy",
-        "file_pattern",
-        "audio_extension",
-        "record_path",
-        "splits",
-        "splits_file_pattern",
-        "sections",
-        "section_root",
-        "extract_files",
-        "checksum",
-    }
-    extra = {k: v for k, v in data.items() if k not in known_keys}
-
-    return DatasetSchema(
-        dataset_id=str(dataset_id),
-        task=str(task).upper() if task else None,
-        format=data.get("format"),
-        index_file=data.get("index_file"),
-        base_audio_path=data.get("base_audio_path"),
-        columns=columns,
-        separator=data.get("separator"),
-        has_header=data.get("has_header", True),
-        encoding=data.get("encoding", "utf-8"),
-        strict=data.get("strict", False),
-        root_strategy=data.get("root_strategy"),
-        file_pattern=data.get("file_pattern"),
-        audio_extension=data.get("audio_extension"),
-        record_path=data.get("record_path"),
-        splits=data.get("splits"),
-        splits_file_pattern=data.get("splits_file_pattern"),
-        sections=data.get("sections"),
-        section_root=data.get("section_root"),
-        extract_files=data.get("extract_files"),
-        checksum=data.get("checksum"),
-        extra=extra,
-    )
+    return DatasetSchema.model_validate(raw)

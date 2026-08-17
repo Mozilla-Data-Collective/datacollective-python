@@ -62,7 +62,15 @@ silently fell back to index-based loading.
    relative path. A new optional `strict: true` field additionally disables
    the recursive search and fuzzy column-name matching.
 
-8. **Separator sniffing is removed.** Pre-0.6.0, a file whose declared or
+8. **Schemas are validated at parse time.** Unknown `dtype` values (e.g.
+   `"flaot"`) and unknown keys inside a column mapping entry (e.g. `dtpye:`)
+   now raise a `ValueError` at parse instead of being silently ignored or
+   cast to string. Unknown `root_strategy` values fail at parse rather than
+   at load. Unknown **top-level** keys still parse, but emit a
+   `SchemaValidationWarning` with a "did you mean …?" hint and land in the
+   `extra` catch-all.
+
+9. **Separator sniffing is removed.** Pre-0.6.0, a file whose declared or
    inferred separator parsed into a single column was re-parsed with a
    guessed delimiter. Now the declared separator is authoritative: a schema
    that relied on sniffing fails with "Required column … not found" listing

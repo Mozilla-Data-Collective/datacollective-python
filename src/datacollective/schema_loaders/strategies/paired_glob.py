@@ -22,6 +22,8 @@ class PairedGlobLoader(BaseSchemaLoader):
       normalised JSON records.
     - otherwise: each audio file has a matching text sidecar containing the
       transcription; requires ``file_pattern`` and ``audio_extension``.
+      Column mappings, when declared, are applied over the derived
+      ``audio_path`` / ``transcription`` / ``split`` sources.
     """
 
     def __init__(self, schema: DatasetSchema, extract_dir: Path) -> None:
@@ -107,6 +109,11 @@ class PairedGlobLoader(BaseSchemaLoader):
         contents, and pairs them with the corresponding audio files based on
         the same filename stem. The parent directory name of each text/audio
         pair is captured as a `split` column in the resulting DataFrame.
+
+        When the schema declares ``columns``, the mappings are applied over
+        the derived ``audio_path`` / ``transcription`` / ``split`` sources
+        (renaming, dtype conversion, dropping); the ``split`` column is kept,
+        mirroring the multi_split strategy.
         """
         assert self.schema.file_pattern is not None
         assert self.schema.audio_extension is not None
@@ -151,4 +158,11 @@ class PairedGlobLoader(BaseSchemaLoader):
                 f"No paired (text + {audio_ext}) files found under '{self.extract_dir}'"
             )
 
-        return pd.DataFrame(rows)
+        raw_df = pd.DataFrame(rows)
+        if not self.schema.columns:
+            return raw_df
+
+        mapped = self._apply_column_mappings(raw_df)
+        if "split" in raw_df.columns:
+            mapped["split"] = raw_df["split"]
+        return mapped

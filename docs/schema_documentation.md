@@ -113,6 +113,7 @@ transcription; pairing is done on the filename stem:
 | `root_strategy` | — | ✓ | Must be `"paired_glob"`. |
 | `file_pattern` | — | ✓ | Glob pattern to find text files (e.g. `"**/*.txt"`). |
 | `audio_extension` | — | ✓ | Extension of the matching audio files (e.g. `".webm"`). |
+| `columns` | — | ✗ | Optional mappings applied over the derived `audio_path` / `transcription` / `split` sources (rename, dtype, drop). The `split` column is kept. When omitted, the default `audio_path` / `transcription` / `split` output is returned. |
 
 **ASR (JSON sidecars)** — each audio file has a matching JSON file holding the
 audio filename, metadata, and (optionally) a list of time-aligned utterance
@@ -162,12 +163,13 @@ This field is task-agnostic — it works with any loader.
 
 ## Column mapping
 
-Used by the **index-based**, **multi-split**, **multi-sections**, **paired-glob (JSON)** 
-and **glob** strategies. Each key under `columns` is
-the **logical** column name that will appear in the resulting DataFrame.  For
-the glob strategy, `source_column` names a path-derived source (`path`,
-`parent`, `content`, …) instead of an index-file column — see the
-[glob strategy](./loaders/glob.md) page.  For all other strategies:
+Used by every strategy. Each key under `columns` is the **logical** column
+name that will appear in the resulting DataFrame.  For the glob strategy,
+`source_column` names a path-derived source (`path`, `parent`, `content`, …)
+instead of an index-file column — see the [glob strategy](./loaders/glob.md)
+page; for the paired-glob text variant it names one of the derived
+`audio_path` / `transcription` / `split` sources.  For the index-based
+strategies:
 
 ```yaml
 columns:
@@ -262,6 +264,13 @@ columns:
 | `category` | Cast to pandas `Categorical`. |
 | `int` | Numeric coercion → nullable `Int64`. |
 | `float` | Numeric coercion → `float64`. |
+
+Column mappings are validated at parse time: an unknown `dtype` value or an
+unknown key inside a mapping entry (e.g. `dtpye:`) raises a `ValueError`
+instead of being silently ignored. Unknown **top-level** schema keys emit a
+`SchemaValidationWarning` (with a "did you mean …?" hint for near-misses) and
+are kept under the `extra` catch-all, and unknown `root_strategy` values fail
+at parse time.
 
 ---
 

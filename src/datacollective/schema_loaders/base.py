@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import abc
 import re
-from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
 from datacollective.logging_utils import get_logger
-from datacollective.schema import ColumnMapping, DatasetSchema
+from datacollective.schema import ColumnMapping, DatasetSchema, Strategy
+
+__all__ = ["FORMAT_SEP", "SUFFIX_SEP", "BaseSchemaLoader", "Strategy"]
 
 logger = get_logger(__name__)
 
@@ -27,16 +28,6 @@ SUFFIX_SEP: dict[str, str] = {
     ".psv": "|",
     ".pipe": "|",
 }
-
-
-class Strategy(StrEnum):
-    """Loading strategies recognised by schema loaders."""
-
-    INDEX = "index"
-    MULTI_SPLIT = "multi_split"
-    MULTI_SECTIONS = "multi_sections"
-    PAIRED_GLOB = "paired_glob"
-    GLOB = "glob"
 
 
 class BaseSchemaLoader(abc.ABC):

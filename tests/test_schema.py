@@ -6,6 +6,7 @@ from typing import Any
 import pytest
 import yaml
 
+from datacollective.errors import SchemaValidationWarning
 from datacollective.schema import (
     ColumnMapping,
     DatasetSchema,
@@ -200,14 +201,15 @@ class TestParseSchema:
         assert s.columns["audio"].source_column == 0
         assert s.has_header is False
 
-    def test_unknown_keys_captured_in_extra(self) -> None:
+    def test_unknown_keys_warn_and_land_in_extra(self) -> None:
         raw: dict[str, Any] = {
             "dataset_id": "ds1",
             "task": "ASR",
             "my_custom_field": "hello",
             "another": 42,
         }
-        s = _parse_schema(raw)
+        with pytest.warns(SchemaValidationWarning, match="Unknown schema key"):
+            s = _parse_schema(raw)
         assert s.extra == {"my_custom_field": "hello", "another": 42}
 
     def test_strict_parsed(self) -> None:
@@ -277,12 +279,39 @@ class TestParseSchema:
         assert s.columns["a"].file_extension == ".wav"
         assert s.columns["a"].path_template == "${Speaker ID}_khm_${value}.wav"
 
-    def test_non_dict_column_entries_ignored(self) -> None:
+    def test_non_dict_column_entries_raise(self) -> None:
+        """Malformed column entries fail at parse time instead of vanishing."""
         raw: dict[str, Any] = {
             "dataset_id": "ds1",
             "task": "ASR",
             "columns": {"good": {"source_column": "x"}, "bad": "not_a_dict"},
         }
-        s = _parse_schema(raw)
-        assert "good" in s.columns
-        assert "bad" not in s.columns
+        with pytest.raises(ValueError, match="bad"):
+            _parse_schema(raw)
+
+    def test_unknown_dtype_raises(self) -> None:
+        """A typo'd dtype is a parse error, not a silent cast to string."""
+        raw: dict[str, Any] = {
+            "dataset_id": "ds1",
+            "columns": {"audio": {"source_column": "path", "dtype": "flaot"}},
+        }
+        with pytest.raises(ValueError, match="dtype"):
+            _parse_schema(raw)
+
+    def test_unknown_column_mapping_key_raises(self) -> None:
+        """A typo'd key inside a column mapping is a parse error."""
+        raw: dict[str, Any] = {
+            "dataset_id": "ds1",
+            "columns": {"audio": {"source_column": "path", "dtpye": "string"}},
+        }
+        with pytest.raises(ValueError, match="dtpye"):
+            _parse_schema(raw)
+
+    def test_unknown_root_strategy_raises_at_parse(self) -> None:
+        with pytest.raises(ValueError, match="Unknown root_strategy"):
+            _parse_schema({"dataset_id": "ds1", "root_strategy": "multisplit"})
+
+    def test_unknown_key_warns_with_suggestion(self) -> None:
+        with pytest.warns(SchemaValidationWarning, match="did you mean 'index_file'"):
+            s = _parse_schema({"dataset_id": "ds1", "index_files": "train.tsv"})
+        assert s.extra == {"index_files": "train.tsv"}
