@@ -1,18 +1,17 @@
 from __future__ import annotations
 
-import urllib.error
-import urllib.request
 import warnings
 from difflib import get_close_matches
 from enum import StrEnum
 from pathlib import Path
 from typing import Any, Literal
 
+import requests
 import yaml
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from datacollective.api_utils import SCHEMA_REGISTRY_RAW_BASE_URL
+from datacollective.api_utils import HTTP_TIMEOUT, SCHEMA_REGISTRY_RAW_BASE_URL
 from datacollective.errors import SchemaValidationWarning
 from datacollective.logging_utils import get_logger
 
@@ -270,15 +269,14 @@ def _get_dataset_schema(dataset_id: str) -> DatasetSchema | None:
     url = f"{SCHEMA_REGISTRY_RAW_BASE_URL}/main/registry/{dataset_id}/schema.yaml"
 
     try:
-        with urllib.request.urlopen(url) as response:
-            raw = response.read().decode("utf-8")
-        return _parse_schema(raw)
-    except urllib.error.HTTPError as exc:
-        if exc.code == 404:
-            return None
-        raise RuntimeError(f"HTTP {exc.code} while fetching {url}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"Network error while fetching {url}: {exc.reason}") from exc
+        response = requests.get(url, timeout=HTTP_TIMEOUT)
+    except requests.RequestException as exc:
+        raise RuntimeError(f"Network error while fetching {url}: {exc}") from exc
+    if response.status_code == 404:
+        return None
+    if not response.ok:
+        raise RuntimeError(f"HTTP {response.status_code} while fetching {url}")
+    return _parse_schema(response.text)
 
 
 def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
