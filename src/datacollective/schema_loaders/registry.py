@@ -10,10 +10,7 @@ import pandas as pd
 from datacollective.logging_utils import get_logger
 from datacollective.schema import DatasetSchema
 from datacollective.schema_loaders.base import BaseSchemaLoader, Strategy
-from datacollective.schema_loaders.contracts import (
-    _validate_declared_contract,
-    _validate_task_contract,
-)
+from datacollective.schema_loaders.contracts import _validate_task_contract
 from datacollective.schema_loaders.strategies import (
     GlobLoader,
     IndexLoader,
@@ -76,7 +73,8 @@ def _load_dataset_from_schema(schema: DatasetSchema, extract_dir: Path) -> pd.Da
 
     When the schema declares a task with a known contract (see
     `~datacollective.schema_loaders.contracts.TASK_CONTRACTS`), the loaded
-    DataFrame is validated against it.
+    DataFrame is validated against it; a violation emits a
+    `TaskValidationWarning` but the DataFrame is still returned.
 
     Args:
         schema: Parsed dataset schema.
@@ -90,7 +88,6 @@ def _load_dataset_from_schema(schema: DatasetSchema, extract_dir: Path) -> pd.Da
 
     strategy = _resolve_strategy(schema)
     loader_cls = _get_strategy_loader(strategy)
-    _validate_declared_contract(schema, strategy)
 
     loader = loader_cls(schema=schema, extract_dir=extract_dir)
     logger.info(f"Loading dataset '{schema.dataset_id}' with {loader_cls.__name__}")

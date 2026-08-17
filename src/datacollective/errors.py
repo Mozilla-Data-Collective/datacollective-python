@@ -42,8 +42,12 @@ class DownloadError(Exception):
         return "Download failed. Unfortunately this dataset does not support resuming downloads — please try again."
 
 
-class TaskValidationError(ValueError):
-    """Raised when a loaded dataset does not satisfy its task's column contract."""
+class TaskValidationWarning(UserWarning):
+    """Emitted when a loaded dataset does not satisfy its task's column contract.
+
+    Issued via :mod:`warnings`, so it is shown even when package logging is
+    disabled (``enable_logging=False``).
+    """
 
 
 class MissingDependencyError(ImportError):
