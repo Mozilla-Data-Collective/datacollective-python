@@ -125,3 +125,24 @@ class TestMultiSectionsLoader:
         assert list(df.columns) == ["audio_path", "transcription", "section"]
         assert set(df["section"]) == {"General", "Chat"}
         assert set(df["transcription"]) == {"Hello from General", "Hello from Chat"}
+
+
+class TestSectionNameDerivation:
+    def test_nested_index_file_keeps_declared_section_name(
+        self, tmp_path: Path
+    ) -> None:
+        """The section column must be the declared section name, not the
+        immediate parent directory of a nested index file."""
+        _write(
+            tmp_path / "dataset" / "General" / "meta" / "index.tsv",
+            "audio\ttext\ngeneral.wav\tHello from General\n",
+        )
+        schema = DatasetSchema(
+            dataset_id="ds",
+            root_strategy="multi_sections",
+            sections=["General"],
+            section_root="dataset",
+            index_file="meta/index.tsv",
+        )
+        df = MultiSectionsLoader(schema, tmp_path).load()
+        assert list(df["section"]) == ["General"]

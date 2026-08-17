@@ -148,3 +148,19 @@ class TestFallbacks:
 
         mock_get.assert_called_once_with("ds1")
         assert result.checksum is None
+
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
+    def test_empty_archive_checksum_never_validates_cache(
+        self, mock_get, tmp_path: Path
+    ) -> None:
+        """'' == '' must not count as a cache hit: datasets without an API
+        checksum would otherwise pin their first cached schema forever."""
+        _write_schema_yaml(tmp_path / "schema.yaml", task="ASR", checksum="")
+        remote = _make_schema(task="TTS", checksum=None)
+        mock_get.return_value = remote
+
+        result = _resolve_schema("ds1", tmp_path, archive_checksum="")
+
+        mock_get.assert_called_once_with("ds1")
+        assert result.task == "TTS"
+        assert result.checksum is None

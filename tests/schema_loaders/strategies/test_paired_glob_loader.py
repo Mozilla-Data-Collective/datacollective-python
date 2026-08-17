@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from datacollective.errors import DataLoadWarning
 from datacollective.schema import ColumnMapping, DatasetSchema
 from datacollective.schema_loaders.strategies.paired_glob import PairedGlobLoader
 
@@ -84,7 +85,8 @@ class TestPairedGlobText:
             file_pattern="**/*.txt",
             audio_extension=".webm",
         )
-        df = PairedGlobLoader(schema, tmp_path).load()
+        with pytest.warns(DataLoadWarning, match=r"1 of 2.*'001\.txt'"):
+            df = PairedGlobLoader(schema, tmp_path).load()
         assert len(df) == 1
         assert df["transcription"].iloc[0] == "world"
 

@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from datacollective.errors import TaskValidationWarning
+from datacollective.errors import DataLoadWarning, TaskValidationWarning
 from datacollective.schema import DatasetSchema, _parse_schema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
 
@@ -128,9 +128,10 @@ class TestASRIndexE2E:
                 },
             }
         )
-        df = _load_dataset_from_schema(schema, tmp_path)
+        with pytest.warns(DataLoadWarning, match="'age'.*'bad'"):
+            df = _load_dataset_from_schema(schema, tmp_path)
         assert df["age"].iloc[0] == 30
-        assert pd.isna(df["age"].iloc[1])  # "bad" → coerced to NaN
+        assert pd.isna(df["age"].iloc[1])  # "bad" → coerced to NaN, with a warning
         assert df["score"].iloc[1] == pytest.approx(1.5)
 
     def test_file_path_search_with_multiple_roots(self, tmp_path: Path) -> None:
