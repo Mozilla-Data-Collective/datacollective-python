@@ -200,19 +200,6 @@ class TestParseSchema:
         assert s.columns["audio"].source_column == 0
         assert s.has_header is False
 
-    def test_content_mapping_lands_in_extra(self) -> None:
-        """Removed field: legacy schemas carrying it still parse, into `extra`."""
-        raw: dict[str, Any] = {
-            "dataset_id": "ds1",
-            "task": "LM",
-            "content_mapping": {"text": "file_content", "meta_source": "file_name"},
-        }
-        s = _parse_schema(raw)
-        assert s.extra["content_mapping"] == {
-            "text": "file_content",
-            "meta_source": "file_name",
-        }
-
     def test_unknown_keys_captured_in_extra(self) -> None:
         raw: dict[str, Any] = {
             "dataset_id": "ds1",
