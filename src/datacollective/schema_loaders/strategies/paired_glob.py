@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import json
+import warnings
 from pathlib import Path
 
 import pandas as pd
 
+from datacollective.errors import DataLoadWarning
 from datacollective.logging_utils import get_logger
 from datacollective.schema import DatasetSchema
 from datacollective.schema_loaders.base import BaseSchemaLoader
@@ -131,6 +133,7 @@ class PairedGlobLoader(BaseSchemaLoader):
 
         audio_ext = self.schema.audio_extension
         rows: list[dict[str, str]] = []
+        skipped: list[str] = []
 
         for txt_path in text_files:
             audio_path = txt_path.with_suffix(audio_ext)
@@ -138,6 +141,7 @@ class PairedGlobLoader(BaseSchemaLoader):
                 logger.debug(
                     f"No matching audio file for '{txt_path.name}' — skipping."
                 )
+                skipped.append(txt_path.name)
                 continue
 
             transcription = txt_path.read_text(encoding=self.schema.encoding).strip()
@@ -156,6 +160,17 @@ class PairedGlobLoader(BaseSchemaLoader):
         if not rows:
             raise FileNotFoundError(
                 f"No paired (text + {audio_ext}) files found under '{self.extract_dir}'"
+            )
+
+        if skipped:
+            examples = ", ".join(repr(name) for name in skipped[:3])
+            warnings.warn(
+                f"{len(skipped)} of {len(text_files)} files matching "
+                f"'{self.schema.file_pattern}' had no paired '{audio_ext}' "
+                f"audio file and were skipped (e.g. {examples}). Check "
+                "'audio_extension' if this is unexpected.",
+                DataLoadWarning,
+                stacklevel=2,
             )
 
         raw_df = pd.DataFrame(rows)

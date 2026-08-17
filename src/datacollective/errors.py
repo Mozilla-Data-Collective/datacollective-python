@@ -50,6 +50,16 @@ class SchemaValidationWarning(UserWarning):
     """
 
 
+class DataLoadWarning(UserWarning):
+    """Emitted when values are lost or unresolved while loading a dataset
+    (e.g. unresolvable file paths, unparseable numeric cells, skipped
+    sidecar files).
+
+    Issued via :mod:`warnings`, so it is shown even when package logging is
+    disabled (``enable_logging=False``).
+    """
+
+
 class TaskValidationWarning(UserWarning):
     """Emitted when a loaded dataset does not satisfy its task's column contract.
 

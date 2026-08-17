@@ -31,11 +31,9 @@ class MultiSectionsLoader(BaseSchemaLoader):
             raise ValueError("multi_sections schema must specify 'index_file'")
 
     def load(self) -> pd.DataFrame:
-        sections = self._resolve_sections()
         parts: list[pd.DataFrame] = []
-        for section_path in sections:
+        for section_name, section_path in self._resolve_sections():
             section_df = self._read_delimited_file(section_path)
-            section_name = section_path.parents[0].name
 
             if self.schema.columns:
                 section_df = self._apply_column_mappings(section_df)
@@ -44,9 +42,10 @@ class MultiSectionsLoader(BaseSchemaLoader):
 
         return pd.concat(parts, ignore_index=True)
 
-    def _resolve_sections(self) -> list[Path]:
+    def _resolve_sections(self) -> list[tuple[str, Path]]:
         """
-        Get a list of valid sections, i.e. subdirectories that include an index file.
+        Get the ``(section name, index file path)`` pair for each declared
+        section, i.e. each subdirectory that includes an index file.
         """
         assert self.schema.sections is not None
         assert self.schema.index_file is not None
@@ -62,6 +61,6 @@ class MultiSectionsLoader(BaseSchemaLoader):
             )
             if not section_path.exists():
                 raise FileNotFoundError(f"Index file '{section_path}' not found ")
-            section_paths.append(section_path)
+            section_paths.append((section, section_path))
 
         return section_paths
