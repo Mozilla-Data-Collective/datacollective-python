@@ -156,9 +156,12 @@ This field is task-agnostic — it works with any loader.
 
 ## Column mapping
 
-Used by the **index-based**, **multi-split**, **multi-sections** and 
-**paired-glob (JSON)**. Each key under `columns` is the **logical** column name that will appear in the resulting
-DataFrame:
+Used by the **index-based**, **multi-split**, **multi-sections**, **paired-glob (JSON)** 
+and **glob** strategies. Each key under `columns` is
+the **logical** column name that will appear in the resulting DataFrame.  For
+the glob strategy, `source_column` names a path-derived source (`path`,
+`parent`, `content`, …) instead of an index-file column — see the
+[glob strategy](./loaders/glob.md) page.  For all other strategies:
 
 ```yaml
 columns:
