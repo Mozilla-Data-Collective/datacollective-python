@@ -496,6 +496,11 @@ old SDKs parse but **ignore** produce diverging output between versions:
   default output, 0.6.0 returns the mapped one;
 - `strict` is ignored entirely by old SDKs (they keep searching/fuzzy-matching).
 
+Users upgrading do not need to clear previously extracted datasets: a
+`schema.yaml` cached next to an archive by an SDK before 0.6.0 has no
+`root_strategy`, so 0.6.0 treats it as a cache miss and re-downloads the
+migrated registry schema even when the archive checksum still matches.
+
 Prefer migrations that avoid these fields unless the divergence is acceptable,
 or accept that pre-0.6.0 users see the old column names until they upgrade.
 
