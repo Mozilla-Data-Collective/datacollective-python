@@ -73,7 +73,15 @@ class License(str, Enum):
 
 
 class Visibility(str, Enum):
-    """Dataset visibility levels."""
+    """
+    Dataset visibility levels.
+
+    - ``PUBLIC``: visible to everyone, downloadable by everyone.
+    - ``RESTRICTED``: visible to everyone, downloadable by your organization and
+      approved requesters (see ``autoApproveAccessRequests``).
+    - ``PRIVATE``: visible only to your organization, downloadable by your
+      organization via the SDK.
+    """
 
     PUBLIC = "public"
     PRIVATE = "private"
