@@ -11,15 +11,26 @@ from datacollective.schema_loaders.cache_schema import _resolve_schema
 
 
 def _make_schema(
-    dataset_id: str = "ds1", task: str = "TTS", checksum: str | None = None
+    dataset_id: str = "ds1",
+    task: str = "TTS",
+    checksum: str | None = None,
+    root_strategy: str | None = "index",
 ) -> DatasetSchema:
-    return DatasetSchema(dataset_id=dataset_id, task=task, checksum=checksum)
+    return DatasetSchema(
+        dataset_id=dataset_id, task=task, checksum=checksum, root_strategy=root_strategy
+    )
 
 
 def _write_schema_yaml(
-    path: Path, dataset_id: str = "ds1", task: str = "TTS", checksum: str | None = None
+    path: Path,
+    dataset_id: str = "ds1",
+    task: str = "TTS",
+    checksum: str | None = None,
+    root_strategy: str | None = "index",
 ) -> None:
     data: dict = {"dataset_id": dataset_id, "task": task}
+    if root_strategy is not None:
+        data["root_strategy"] = root_strategy
     if checksum is not None:
         data["checksum"] = checksum
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -88,6 +99,26 @@ class TestCacheMiss:
 
         mock_get.assert_called_once_with("ds1")
         assert result.checksum == "new_checksum"
+
+    @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
+    def test_cached_without_root_strategy_fetches_remote(
+        self, mock_get, tmp_path: Path
+    ) -> None:
+        """A schema.yaml cached by an SDK < 0.6.0 has no ``root_strategy`` and
+        cannot be loaded anymore; a matching checksum must not pin it."""
+        _write_schema_yaml(
+            tmp_path / "schema.yaml", checksum="abc123", root_strategy=None
+        )
+        remote = _make_schema(checksum=None, root_strategy="index")
+        mock_get.return_value = remote
+
+        result = _resolve_schema("ds1", tmp_path, archive_checksum="abc123")
+
+        mock_get.assert_called_once_with("ds1")
+        assert result.root_strategy == "index"
+        assert result.checksum == "abc123"
+        saved = yaml.safe_load((tmp_path / "schema.yaml").read_text())
+        assert saved["root_strategy"] == "index"
 
     @patch("datacollective.schema_loaders.cache_schema._get_dataset_schema")
     def test_cached_without_checksum_fetches_remote(
