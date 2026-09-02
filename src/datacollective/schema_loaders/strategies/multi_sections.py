@@ -35,11 +35,18 @@ class MultiSectionsLoader(BaseSchemaLoader):
         for section_name, section_path in self._resolve_sections():
             section_df = self._read_delimited_file(section_path)
 
+            # Anchor relative paths (``base_audio_path``, ``file_path`` values)
+            # at the section directory, mirroring how the index strategy
+            # anchors them at the directory of the resolved index file.
+            self._dataset_root = self._derive_dataset_root(
+                section_path, self.schema.index_file
+            )
             if self.schema.columns:
                 section_df = self._apply_column_mappings(section_df)
             section_df["section"] = section_name
             parts.append(section_df)
 
+        self._dataset_root = None
         return pd.concat(parts, ignore_index=True)
 
     def _resolve_sections(self) -> list[tuple[str, Path]]:
