@@ -933,18 +933,18 @@
 <h2 id="inner-archive-extraction">Inner archive extraction</h2>
 <p>Some datasets ship as an outer archive containing inner <code>.tar.gz</code> or <code>.zip</code> files. The <code>extract_files</code> field lists these inner archives (paths relative to the dataset root). The SDK extracts them automatically before loading and skips re-extraction on subsequent runs.</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">extract_files</span><span class="p">:</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Train.tar.gz&quot;</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;Dev.tar.gz&quot;</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"Train.tar.gz"</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"Dev.tar.gz"</span>
 </span></code></pre></div>
 <p>This field is task-agnostic — it works with any loader, not just OTH.</p>
 <hr />
 <h2 id="examples">Examples</h2>
 <h3 id="flat-directory-no-splits">Flat directory (no splits)</h3>
 <p>A dataset where audio files are organised as <code>speaker_id/language/utterance.wav</code> directly under the dataset root.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tidyvoicex2-asv&quot;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;OTH&quot;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;glob&quot;</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;**/*.wav&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"tidyvoicex2-asv"</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"OTH"</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"glob"</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"**/*.wav"</span>
 </span></code></pre></div>
 <p>Resulting DataFrame:</p>
 <table>
@@ -970,16 +970,16 @@
 </table>
 <h3 id="with-splits-and-inner-archives">With splits and inner archives</h3>
 <p>A dataset containing <code>Train.tar.gz</code> and <code>Dev.tar.gz</code>, each extracting to a directory with the same <code>speaker_id/language/utterance.wav</code> structure.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tidyvoicex-asv&quot;</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;OTH&quot;</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;glob&quot;</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nt">file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;**/*.wav&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"tidyvoicex-asv"</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"OTH"</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"glob"</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nt">file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"**/*.wav"</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="nt">splits</span><span class="p">:</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;TidyVoiceX_Train&quot;</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;TidyVoiceX_Dev&quot;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"TidyVoiceX_Train"</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"TidyVoiceX_Dev"</span>
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="nt">extract_files</span><span class="p">:</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;TidyVoiceX_Train.tar.gz&quot;</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;TidyVoiceX_Dev.tar.gz&quot;</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"TidyVoiceX_Train.tar.gz"</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"TidyVoiceX_Dev.tar.gz"</span>
 </span></code></pre></div>
 <p>Resulting DataFrame:</p>
 <table>
@@ -1008,18 +1008,18 @@
 </table>
 <h3 id="index-file-schema">Index-file schema</h3>
 <p>A dataset described by a single delimited index file, with column mappings applied. Example: the Mozilla Common Voice Text Language Identification dataset.</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;common-voice-text-langid&quot;</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;OTH&quot;</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tsv&quot;</span>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data.tsv&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"common-voice-text-langid"</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"OTH"</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">"tsv"</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">"data.tsv"</span>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nt">columns</span><span class="p">:</span>
 </span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nt">sentence</span><span class="p">:</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sentence&quot;</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"sentence"</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">language</span><span class="p">:</span>
-</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;lang&quot;</span>
-</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;category&quot;</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"lang"</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"category"</span>
 </span></code></pre></div>
 <p>When <code>columns</code> is omitted, the index file is returned as a raw DataFrame with its original columns.</p>
 

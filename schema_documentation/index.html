@@ -1180,7 +1180,7 @@ turn the raw files inside the archive into a ready-to-use <strong>pandas DataFra
 without executing any custom code outside the datacollective library.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">df</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;your-dataset-id&quot;</span><span class="p">)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">df</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">)</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
 </span></code></pre></div>
 <p>Under the hood, <code>load_dataset()</code> performs the following steps automatically:</p>
@@ -1197,17 +1197,17 @@ without executing any custom code outside the datacollective library.</p>
 <li><strong>How to map</strong> raw columns / files into a clean DataFrame.</li>
 </ul>
 <h3 id="minimal-example">Minimal example</h3>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;common-voice-gsw-24&quot;</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;ASR&quot;</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;tsv&quot;</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;train.tsv&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"common-voice-gsw-24"</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"ASR"</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">"tsv"</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">"train.tsv"</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">columns</span><span class="p">:</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;path&quot;</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"path"</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
 </span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sentence&quot;</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"sentence"</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
 </span></code></pre></div>
 <p>This tells the SDK: <em>"Read <code>train.tsv</code> as tab-separated, take the <code>path</code>
 column as audio file paths and the <code>sentence</code> column as transcriptions."</em></p>
@@ -1557,28 +1557,28 @@ column with the directory name is added before concatenation.</p>
 DataFrame:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">columns</span><span class="p">:</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;path&quot;</span><span class="w">       </span><span class="c1"># column name in the index file</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span><span class="w">          </span><span class="c1"># see dtype table below</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"path"</span><span class="w">       </span><span class="c1"># column name in the index file</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span><span class="w">          </span><span class="c1"># see dtype table below</span>
 </span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;sentence&quot;</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"sentence"</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
 </span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="w">  </span><span class="nt">speaker_id</span><span class="p">:</span>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;client_id&quot;</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;category&quot;</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"client_id"</span>
+</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"category"</span>
 </span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">              </span><span class="c1"># skip silently if the column is missing</span>
 </span></code></pre></div>
 <p>For datasets where the index stores an ID instead of the full audio filename,
 you can opt into search-based file resolution:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">base_audio_path</span><span class="p">:</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/recipes/&quot;</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/giving_gift/&quot;</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"data/recipes/"</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"data/giving_gift/"</span>
 </span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">columns</span><span class="p">:</span>
 </span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Sentence</span><span class="nv"> </span><span class="s">ID&quot;</span>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">path_match_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;exact&quot;</span><span class="w">   </span><span class="c1"># &quot;direct&quot; (default), &quot;exact&quot;, or &quot;contains&quot;</span>
-</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">file_extension</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.wav&quot;</span><span class="w">         </span><span class="c1"># optional, helps when the index omits the suffix</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"Sentence</span><span class="nv"> </span><span class="s">ID"</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">path_match_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"exact"</span><span class="w">   </span><span class="c1"># "direct" (default), "exact", or "contains"</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">    </span><span class="nt">file_extension</span><span class="p">:</span><span class="w"> </span><span class="s">".wav"</span><span class="w">         </span><span class="c1"># optional, helps when the index omits the suffix</span>
 </span></code></pre></div>
 <p>With <code>path_match_strategy: "exact"</code>, the loader searches the configured
 <code>base_audio_path</code> directories for a matching filename or stem. With
@@ -1586,29 +1586,29 @@ you can opt into search-based file resolution:</p>
 source value. If that source value is not unique enough on its own, use
 <code>path_template</code> to build the real filename from multiple metadata columns:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">base_audio_path</span><span class="p">:</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/recipes/&quot;</span>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">&quot;data/giving_gift/&quot;</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"data/recipes/"</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"data/giving_gift/"</span>
 </span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
 </span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nt">columns</span><span class="p">:</span>
 </span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Sentence</span><span class="nv"> </span><span class="s">ID&quot;</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">file_extension</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.wav&quot;</span>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">path_template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${Speaker</span><span class="nv"> </span><span class="s">ID}_khm_${Sentence</span><span class="nv"> </span><span class="s">ID}.wav&quot;</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"Sentence</span><span class="nv"> </span><span class="s">ID"</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="nt">file_extension</span><span class="p">:</span><span class="w"> </span><span class="s">".wav"</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="w">    </span><span class="nt">path_template</span><span class="p">:</span><span class="w"> </span><span class="s">"${Speaker</span><span class="nv"> </span><span class="s">ID}_khm_${Sentence</span><span class="nv"> </span><span class="s">ID}.wav"</span>
 </span></code></pre></div>
 <p><code>path_template</code> placeholders reference raw index-file columns exactly as they
 appear in the metadata, and <code>${value}</code> refers to the current column's source
 value.</p>
 <p><code>base_audio_path</code> can use the same placeholder syntax when the containing
 directory also depends on metadata columns:</p>
-<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">base_audio_path</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;data/${Split}/&quot;</span>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">base_audio_path</span><span class="p">:</span><span class="w"> </span><span class="s">"data/${Split}/"</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">columns</span><span class="p">:</span>
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Sentence</span><span class="nv"> </span><span class="s">ID&quot;</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">file_extension</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;.wav&quot;</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">path_template</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;${Speaker</span><span class="nv"> </span><span class="s">ID}_khm_${value}&quot;</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"Sentence</span><span class="nv"> </span><span class="s">ID"</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="w">    </span><span class="nt">file_extension</span><span class="p">:</span><span class="w"> </span><span class="s">".wav"</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">    </span><span class="nt">path_template</span><span class="p">:</span><span class="w"> </span><span class="s">"${Speaker</span><span class="nv"> </span><span class="s">ID}_khm_${value}"</span>
 </span></code></pre></div>
 <p>In that example, each row resolves to
 <code>dataset_root / data/&lt;Split&gt;/&lt;Speaker ID&gt;_khm_&lt;Sentence ID&gt;.wav</code>.</p>
@@ -1617,10 +1617,10 @@ instead of a column name:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">columns</span><span class="p">:</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_path&quot;</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
 </span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
 </span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;string&quot;</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
 </span></code></pre></div>
 <h3 id="supported-dtypes">Supported dtypes</h3>
 <table>
@@ -1662,8 +1662,8 @@ instead of a column name:</p>
 parser but not consumed by any current loader. It is intended for glob-based
 tasks (e.g. LM) to describe how file contents become DataFrame columns:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">content_mapping</span><span class="p">:</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_content&quot;</span><span class="w">     </span><span class="c1"># each file&#39;s text → &quot;text&quot; column</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">meta_source</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;file_name&quot;</span><span class="w"> </span><span class="c1"># filename → &quot;meta_source&quot; column</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">text</span><span class="p">:</span><span class="w"> </span><span class="s">"file_content"</span><span class="w">     </span><span class="c1"># each file's text → "text" column</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">meta_source</span><span class="p">:</span><span class="w"> </span><span class="s">"file_name"</span><span class="w"> </span><span class="c1"># filename → "meta_source" column</span>
 </span></code></pre></div>
 <hr />
 <h2 id="complete-examples">Complete examples</h2>
