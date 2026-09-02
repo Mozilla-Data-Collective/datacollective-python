@@ -27,6 +27,9 @@ AI-assisted contributions are welcome. Contributors are expected to fully unders
 - Add tests for behavior changes and bug fixes when appropriate.
 - Avoid redundant or excessive tests that add maintenance burden without improving confidence.
 - Prefer precise, meaningful tests that verify observable behavior.
+- `tests/test_openapi_contract.py` checks the SDK models against a snapshot of the
+  platform's OpenAPI spec at `tests/fixtures/openapi.json` to ensure API contract is always up to date. 
+See [Library Development](docs/library_development.md) for how the test is meant to work.
 
 ## Documentation
 
