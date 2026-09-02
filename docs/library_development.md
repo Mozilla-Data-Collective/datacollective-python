@@ -72,8 +72,8 @@ updated (or the platform updates the spec).
 ### Which spec it runs against
 
 By default the test reads a snapshot at `tests/fixtures/openapi.json`,
-so the unit test suite is deterministic and offline. Refresh the snapshot when the
-platform ships an API change:
+so the unit test suite is deterministic and offline. You can refresh the snapshot with 
+the latest spec by running:
 
 ```bash
 curl -sL https://mozilladatacollective.com/api/openapi.json \
@@ -84,11 +84,11 @@ pytest tests/test_openapi_contract.py
 Commit the refreshed snapshot together with any model changes it required, so the
 diff shows what moved in the contract and how the SDK adapted.
 
-Set `MDC_OPENAPI_SPEC` to a file path or URL to run against a different spec:
+You can also set `MDC_OPENAPI_SPEC` to a file path or URL to run against a different spec:
 
 ```bash
-MDC_OPENAPI_SPEC=https://mozilladatacollective.com/api/openapi.json pytest tests/test_openapi_contract.py
-MDC_OPENAPI_SPEC=../platform/openapi.json pytest tests/test_openapi_contract.py
+MDC_OPENAPI_SPEC=https://mozilladatacollective.com/api/openapi.json
+MDC_OPENAPI_SPEC=../platform/openapi.json
 ```
 
 ## Related workflows
