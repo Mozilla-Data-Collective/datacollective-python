@@ -117,11 +117,25 @@ See [Uploading a Sample File](#uploading-a-sample-file) for details.
 
 `visibility` controls who can access the dataset and must be one of the `Visibility` enum values: 
 
-| Value                   | Visible to:       | Who can download:                            |
-|-------------------------|-------------------|----------------------------------------------|
-| `Visibility.PUBLIC`     | Everyone          | Everyone                                     |
-| `Visibility.PRIVATE`    | Everyone          | Your organization & Approved requesters only |
-| `Visibility.RESTRICTED` | Your organization | Your organization (via SDK)                  |
+| Value                   | Visible to:       | Who can download:                       |
+|-------------------------|-------------------|-----------------------------------------|
+| `Visibility.PUBLIC`     | Everyone          | Everyone                                |
+| `Visibility.RESTRICTED` | Everyone          | Your organization & approved requesters |
+| `Visibility.PRIVATE`    | Your organization | Your organization (via SDK)             |
+
+For `Visibility.RESTRICTED` datasets you can also set `autoApproveAccessRequests=True`. The platform
+then grants every access request automatically as soon as it is made, instead of leaving it pending
+for you to review. The requester's email is shared with you and you can still revoke access later.
+The flag defaults to `False` on the platform when left unset. The SDK rejects it for `public`
+datasets, which need no access request, and for `private` datasets, which are only visible to your
+organization.
+
+```python
+submission = DatasetSubmission(
+    visibility=Visibility.RESTRICTED,
+    autoApproveAccessRequests=True,
+)
+```
 
 
 ### Pricing
