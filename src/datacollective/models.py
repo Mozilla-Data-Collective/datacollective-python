@@ -246,6 +246,15 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
         None,
         description="You confirm that you have the right to submit this dataset and that all information provided in the datasheet is accurate. Required to be True to complete the submission process",
     )
+    autoApproveAccessRequests: bool | None = Field(
+        None,
+        description=(
+            "Only applies to `restricted` datasets. When True, the platform grants every "
+            "access request automatically as soon as it is made, instead of leaving it "
+            "pending for you to review; the requester's email is shared with you and you "
+            "can still revoke access later. Defaults to False on the platform when left unset."
+        ),
+    )
     # Submission-specific fields defined by the API and not user-editable
     createdBy: str | None = Field(
         None, description="Identifier for the user who created the submission."
@@ -296,6 +305,19 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
             raise ValueError(
                 "`isPaid` must be True when providing `basePriceCents`, "
                 "otherwise the dataset stays uncompensated and the price is ignored"
+            )
+        return self
+
+    @model_validator(mode="after")
+    def _validate_auto_approve_access_requests(self) -> DatasetSubmission:
+        if (
+            self.autoApproveAccessRequests
+            and self.visibility is not None
+            and self.visibility != Visibility.RESTRICTED
+        ):
+            raise ValueError(
+                "`autoApproveAccessRequests` only applies to `restricted` datasets, "
+                f"the only visibility with access requests; got `{self.visibility.value}`"
             )
         return self
 
@@ -397,6 +419,7 @@ UPDATE_FIELDS = {
     "showContactInfo",
     "visibility",
     "exclusivityOptOut",
+    "autoApproveAccessRequests",
     "isPaid",
     "basePriceCents",
     "currency",
