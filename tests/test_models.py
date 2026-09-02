@@ -184,6 +184,29 @@ def test_price_requires_paid_dataset() -> None:
         DatasetSubmission(isPaid=False, basePriceCents=25_000)
 
 
+def test_auto_approve_access_requests_allowed_for_restricted() -> None:
+    model = DatasetSubmission(
+        visibility=Visibility.RESTRICTED, autoApproveAccessRequests=True
+    )
+    assert model.autoApproveAccessRequests is True
+    # Partial updates may omit visibility; the platform holds the current value.
+    assert DatasetSubmission(autoApproveAccessRequests=True).visibility is None
+    # Turning the flag off is always fine.
+    assert (
+        DatasetSubmission(
+            visibility=Visibility.PUBLIC, autoApproveAccessRequests=False
+        ).autoApproveAccessRequests
+        is False
+    )
+
+
+def test_auto_approve_access_requests_rejected_for_non_restricted() -> None:
+    for visibility in (Visibility.PUBLIC, Visibility.PRIVATE):
+        with pytest.raises(ValidationError) as exc_info:
+            DatasetSubmission(visibility=visibility, autoApproveAccessRequests=True)
+        assert "only applies to `restricted` datasets" in str(exc_info.value)
+
+
 def test_currency_is_set_only_when_paid() -> None:
     free = DatasetSubmission(name="Free")
     assert free.currency is None
