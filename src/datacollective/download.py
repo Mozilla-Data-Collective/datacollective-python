@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from typing import Any
 
-from fox_progress_bar import ProgressBar
 from pydantic import Field
 
 from datacollective.api_utils import (
@@ -15,6 +14,7 @@ from datacollective.api_utils import (
 from datacollective.errors import DownloadError
 from datacollective.logging_utils import get_logger
 from datacollective.models import NonEmptyStrModel
+from datacollective.progress_utils import _ProgressBar
 
 logger = get_logger(__name__)
 
@@ -259,7 +259,7 @@ def _execute_download_plan(
     total_downloaded_bytes = downloaded_bytes_so_far
     logger.info(f"Downloading dataset: {download_plan.target_filepath}")
     if show_progress:
-        progress_bar = ProgressBar(download_plan.size_bytes)
+        progress_bar = _ProgressBar(download_plan.size_bytes)
         progress_bar.update(downloaded_bytes_so_far)
         progress_bar._display()
     try:

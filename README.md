@@ -73,6 +73,9 @@ dataset_path = download_dataset("your-dataset-id")
 > [!TIP]
 > Set `enable_logging=True` to emit detailed SDK logs to the console and a local log file at `~/.mozdata/datacollective.log` with timestamped entries, a per-session id, and retention of 5 backup files at 10 MB each.
 
+> [!NOTE]
+> Download and upload progress bars use stderr and are only shown when stderr is connected to a terminal. Set `show_progress=False` to disable them. Characters unsupported by the terminal's encoding are replaced automatically.
+
 
 5. **Get information & metadata about a dataset**:
 

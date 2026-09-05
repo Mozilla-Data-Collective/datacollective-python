@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any
 
 import requests
-from fox_progress_bar import ProgressBar
 from pydantic import Field, ValidationError
 
 from datacollective.api_utils import (
@@ -16,6 +15,7 @@ from datacollective.api_utils import (
 )
 from datacollective.logging_utils import get_logger
 from datacollective.models import NonEmptyStrModel, UploadPart
+from datacollective.progress_utils import _ProgressBar
 
 
 logger = get_logger(__name__)
@@ -320,10 +320,10 @@ def _init_progress_bar(
     file_size: int,
     part_size: int,
     already_uploaded: int,
-) -> ProgressBar | None:
+) -> _ProgressBar | None:
     if not show_progress:
         return None
-    progress_bar = ProgressBar(file_size)
+    progress_bar = _ProgressBar(file_size)
     if already_uploaded > 0:
         progress_bar.update(already_uploaded * part_size)
         progress_bar._display()
@@ -335,7 +335,7 @@ def _upload_missing_parts(
     state: UploadState,
     parts_by_number: dict[int, str],
     expected_parts: int,
-    progress_bar: ProgressBar | None,
+    progress_bar: _ProgressBar | None,
     state_file: Path,
 ) -> tuple[int, str]:
     hasher = hashlib.sha256()
