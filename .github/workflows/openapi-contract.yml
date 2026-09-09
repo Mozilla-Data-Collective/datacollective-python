@@ -1,0 +1,52 @@
+name: OpenAPI contract (production)
+
+# Runs the OpenAPI contract test against the *live* production spec.
+on:
+  schedule:
+    - cron: '0 6 * * *' # daily, 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      spec_url:
+        description: Spec URL to test against (defaults to production)
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  contract-production:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    env:
+      # Same host the SDK talks to by default (DEFAULT_API_URL in api_utils.py).
+      SPEC_URL: ${{ inputs.spec_url || 'https://mozilladatacollective.com/api/openapi.json' }}
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Install test dependencies
+        run: uv pip install --system -e . --group dev
+
+      - name: Run contract test against the live spec
+        run: |
+          spec_url="$SPEC_URL"
+          # The platform serves the spec with a one-hour public cache; a unique query
+          # string makes sure we read the currently deployed document.
+          case "$spec_url" in
+            http*) spec_url="${spec_url}?run=${GITHUB_RUN_ID}" ;;
+          esac
+          echo "Testing against $spec_url"
+          MDC_OPENAPI_SPEC="$spec_url" pytest -q tests/test_openapi_contract.py
