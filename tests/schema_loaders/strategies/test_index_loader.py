@@ -429,7 +429,7 @@ class TestIndexLoader:
         assert len(df) == 1
         assert df["text"].iloc[0] == "hi"
 
-    def test_sniffed_separator_and_trimmed_headers(self, tmp_path: Path) -> None:
+    def test_explicit_separator_and_trimmed_headers(self, tmp_path: Path) -> None:
         _write(
             tmp_path / "metadata.csv",
             "Topic; Sentence ID ; Sentences \nFood; clip.wav; hello\n",
@@ -438,7 +438,7 @@ class TestIndexLoader:
 
         schema = DatasetSchema(
             dataset_id="ds",
-            format="csv",
+            separator=";",
             index_file="metadata.csv",
             columns={
                 "audio": ColumnMapping(source_column="Sentence ID", dtype="file_path"),
@@ -448,6 +448,23 @@ class TestIndexLoader:
         df = IndexLoader(schema, tmp_path).load()
         assert df["audio"].iloc[0] == str(tmp_path / "clip.wav")
         assert df["text"].iloc[0] == "hello"
+
+    def test_undeclared_separator_is_not_guessed(self, tmp_path: Path) -> None:
+        """Separator sniffing was removed: a semicolon file declared as csv
+        parses as a single column and required columns fail loudly."""
+        _write(tmp_path / "meta.csv", "path;sentence\nc.mp3;hi\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            format="csv",
+            index_file="meta.csv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path"),
+                "transcription": ColumnMapping(source_column="sentence"),
+            },
+        )
+        with pytest.raises(KeyError, match="path"):
+            IndexLoader(schema, tmp_path).load()
 
     def test_nested_index_file_found(self, tmp_path: Path) -> None:
         """Index file inside a subdirectory should be located via rglob."""
@@ -504,6 +521,23 @@ class TestIndexLoader:
         df = IndexLoader(schema, tmp_path).load()
         assert df["text"].iloc[0] == "hello world"
 
+    def test_literal_relative_path_wins_over_search(self, tmp_path: Path) -> None:
+        """When index_file exists at its literal path, nested copies are ignored."""
+        _write(tmp_path / "meta.csv", "a,b\nroot,1\n")
+        _write(tmp_path / "nested" / "meta.csv", "a,b\nnested,1\n")
+
+        schema = DatasetSchema(dataset_id="ds", format="csv", index_file="meta.csv")
+        df = IndexLoader(schema, tmp_path).load()
+        assert df["a"].iloc[0] == "root"
+
+    def test_ambiguous_equal_depth_matches_raise(self, tmp_path: Path) -> None:
+        _write(tmp_path / "dir_a" / "meta.csv", "a,b\n1,2\n")
+        _write(tmp_path / "dir_b" / "meta.csv", "a,b\n3,4\n")
+
+        schema = DatasetSchema(dataset_id="ds", format="csv", index_file="meta.csv")
+        with pytest.raises(ValueError, match="Ambiguous index_file"):
+            IndexLoader(schema, tmp_path).load()
+
     def test_file_content_dtype_with_file_extension(self, tmp_path: Path) -> None:
         _write(
             tmp_path / "index.csv",
@@ -528,3 +562,63 @@ class TestIndexLoader:
         )
         df = IndexLoader(schema, tmp_path).load()
         assert df["text"].iloc[0] == "resolved with extension"
+
+
+class TestStrictMode:
+    def test_strict_loads_from_literal_path(self, tmp_path: Path) -> None:
+        _write(tmp_path / "data" / "meta.csv", "path,sentence\nc.mp3,hi\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            strict=True,
+            format="csv",
+            index_file="data/meta.csv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
+                "transcription": ColumnMapping(source_column="sentence"),
+            },
+        )
+        df = IndexLoader(schema, tmp_path).load()
+        assert len(df) == 1
+
+    def test_strict_does_not_search_recursively(self, tmp_path: Path) -> None:
+        """A nested index file is not discovered in strict mode."""
+        _write(tmp_path / "sub" / "deep" / "meta.csv", "a,b\n1,2\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds", strict=True, format="csv", index_file="meta.csv"
+        )
+        with pytest.raises(FileNotFoundError, match="no recursive search"):
+            IndexLoader(schema, tmp_path).load()
+
+    def test_strict_disables_fuzzy_column_matching(self, tmp_path: Path) -> None:
+        """Case-insensitive header matching is off in strict mode."""
+        _write(tmp_path / "meta.csv", "Path,Sentence\nc.mp3,hi\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            strict=True,
+            format="csv",
+            index_file="meta.csv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path"),
+                "transcription": ColumnMapping(source_column="sentence"),
+            },
+        )
+        with pytest.raises(KeyError, match="path"):
+            IndexLoader(schema, tmp_path).load()
+
+    def test_non_strict_fuzzy_matching_still_works(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.csv", "Path,Sentence\nc.mp3,hi\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            format="csv",
+            index_file="meta.csv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path"),
+                "transcription": ColumnMapping(source_column="sentence"),
+            },
+        )
+        df = IndexLoader(schema, tmp_path).load()
+        assert df["transcription"].iloc[0] == "hi"

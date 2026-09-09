@@ -210,6 +210,12 @@ class TestParseSchema:
         s = _parse_schema(raw)
         assert s.extra == {"my_custom_field": "hello", "another": 42}
 
+    def test_strict_parsed(self) -> None:
+        s = _parse_schema({"dataset_id": "ds1", "strict": True})
+        assert s.strict is True
+        # default is False
+        assert _parse_schema({"dataset_id": "ds1"}).strict is False
+
     def test_root_strategy_parsed(self) -> None:
         raw: dict[str, Any] = {
             "dataset_id": "ds1",

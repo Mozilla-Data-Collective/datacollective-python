@@ -19,6 +19,7 @@ the raw index file is returned as-is.
 | `separator` | ✗ | Explicit column separator (e.g. `"\|"`). |
 | `has_header` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
 | `encoding` | ✗ | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
+| `strict` | ✗ | Disable archive heuristics: `index_file` must exist at its literal relative path (no recursive search), exact column-name matching only. |
 
 ---
 
@@ -140,8 +141,9 @@ columns:
 
 `path_match_strategy: "direct"` remains the default and preserves the existing
 `extract_dir / base_audio_path / value` behavior. The loader also trims BOMs
-and surrounding header whitespace, and can retry common delimiters
-automatically when a file initially parses as a single column.
+and surrounding header whitespace. The separator is never guessed from file
+contents — when the declared/inferred separator is wrong, loading fails with
+the raw (single-column) headers listed; declare `separator` explicitly.
 
 If the true audio filename is composed from multiple metadata columns, use
 `path_template` instead of a fuzzy search:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import abc
-import csv
 import re
 from enum import StrEnum
 from pathlib import Path
@@ -82,29 +81,53 @@ class BaseSchemaLoader(abc.ABC):
     def _resolve_index_file(self) -> Path:
         """Find the index file inside the extracted directory.
 
-        The method searches recursively and returns the shallowest match.
+        Resolution is deterministic: the literal path relative to the dataset
+        root wins when it exists. Otherwise (non-strict schemas only) the tree
+        is searched recursively and the shallowest match is used; multiple
+        matches at the same depth are an error rather than an arbitrary pick.
 
         Used by index-based loaders.
 
         Raises:
-            FileNotFoundError: If no matching file is found.
+            FileNotFoundError: If no matching file is found (in strict mode,
+                if the literal relative path does not exist).
+            ValueError: If the recursive search is ambiguous.
         """
         if self._resolved_index_file is not None:
             return self._resolved_index_file
 
         assert self.schema.index_file is not None
-        candidates = list(self.extract_dir.rglob(self.schema.index_file))
-        if not candidates:
+        literal = self.extract_dir / self.schema.index_file
+        if literal.is_file():
+            resolved = literal
+        elif self.schema.strict:
             raise FileNotFoundError(
-                f"Index file '{self.schema.index_file}' not found "
-                f"under '{self.extract_dir}'"
+                f"Index file '{self.schema.index_file}' not found at "
+                f"'{literal}' (strict schema: no recursive search)"
             )
-        # Prefer the shallowest match
-        candidates.sort(key=lambda p: len(p.parts))
-        self._resolved_index_file = candidates[0]
-        self._dataset_root = self._derive_dataset_root(
-            self._resolved_index_file, self.schema.index_file
-        )
+        else:
+            candidates = list(self.extract_dir.rglob(self.schema.index_file))
+            if not candidates:
+                raise FileNotFoundError(
+                    f"Index file '{self.schema.index_file}' not found "
+                    f"under '{self.extract_dir}'"
+                )
+            # Prefer the shallowest match; equal-depth ties are ambiguous
+            candidates.sort(key=lambda p: (len(p.parts), str(p)))
+            min_depth = len(candidates[0].parts)
+            ties = [c for c in candidates if len(c.parts) == min_depth]
+            if len(ties) > 1:
+                raise ValueError(
+                    f"Ambiguous index_file '{self.schema.index_file}': "
+                    f"{len(ties)} matches at the same depth under "
+                    f"'{self.extract_dir}': {[str(t) for t in ties[:5]]}. "
+                    "Set 'index_file' to an explicit path relative to the "
+                    "dataset root."
+                )
+            resolved = candidates[0]
+
+        self._resolved_index_file = resolved
+        self._dataset_root = self._derive_dataset_root(resolved, self.schema.index_file)
         return self._resolved_index_file
 
     def _apply_column_mappings(self, raw_df: pd.DataFrame) -> pd.DataFrame:
@@ -166,17 +189,6 @@ class BaseSchemaLoader(abc.ABC):
 
         logger.debug(f"Reading delimited file: {file_path} (sep={sep!r})")
         df = self._read_csv(file_path, sep=sep, header=header)
-
-        sniffed_sep = self._maybe_sniff_separator(file_path, df, sep)
-        if sniffed_sep is not None and sniffed_sep != sep:
-            logger.debug(
-                "Retrying %s with sniffed separator %r instead of %r",
-                file_path,
-                sniffed_sep,
-                sep,
-            )
-            df = self._read_csv(file_path, sep=sniffed_sep, header=header)
-
         return self._normalize_dataframe_columns(df)
 
     def _read_csv(
@@ -210,45 +222,6 @@ class BaseSchemaLoader(abc.ABC):
                 return SUFFIX_SEP[suffix]
         return None
 
-    def _maybe_sniff_separator(
-        self, file_path: Path, raw_df: pd.DataFrame, initial_sep: str | None
-    ) -> str | None:
-        if self.schema.separator or len(raw_df.columns) != 1 or not self.schema.columns:
-            return None
-
-        required_sources = [
-            col_map.source_column
-            for col_map in self.schema.columns.values()
-            if not col_map.optional
-        ]
-        if not required_sources:
-            return None
-        if all(
-            self._resolve_source_column(raw_df, source) is not None
-            for source in required_sources
-        ):
-            return None
-
-        with file_path.open(
-            "r", encoding=self.schema.encoding, errors="ignore"
-        ) as handle:
-            sample = handle.read(4096)
-
-        delimiters = "".join(
-            delim
-            for delim in (",", "\t", "|", ";")
-            if delim in sample and delim != initial_sep
-        )
-        if not delimiters:
-            return None
-
-        try:
-            dialect = csv.Sniffer().sniff(sample, delimiters=delimiters)
-        except csv.Error:
-            return None
-
-        return dialect.delimiter
-
     def _normalize_dataframe_columns(self, raw_df: pd.DataFrame) -> pd.DataFrame:
         if raw_df.empty and not len(raw_df.columns):
             return raw_df
@@ -271,6 +244,9 @@ class BaseSchemaLoader(abc.ABC):
             return source
         if isinstance(source, int):
             return source if source in raw_df.columns else None
+        if self.schema.strict:
+            # Strict schemas require exact column names — no fuzzy matching
+            return None
 
         stripped_source = source.strip()
         if stripped_source in raw_df.columns:
@@ -403,40 +379,44 @@ class BaseSchemaLoader(abc.ABC):
         row: pd.Series | None = None,
         template_value: str | None = None,
     ) -> list[Path]:
+        """Resolve ``base_audio_path`` into deduplicated search roots.
+
+        Empty entries (including template renders that come out empty) fall
+        back to the dataset root; relative entries are anchored at it.
+        """
         raw_paths = self.schema.base_audio_path
-        dataset_root = self._get_dataset_root()
-        if raw_paths is None or raw_paths == "":
-            return [dataset_root]
+        if not isinstance(raw_paths, list):
+            raw_paths = [raw_paths] if raw_paths else []
 
-        path_values = raw_paths if isinstance(raw_paths, list) else [raw_paths]
         roots: list[Path] = []
-        seen: set[str] = set()
-        for raw_path in path_values:
-            if raw_path in (None, ""):
-                root = dataset_root
-            else:
-                rendered_path = raw_path
-                if row is not None and "${" in raw_path:
-                    rendered_path = self._render_path_template(
-                        template_value or "",
-                        row,
-                        raw_path,
-                        template_name="base_audio_path",
-                    )
+        for raw_path in raw_paths:
+            root = self._resolve_audio_root(raw_path, row, template_value)
+            if root not in roots:
+                roots.append(root)
+        return roots or [self._get_dataset_root()]
 
-                if rendered_path in (None, ""):
-                    root = dataset_root
-                else:
-                    path = Path(rendered_path)
-                    root = path if path.is_absolute() else dataset_root / path
+    def _resolve_audio_root(
+        self,
+        raw_path: str,
+        row: pd.Series | None,
+        template_value: str | None,
+    ) -> Path:
+        dataset_root = self._get_dataset_root()
+        if not raw_path:
+            return dataset_root
 
-            key = str(root)
-            if key in seen:
-                continue
-            seen.add(key)
-            roots.append(root)
+        if row is not None and "${" in raw_path:
+            raw_path = self._render_path_template(
+                template_value or "",
+                row,
+                raw_path,
+                template_name="base_audio_path",
+            )
+            if not raw_path:
+                return dataset_root
 
-        return roots or [dataset_root]
+        path = Path(raw_path)
+        return path if path.is_absolute() else dataset_root / path
 
     def _search_audio_file(
         self,
@@ -451,61 +431,13 @@ class BaseSchemaLoader(abc.ABC):
         search_files = self._get_searchable_audio_files(
             search_roots, col_map.file_extension
         )
-        normalized_extension = self._normalize_extension(col_map.file_extension)
-        raw_path = Path(raw_value)
-        expected_name = raw_path.name
-        expected_stem = raw_path.stem if raw_path.suffix else raw_path.name
-        normalized_value = raw_value.casefold()
-        normalized_relative_value = raw_path.as_posix().casefold()
-        normalized_relative_with_extension = None
-        if not raw_path.suffix and normalized_extension is not None:
-            normalized_relative_with_extension = (
-                f"{normalized_relative_value}{normalized_extension.casefold()}"
+
+        if col_map.path_match_strategy == "exact":
+            matches = self._find_exact_matches(
+                raw_value, col_map.file_extension, search_files, search_roots
             )
-        matches: list[Path] = []
-        seen_matches: set[str] = set()
-
-        for candidate in search_files:
-            is_match = False
-            relative_paths = self._candidate_relative_paths(candidate, search_roots)
-            if col_map.path_match_strategy == "exact":
-                if candidate.name == expected_name:
-                    is_match = True
-                elif not raw_path.suffix and candidate.stem == expected_stem:
-                    is_match = True
-                elif (
-                    not raw_path.suffix
-                    and normalized_extension is not None
-                    and candidate.name == f"{expected_name}{normalized_extension}"
-                ):
-                    is_match = True
-                elif normalized_relative_value in relative_paths:
-                    is_match = True
-                elif (
-                    normalized_relative_with_extension is not None
-                    and normalized_relative_with_extension in relative_paths
-                ):
-                    is_match = True
-            elif col_map.path_match_strategy == "contains":
-                relative_strings = [
-                    candidate.name.casefold(),
-                    candidate.stem.casefold(),
-                ]
-                relative_strings.extend(relative_paths)
-                if any(
-                    normalized_value in relative_string
-                    for relative_string in relative_strings
-                ):
-                    is_match = True
-
-            if not is_match:
-                continue
-
-            candidate_key = str(candidate)
-            if candidate_key in seen_matches:
-                continue
-            seen_matches.add(candidate_key)
-            matches.append(candidate)
+        else:  # "contains"
+            matches = self._find_contains_matches(raw_value, search_files, search_roots)
 
         if len(matches) > 1:
             raise ValueError(
@@ -514,6 +446,62 @@ class BaseSchemaLoader(abc.ABC):
                 f"Matches: {[str(match) for match in matches[:5]]}"
             )
         return matches[0] if matches else None
+
+    def _find_exact_matches(
+        self,
+        raw_value: str,
+        file_extension: str | None,
+        search_files: list[Path],
+        search_roots: list[Path],
+    ) -> list[Path]:
+        """Candidates whose name — or, for extension-less values, stem or
+        extension-completed name — equals the value, or whose path relative to
+        a search root equals it (case-insensitive)."""
+        raw_path = Path(raw_value)
+        extension = self._normalize_extension(file_extension)
+
+        expected_names = {raw_path.name}
+        expected_relatives = {raw_path.as_posix().casefold()}
+        match_stem = not raw_path.suffix
+        if match_stem and extension is not None:
+            expected_names.add(f"{raw_path.name}{extension}")
+            expected_relatives.add(
+                f"{raw_path.as_posix().casefold()}{extension.casefold()}"
+            )
+
+        matches: list[Path] = []
+        for candidate in search_files:
+            is_match = (
+                candidate.name in expected_names
+                or (match_stem and candidate.stem == raw_path.name)
+                or not expected_relatives.isdisjoint(
+                    self._candidate_relative_paths(candidate, search_roots)
+                )
+            )
+            if is_match and candidate not in matches:
+                matches.append(candidate)
+        return matches
+
+    def _find_contains_matches(
+        self,
+        raw_value: str,
+        search_files: list[Path],
+        search_roots: list[Path],
+    ) -> list[Path]:
+        """Candidates whose name, stem, or path relative to a search root
+        contains the value as a substring (case-insensitive)."""
+        needle = raw_value.casefold()
+
+        matches: list[Path] = []
+        for candidate in search_files:
+            haystacks = [candidate.name.casefold(), candidate.stem.casefold()]
+            haystacks.extend(self._candidate_relative_paths(candidate, search_roots))
+            if (
+                any(needle in haystack for haystack in haystacks)
+                and candidate not in matches
+            ):
+                matches.append(candidate)
+        return matches
 
     def _candidate_relative_paths(
         self, candidate: Path, search_roots: list[Path]
@@ -529,32 +517,30 @@ class BaseSchemaLoader(abc.ABC):
     def _get_searchable_audio_files(
         self, search_roots: list[Path], file_extension: str | None
     ) -> list[Path]:
-        normalized_extension = self._normalize_extension(file_extension)
-        cache_key = (tuple(str(root) for root in search_roots), normalized_extension)
-        cached = self._audio_file_cache.get(cache_key)
-        if cached is not None:
-            return cached
-
-        files: list[Path] = []
-        for root in search_roots:
-            if root.is_file():
-                if self._is_searchable_audio_file(root, normalized_extension):
-                    files.append(root)
-                continue
-            if not root.exists():
-                continue
-
-            root_files = [
+        """List candidate files under *search_roots* (shallowest first per
+        root), cached per (roots, extension) pair."""
+        extension = self._normalize_extension(file_extension)
+        cache_key = (tuple(str(root) for root in search_roots), extension)
+        if cache_key not in self._audio_file_cache:
+            self._audio_file_cache[cache_key] = [
                 path
-                for path in root.rglob("*")
-                if self._is_searchable_audio_file(path, normalized_extension)
+                for root in search_roots
+                for path in self._list_searchable_files(root, extension)
             ]
-            root_files.sort(
-                key=lambda path: (len(path.relative_to(root).parts), str(path))
-            )
-            files.extend(root_files)
+        return self._audio_file_cache[cache_key]
 
-        self._audio_file_cache[cache_key] = files
+    def _list_searchable_files(self, root: Path, extension: str | None) -> list[Path]:
+        if root.is_file():
+            return [root] if self._is_searchable_audio_file(root, extension) else []
+        if not root.exists():
+            return []
+
+        files = [
+            path
+            for path in root.rglob("*")
+            if self._is_searchable_audio_file(path, extension)
+        ]
+        files.sort(key=lambda path: (len(path.relative_to(root).parts), str(path)))
         return files
 
     def _matches_extension(self, path: Path, extension: str | None) -> bool:
@@ -626,6 +612,9 @@ class BaseSchemaLoader(abc.ABC):
             return source
         if isinstance(source, int):
             return source if source in row.index else None
+        if self.schema.strict:
+            # Strict schemas require exact column names — no fuzzy matching
+            return None
 
         stripped_source = source.strip()
         if stripped_source in row.index:

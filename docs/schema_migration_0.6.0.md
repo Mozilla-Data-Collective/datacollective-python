@@ -54,6 +54,21 @@ silently fell back to index-based loading.
    it lands in the schema's `extra` catch-all and is ignored, so no migration
    is needed beyond optionally deleting it.
 
+7. **`index_file` resolution is deterministic.** The literal path relative to
+   the dataset root wins when it exists; otherwise the recursive search picks
+   the shallowest match as before, but **multiple matches at the same depth
+   now raise an error** instead of silently picking one. Affected archives
+   (equal-depth duplicate index files) must set `index_file` to an explicit
+   relative path. A new optional `strict: true` field additionally disables
+   the recursive search and fuzzy column-name matching.
+
+8. **Separator sniffing is removed.** Pre-0.6.0, a file whose declared or
+   inferred separator parsed into a single column was re-parsed with a
+   guessed delimiter. Now the declared separator is authoritative: a schema
+   that relied on sniffing fails with "Required column … not found" listing
+   the mushed single-column header. Fix by declaring the real separator
+   explicitly (e.g. `separator: ";"`).
+
 > **Keep the `task` field.** Even though 0.6.0 no longer needs it for
 > dispatch, SDK versions **before** 0.6.0 require `task` and use it to select
 > the loader. Registry schemas must keep it so both old and new SDKs can load
