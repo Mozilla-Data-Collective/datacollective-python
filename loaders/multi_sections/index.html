@@ -959,6 +959,11 @@ as-is.</p>
 <td><em>(optional)</em> Column mappings applied to every section frame. When omitted, the raw index columns plus <code>section</code> are returned.</td>
 </tr>
 <tr>
+<td><code>base_audio_path</code></td>
+<td>✗</td>
+<td><em>(optional)</em> Directory holding the audio files, <strong>relative to each section directory</strong> (e.g. <code>"clips/"</code> resolves to <code>section_root/&lt;section&gt;/clips/</code>). <code>file_path</code> values are resolved against it.</td>
+</tr>
+<tr>
 <td><code>format</code></td>
 <td>✗</td>
 <td>Optional file format hint (<code>"csv"</code>, <code>"tsv"</code>, <code>"pipe"</code>).</td>
@@ -967,7 +972,8 @@ as-is.</p>
 </table>
 <hr />
 <h2 id="example">Example</h2>
-<p>For a layout like <code>dataset/General/metadata.tsv</code>, <code>dataset/Chat/metadata.tsv</code>:</p>
+<p>For a layout like <code>dataset/General/metadata.tsv</code> + <code>dataset/General/clips/*.wav</code>,
+<code>dataset/Chat/metadata.tsv</code> + <code>dataset/Chat/clips/*.wav</code>:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"example-tts-sections"</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"TTS"</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"multi_sections"</span>
@@ -976,17 +982,19 @@ as-is.</p>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"General"</span>
 </span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"Chat"</span>
 </span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">"metadata.tsv"</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">"tsv"</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nt">columns</span><span class="p">:</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"audio"</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
-</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"text"</span>
-</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="nt">base_audio_path</span><span class="p">:</span><span class="w"> </span><span class="s">"clips/"</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">"tsv"</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"audio"</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"text"</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
 </span></code></pre></div>
 <p>The resulting DataFrame contains the mapped columns plus a <code>section</code> column
-(<code>General</code> / <code>Chat</code>). Without <code>columns</code>, the raw index columns are returned
+(<code>General</code> / <code>Chat</code>); <code>audio_path</code> holds absolute paths under each section's
+<code>clips/</code> directory. Without <code>columns</code>, the raw index columns are returned
 instead (in that case a <code>task</code> with a contract can only be declared when the
 raw columns already satisfy it).</p>
 

@@ -1174,7 +1174,7 @@
 </table>
 <h3 id="step-3-register-the-loader">Step 3: Register the loader</h3>
 <ol>
-<li><strong>Add to the Enum</strong>: add your strategy to the <code>Strategy</code> enum in <code>src/datacollective/schema_loaders/base.py</code>.</li>
+<li><strong>Add to the Enum</strong>: add your strategy to the <code>Strategy</code> enum in <code>src/datacollective/schema.py</code> (its values are the valid <code>root_strategy</code> entries, validated at parse time).</li>
 <li><strong>Register the class</strong> in <code>src/datacollective/schema_loaders/registry.py</code>:</li>
 </ol>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.strategies.manifest</span><span class="w"> </span><span class="kn">import</span> <span class="n">ManifestLoader</span>
@@ -1268,11 +1268,11 @@ files — older SDK versions still require it.</p>
 <tbody>
 <tr>
 <td><code>datacollective.schema</code></td>
-<td>Pydantic models and YAML parsing.</td>
+<td>Pydantic models, the <code>Strategy</code> enum, and YAML parsing/validation.</td>
 </tr>
 <tr>
 <td><code>datacollective.schema_loaders.base</code></td>
-<td>Abstract base class, shared helpers, and strategy definitions.</td>
+<td>Abstract base class and shared helpers.</td>
 </tr>
 <tr>
 <td><code>datacollective.schema_loaders.registry</code></td>

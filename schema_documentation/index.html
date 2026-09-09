@@ -1519,6 +1519,12 @@ transcription; pairing is done on the filename stem:</p>
 <td>✓</td>
 <td>Extension of the matching audio files (e.g. <code>".webm"</code>).</td>
 </tr>
+<tr>
+<td><code>columns</code></td>
+<td>—</td>
+<td>✗</td>
+<td>Optional mappings applied over the derived <code>audio_path</code> / <code>transcription</code> / <code>split</code> sources (rename, dtype, drop). The <code>split</code> column is kept. When omitted, the default <code>audio_path</code> / <code>transcription</code> / <code>split</code> output is returned.</td>
+</tr>
 </tbody>
 </table>
 <p><strong>ASR (JSON sidecars)</strong> — each audio file has a matching JSON file holding the
@@ -1671,12 +1677,13 @@ the directory name is added before concatenation.</p>
 </table>
 <p>This field is task-agnostic — it works with any loader.</p>
 <h2 id="column-mapping">Column mapping</h2>
-<p>Used by the <strong>index-based</strong>, <strong>multi-split</strong>, <strong>multi-sections</strong>, <strong>paired-glob (JSON)</strong> 
-and <strong>glob</strong> strategies. Each key under <code>columns</code> is
-the <strong>logical</strong> column name that will appear in the resulting DataFrame.  For
-the glob strategy, <code>source_column</code> names a path-derived source (<code>path</code>,
-<code>parent</code>, <code>content</code>, …) instead of an index-file column — see the
-<a href="../loaders/glob/">glob strategy</a> page.  For all other strategies:</p>
+<p>Used by every strategy. Each key under <code>columns</code> is the <strong>logical</strong> column
+name that will appear in the resulting DataFrame.  For the glob strategy,
+<code>source_column</code> names a path-derived source (<code>path</code>, <code>parent</code>, <code>content</code>, …)
+instead of an index-file column — see the <a href="../loaders/glob/">glob strategy</a>
+page; for the paired-glob text variant it names one of the derived
+<code>audio_path</code> / <code>transcription</code> / <code>split</code> sources.  For the index-based
+strategies:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nt">columns</span><span class="p">:</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"path"</span><span class="w">       </span><span class="c1"># column name in the index file</span>
@@ -1779,6 +1786,12 @@ instead of a column name:</p>
 </tr>
 </tbody>
 </table>
+<p>Column mappings are validated at parse time: an unknown <code>dtype</code> value or an
+unknown key inside a mapping entry (e.g. <code>dtpye:</code>) raises a <code>ValueError</code>
+instead of being silently ignored. Unknown <strong>top-level</strong> schema keys emit a
+<code>SchemaValidationWarning</code> (with a "did you mean …?" hint for near-misses) and
+are kept under the <code>extra</code> catch-all, and unknown <code>root_strategy</code> values fail
+at parse time.</p>
 <hr />
 <h2 id="complete-examples">Complete examples</h2>
 <p>For full examples for each strategy, visit the respective strategy documentation pages under <a href="./loaders/">docs/loaders/</a>.</p>

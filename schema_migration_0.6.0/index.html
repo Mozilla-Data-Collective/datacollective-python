@@ -717,6 +717,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Verifying a migrated schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cross-version-caveats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-version caveats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#field-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field reference
+      
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -1364,6 +1392,34 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Verifying a migrated schema">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#cross-version-caveats" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cross-version caveats
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#field-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Field reference
+      
+    </span>
+  </a>
+  
 </li>
       
     </ul>
@@ -1472,12 +1528,42 @@ package logging is disabled (<code>enable_logging=False</code>).</p>
    the recursive search and fuzzy column-name matching.</p>
 </li>
 <li>
+<p><strong>Schemas are validated at parse time.</strong> Unknown <code>dtype</code> values (e.g.
+   <code>"flaot"</code>) and unknown keys inside a column mapping entry (e.g. <code>dtpye:</code>)
+   now raise a <code>ValueError</code> at parse instead of being silently ignored or
+   cast to string. Unknown <code>root_strategy</code> values fail at parse rather than
+   at load. Unknown <strong>top-level</strong> keys still parse, but emit a
+   <code>SchemaValidationWarning</code> with a "did you mean …?" hint and land in the
+   <code>extra</code> catch-all.</p>
+</li>
+<li>
 <p><strong>Separator sniffing is removed.</strong> Pre-0.6.0, a file whose declared or
    inferred separator parsed into a single column was re-parsed with a
    guessed delimiter. Now the declared separator is authoritative: a schema
    that relied on sniffing fails with "Required column … not found" listing
    the mushed single-column header. Fix by declaring the real separator
    explicitly (e.g. <code>separator: ";"</code>).</p>
+</li>
+<li>
+<p><strong>Dirty data warns instead of passing silently (<code>DataLoadWarning</code>).</strong>
+    While loading, the SDK now emits a <code>DataLoadWarning</code> (visible even with
+    <code>enable_logging=False</code>) when values are lost or unresolved:</p>
+<ul>
+<li><code>file_path</code> values (default <code>direct</code> strategy) that resolve to no
+  existing file — the constructed paths are kept as-is, but the warning
+  reports how many missed (usually a wrong <code>base_audio_path</code> or
+  <code>file_extension</code>);</li>
+<li><code>file_content</code> values that resolve to no existing file — those cells
+  are now set to <strong>missing</strong> instead of silently containing a path
+  string;</li>
+<li><code>int</code> / <code>float</code> cells that cannot be parsed — set to missing, with
+  example offending values listed;</li>
+<li>paired-glob text sidecars with no matching audio file — skipped, with
+  a count and examples (usually a wrong <code>audio_extension</code>).</li>
+</ul>
+<p><code>exact</code>/<code>contains</code> path search misses still raise <code>FileNotFoundError</code>.
+Related output fix: the default <code>string</code> dtype now preserves missing
+values instead of turning them into the literal string <code>"nan"</code>.</p>
 </li>
 </ol>
 <blockquote>
@@ -1504,8 +1590,16 @@ the dataset.</p>
 </ul>
 </li>
 <li><strong>Fix silent misconfigurations</strong> that 0.6.0 now surfaces: typo'd
-   <code>root_strategy</code> values, and inert <code>columns</code> blocks on <code>multi_sections</code>
+   <code>root_strategy</code> values, typo'd <code>dtype</code> values or column-mapping keys
+   (now parse errors), and inert <code>columns</code> blocks on <code>multi_sections</code>
    schemas (now applied — verify the mappings are correct or remove them).</li>
+<li><strong>Declare the separator explicitly</strong> (<code>separator: ";"</code>, or a correct
+   <code>format</code>) for any schema whose index file previously loaded only thanks
+   to separator sniffing — sniffing is gone, and a wrong separator now
+   surfaces as "Required column … not found".</li>
+<li><strong>Verify every migrated schema</strong> against its extracted archive with the
+   recipe in <a href="#verifying-a-migrated-schema">Verifying a migrated schema</a> —
+   a clean run loads with <strong>zero warnings</strong>.</li>
 </ol>
 <p>The sections below walk through each strategy.</p>
 <hr />
@@ -1682,6 +1776,13 @@ ASR/TTS contract is satisfied by construction.</p>
 dataset with <code>.txt</code> sidecars is expressible with exactly the schema above
 (just with <code>task: "ASR"</code>).</p>
 </blockquote>
+<p>Also new in 0.6.0 (optional): the text variant now applies a declared
+<code>columns</code> block over its derived <code>audio_path</code> / <code>transcription</code> / <code>split</code>
+sources (rename, dtype, drop; <code>split</code> is kept). Pre-0.6.0 such a block was
+silently ignored — existing schemas do not carry one, so no migration is
+needed. Text files skipped for lack of a paired audio file now emit a
+<code>DataLoadWarning</code> with a count instead of disappearing silently — treat that
+warning during verification as a probable <code>audio_extension</code> mistake.</p>
 <hr />
 <h2 id="case-5-paired-glob-json-schemas-root_strategy-paired_glob-format-json">Case 5: Paired-glob JSON schemas (<code>root_strategy: "paired_glob"</code>, <code>format: "json"</code>)</h2>
 <p><strong>Who is affected:</strong> only schemas whose <code>columns</code> use non-contract logical
@@ -1744,30 +1845,106 @@ glob output has no <code>transcription</code> column, so every load would emit a
 <hr />
 <h2 id="verifying-a-migrated-schema">Verifying a migrated schema</h2>
 <p>Test the schema locally against the extracted dataset before submitting it to
-the registry:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_schema</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">_load_dataset_from_schema</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">_parse_schema</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"path/to/extracted/schema.yaml"</span><span class="p">))</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="n">df</span> <span class="o">=</span> <span class="n">_load_dataset_from_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">extract_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">"path/to/extracted/"</span><span class="p">))</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+the registry. Escalating all SDK warnings to errors makes every problem a
+hard failure:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_schema</span>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">_load_dataset_from_schema</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">warnings</span><span class="o">.</span><span class="n">simplefilter</span><span class="p">(</span><span class="s2">"error"</span><span class="p">,</span> <span class="ne">UserWarning</span><span class="p">)</span>  <span class="c1"># any SDK warning → hard failure</span>
+</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>
+</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">_parse_schema</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"path/to/extracted/schema.yaml"</span><span class="p">))</span>
+</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="n">df</span> <span class="o">=</span> <span class="n">_load_dataset_from_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">extract_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">"path/to/extracted/"</span><span class="p">))</span>
+</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>
+</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">dtypes</span><span class="p">)</span>
+</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span>
 </span></code></pre></div>
-<p>A migrated schema is correct when:</p>
-<ul>
-<li>it loads without <code>ValueError</code> (strategy resolution),</li>
-<li>it emits no <code>TaskValidationWarning</code> (run with
-  <code>python -W error::UserWarning …</code> or <code>warnings.simplefilter("error")</code> to
-  turn the warning into a hard failure during testing), <strong>and</strong></li>
-<li>for <code>ASR</code>/<code>TTS</code>, <code>{"audio_path", "transcription"} &lt;= set(df.columns)</code>.</li>
-</ul>
+<p>A migrated schema is correct when the snippet completes with <strong>no error and
+no warning</strong>. Each failure mode points at a specific fix:</p>
+<table>
+<thead>
+<tr>
+<th>Signal</th>
+<th>Meaning</th>
+<th>Fix</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ValueError: Schema must specify 'root_strategy'</code></td>
+<td>Checklist step 1 missed.</td>
+<td>Add <code>root_strategy</code>.</td>
+</tr>
+<tr>
+<td><code>ValueError: Unknown root_strategy …</code> / unknown <code>dtype</code> / unknown mapping key</td>
+<td>Typo in the schema (parse-time validation).</td>
+<td>Correct the value/key.</td>
+</tr>
+<tr>
+<td><code>SchemaValidationWarning: Unknown schema key 'X' — did you mean 'Y'?</code></td>
+<td>Misspelled top-level key, silently ignored.</td>
+<td>Rename it (or delete leftovers like <code>content_mapping</code>).</td>
+</tr>
+<tr>
+<td><code>ValueError: Ambiguous index_file …</code></td>
+<td>Duplicate index files at equal depth.</td>
+<td>Set <code>index_file</code> to an explicit relative path.</td>
+</tr>
+<tr>
+<td><code>KeyError: Required column … not found</code> listing one mushed header</td>
+<td>Wrong separator (sniffing no longer rescues it).</td>
+<td>Declare <code>separator</code> / fix <code>format</code>.</td>
+</tr>
+<tr>
+<td><code>TaskValidationWarning: … missing column(s) […]</code></td>
+<td>Output misses the task contract.</td>
+<td>Rename logical columns / add a <code>columns</code> block (checklist step 2).</td>
+</tr>
+<tr>
+<td><code>DataLoadWarning: Column 'X': N of M values did not resolve …</code></td>
+<td>Audio/content paths don't resolve.</td>
+<td>Fix <code>base_audio_path</code>, <code>file_extension</code>, <code>path_template</code>, or <code>path_match_strategy</code>.</td>
+</tr>
+<tr>
+<td><code>DataLoadWarning: … could not be parsed as int/float</code></td>
+<td>Wrong <code>dtype</code> for the column's actual values.</td>
+<td>Fix the <code>dtype</code> or accept missing values.</td>
+</tr>
+<tr>
+<td><code>DataLoadWarning: … had no paired '&lt;ext&gt;' audio file</code></td>
+<td>Text sidecars skipped.</td>
+<td>Fix <code>audio_extension</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>For fully deterministic schemas, additionally set <code>strict: true</code> (literal
+<code>index_file</code> path, exact column names) and confirm the load still passes.</p>
+<h3 id="cross-version-caveats">Cross-version caveats</h3>
 <p>Because the migrated schema keeps <code>task</code> and only <em>adds</em> fields that pre-0.6.0
 loaders either required anyway (<code>columns</code> renames) or ignored
-(<code>root_strategy: "index"</code> on index schemas, <code>columns</code> on <code>multi_sections</code>),
-sanity-check the pre-0.6.0 behavior too if the dataset must stay loadable by
-older SDKs — with one caveat: pre-0.6.0 <code>multi_sections</code> ignores the new
-<code>columns</code> block, so old SDKs return the raw section columns while 0.6.0
-returns the mapped ones.</p>
+(<code>root_strategy: "index"</code> on index schemas), sanity-check the pre-0.6.0
+behavior too if the dataset must stay loadable by older SDKs. Fields that
+old SDKs parse but <strong>ignore</strong> produce diverging output between versions:</p>
+<ul>
+<li><code>columns</code> on <code>multi_sections</code> schemas: old SDKs return the raw section
+  columns, 0.6.0 returns the mapped ones;</li>
+<li><code>columns</code> on <code>glob</code> or paired-glob <strong>text</strong> schemas: old SDKs return the
+  default output, 0.6.0 returns the mapped one;</li>
+<li><code>strict</code> is ignored entirely by old SDKs (they keep searching/fuzzy-matching).</li>
+</ul>
+<p>Users upgrading do not need to clear previously extracted datasets: a
+<code>schema.yaml</code> cached next to an archive by an SDK before 0.6.0 has no
+<code>root_strategy</code>, so 0.6.0 treats it as a cache miss and re-downloads the
+migrated registry schema even when the archive checksum still matches.</p>
+<p>Prefer migrations that avoid these fields unless the divergence is acceptable,
+or accept that pre-0.6.0 users see the old column names until they upgrade.</p>
+<h2 id="field-reference">Field reference</h2>
+<p>The complete per-strategy field tables live in
+<a href="../schema_documentation/">Schema-Based Loading</a>, with full examples on the
+per-strategy pages under <a href="../loaders/">docs/loaders/</a>.</p>
 
 
 

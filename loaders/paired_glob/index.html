@@ -1032,9 +1032,12 @@ with a sidecar file. Two variants exist, selected by the <code>format</code> fie
 <h2 id="text-sidecar-variant-default">Text-sidecar variant (default)</h2>
 <p>The loader recursively finds all text files matching <code>file_pattern</code>, reads the
 transcription, and pairs each with the audio file sharing the same stem. The
-parent directory name is captured as a <code>split</code> column. The resulting DataFrame
-always contains <code>audio_path</code> and <code>transcription</code>, so it satisfies the ASR/TTS
+parent directory name is captured as a <code>split</code> column. The default DataFrame
+contains <code>audio_path</code> and <code>transcription</code>, so it satisfies the ASR/TTS
 contracts by construction.</p>
+<p>When the schema declares <code>columns</code>, the mappings are applied over the derived
+<code>audio_path</code> / <code>transcription</code> / <code>split</code> sources (rename, dtype conversion,
+drop); the <code>split</code> column is kept, mirroring the multi-split strategy.</p>
 <p><strong>Controlled by:</strong></p>
 <table>
 <thead>
@@ -1054,6 +1057,11 @@ contracts by construction.</p>
 <td><code>audio_extension</code></td>
 <td>✓</td>
 <td>Extension of the matching audio files (e.g. <code>".webm"</code>).</td>
+</tr>
+<tr>
+<td><code>columns</code></td>
+<td>✗</td>
+<td>Optional mappings over the derived <code>audio_path</code> / <code>transcription</code> / <code>split</code> sources. When omitted, the default output is returned.</td>
 </tr>
 </tbody>
 </table>
