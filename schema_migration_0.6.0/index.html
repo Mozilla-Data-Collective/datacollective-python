@@ -1455,6 +1455,13 @@ package logging is disabled (<code>enable_logging=False</code>).</p>
    loading; now it raises
    <code>ValueError: Unknown root_strategy 'multisplit'. Supported strategies: …</code>.</p>
 </li>
+<li>
+<p><strong><code>content_mapping</code> is removed.</strong> The field was never consumed by any
+   loader ("reserved for future use"); its use case is covered by the glob
+   strategy's <code>columns</code> mapping. Schemas still carrying the block parse fine —
+   it lands in the schema's <code>extra</code> catch-all and is ignored, so no migration
+   is needed beyond optionally deleting it.</p>
+</li>
 </ol>
 <blockquote>
 <p><strong>Keep the <code>task</code> field.</strong> Even though 0.6.0 no longer needs it for
