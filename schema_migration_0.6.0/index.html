@@ -1693,9 +1693,14 @@ listing the missing contract columns (the DataFrame is still returned).</p>
 <h2 id="case-6-glob-schemas-root_strategy-glob">Case 6: Glob schemas (<code>root_strategy: "glob"</code>)</h2>
 <p><strong>Who is affected:</strong> nobody with <code>task: "OTH"</code> — <strong>no migration needed</strong>.</p>
 <p><code>root_strategy</code> was already required for glob, the fields are unchanged, and
-<code>OTH</code> has no contract. The glob loader's output is fixed
-(<code>audio_path</code>, <code>language</code>, <code>speaker_id</code>, and <code>split</code> when <code>splits</code> is set);
-it does not apply <code>columns</code>.</p>
+<code>OTH</code> has no contract, and the pre-0.6.0 fields work unchanged: without
+<code>columns</code>, the loader keeps producing its default output (<code>audio_path</code>,
+<code>language</code>, <code>speaker_id</code>, and <code>split</code> when <code>splits</code> is set).</p>
+<p>New in 0.6.0 (optional): glob schemas may declare a <code>columns</code> mapping over
+path-derived sources (<code>path</code>, <code>name</code>, <code>stem</code>, <code>parent</code>, <code>parents[N]</code>,
+<code>content</code>) to control the output columns instead of relying on the default —
+see the <a href="../loaders/glob/">glob strategy</a> page. Existing schemas do not need
+this to migrate.</p>
 <h3 id="valid-before-and-after_2">Valid before and after</h3>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-glob-dataset"</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"OTH"</span>
@@ -1707,9 +1712,10 @@ it does not apply <code>columns</code>.</p>
 </span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"Dev.tar.gz"</span>
 </span></code></pre></div>
 <blockquote>
-<p>Caution: avoid combining <code>glob</code> with <code>task: "ASR"</code> or <code>task: "TTS"</code>. The
-glob output can never contain a <code>transcription</code> column, so every load would
-emit a <code>TaskValidationWarning</code>.</p>
+<p>Caution: avoid combining <code>glob</code> with <code>task: "ASR"</code> or <code>task: "TTS"</code> unless
+a <code>columns</code> mapping actually produces the contract columns — the default
+glob output has no <code>transcription</code> column, so every load would emit a
+<code>TaskValidationWarning</code>.</p>
 </blockquote>
 <hr />
 <h2 id="verifying-a-migrated-schema">Verifying a migrated schema</h2>
