@@ -1098,6 +1098,11 @@ the raw index file is returned as-is.</p>
 <td>✗</td>
 <td>File encoding (e.g. <code>"utf-8-sig"</code> for files with a BOM).</td>
 </tr>
+<tr>
+<td><code>strict</code></td>
+<td>✗</td>
+<td>Disable archive heuristics: <code>index_file</code> must exist at its literal relative path (no recursive search), exact column-name matching only.</td>
+</tr>
 </tbody>
 </table>
 <hr />
@@ -1208,8 +1213,9 @@ audio roots:</p>
 </span></code></pre></div>
 <p><code>path_match_strategy: "direct"</code> remains the default and preserves the existing
 <code>extract_dir / base_audio_path / value</code> behavior. The loader also trims BOMs
-and surrounding header whitespace, and can retry common delimiters
-automatically when a file initially parses as a single column.</p>
+and surrounding header whitespace. The separator is never guessed from file
+contents — when the declared/inferred separator is wrong, loading fails with
+the raw (single-column) headers listed; declare <code>separator</code> explicitly.</p>
 <p>If the true audio filename is composed from multiple metadata columns, use
 <code>path_template</code> instead of a fuzzy search:</p>
 <div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"khmer-asr-cultural-dataset-4e33cd05"</span>

@@ -1462,6 +1462,23 @@ package logging is disabled (<code>enable_logging=False</code>).</p>
    it lands in the schema's <code>extra</code> catch-all and is ignored, so no migration
    is needed beyond optionally deleting it.</p>
 </li>
+<li>
+<p><strong><code>index_file</code> resolution is deterministic.</strong> The literal path relative to
+   the dataset root wins when it exists; otherwise the recursive search picks
+   the shallowest match as before, but <strong>multiple matches at the same depth
+   now raise an error</strong> instead of silently picking one. Affected archives
+   (equal-depth duplicate index files) must set <code>index_file</code> to an explicit
+   relative path. A new optional <code>strict: true</code> field additionally disables
+   the recursive search and fuzzy column-name matching.</p>
+</li>
+<li>
+<p><strong>Separator sniffing is removed.</strong> Pre-0.6.0, a file whose declared or
+   inferred separator parsed into a single column was re-parsed with a
+   guessed delimiter. Now the declared separator is authoritative: a schema
+   that relied on sniffing fails with "Required column … not found" listing
+   the mushed single-column header. Fix by declaring the real separator
+   explicitly (e.g. <code>separator: ";"</code>).</p>
+</li>
 </ol>
 <blockquote>
 <p><strong>Keep the <code>task</code> field.</strong> Even though 0.6.0 no longer needs it for

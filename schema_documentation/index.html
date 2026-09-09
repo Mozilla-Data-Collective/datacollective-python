@@ -1433,8 +1433,18 @@ strategy is selected with the required <code>root_strategy</code> field:</p>
 <td>✗</td>
 <td>File encoding (e.g. <code>"utf-8-sig"</code> for files with a BOM).</td>
 </tr>
+<tr>
+<td><code>strict</code></td>
+<td><code>false</code></td>
+<td>✗</td>
+<td>Disable archive heuristics for deterministic loading: <code>index_file</code> must exist at its literal path relative to the dataset root (no recursive search) and source column names must match exactly (no fuzzy matching). Applies to every strategy that reads delimited files.</td>
+</tr>
 </tbody>
 </table>
+<p>The <code>index_file</code> lookup is deterministic even without <code>strict</code>: the literal
+relative path wins when it exists; otherwise the tree is searched recursively
+and the shallowest match is used — multiple matches at the same depth raise an
+error instead of picking one arbitrarily.</p>
 <h3 id="multi-split-fields">Multi-split fields</h3>
 <table>
 <thead>
