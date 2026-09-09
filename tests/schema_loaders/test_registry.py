@@ -135,10 +135,9 @@ class TestStrategyDispatch:
         with pytest.raises(ValueError, match="must specify 'root_strategy'"):
             _load_dataset_from_schema(schema, tmp_path)
 
-    def test_unknown_strategy_raises(self, tmp_path: Path) -> None:
-        schema = DatasetSchema(dataset_id="ds", root_strategy="unknown_strategy")
+    def test_unknown_strategy_raises_at_parse(self, tmp_path: Path) -> None:
         with pytest.raises(ValueError, match="Unknown root_strategy"):
-            _load_dataset_from_schema(schema, tmp_path)
+            DatasetSchema(dataset_id="ds", root_strategy="unknown_strategy")
 
 
 class TestTaskContracts:

@@ -2,14 +2,17 @@ from __future__ import annotations
 
 import abc
 import re
-from enum import StrEnum
+import warnings
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
+from datacollective.errors import DataLoadWarning
 from datacollective.logging_utils import get_logger
-from datacollective.schema import ColumnMapping, DatasetSchema
+from datacollective.schema import ColumnMapping, DatasetSchema, Strategy
+
+__all__ = ["FORMAT_SEP", "SUFFIX_SEP", "BaseSchemaLoader", "Strategy"]
 
 logger = get_logger(__name__)
 
@@ -27,16 +30,6 @@ SUFFIX_SEP: dict[str, str] = {
     ".psv": "|",
     ".pipe": "|",
 }
-
-
-class Strategy(StrEnum):
-    """Loading strategies recognised by schema loaders."""
-
-    INDEX = "index"
-    MULTI_SPLIT = "multi_split"
-    MULTI_SECTIONS = "multi_sections"
-    PAIRED_GLOB = "paired_glob"
-    GLOB = "glob"
 
 
 class BaseSchemaLoader(abc.ABC):
@@ -156,32 +149,70 @@ class BaseSchemaLoader(abc.ABC):
             series = raw_df[resolved_source]
 
             if col_map.dtype == "file_path":
+                misses: list[str] = []
                 series = raw_df.apply(
                     lambda row, _col_map=col_map, _source=resolved_source: (
-                        self._resolve_file_path(row[_source], _col_map, row)
+                        self._resolve_file_path(row[_source], _col_map, row, misses)
                     ),
                     axis=1,
                 )
+                self._warn_unresolved_files(
+                    logical_name,
+                    misses,
+                    len(raw_df),
+                    "the constructed paths are kept as-is",
+                )
             elif col_map.dtype == "file_content":
+                misses = []
                 series = raw_df.apply(
                     lambda row, _col_map=col_map, _source=resolved_source: (
-                        self._load_file_content(row[_source], _col_map, row)
+                        self._load_file_content(row[_source], _col_map, row, misses)
                     ),
                     axis=1,
+                )
+                self._warn_unresolved_files(
+                    logical_name, misses, len(raw_df), "their values are set to missing"
                 )
             elif col_map.dtype == "category":
                 series = series.astype("category")
-            elif col_map.dtype == "int":
-                series = pd.to_numeric(series, errors="coerce").astype("Int64")
-            elif col_map.dtype == "float":
-                series = pd.to_numeric(series, errors="coerce")
+            elif col_map.dtype in ("int", "float"):
+                numeric = pd.to_numeric(series, errors="coerce")
+                coerced = series.notna() & numeric.isna()
+                if coerced.any():
+                    examples = ", ".join(
+                        repr(value) for value in series[coerced].unique()[:3]
+                    )
+                    warnings.warn(
+                        f"Column '{logical_name}': {int(coerced.sum())} of "
+                        f"{len(series)} values could not be parsed as "
+                        f"{col_map.dtype} and were set to missing "
+                        f"(e.g. {examples}).",
+                        DataLoadWarning,
+                        stacklevel=2,
+                    )
+                series = numeric.astype("Int64") if col_map.dtype == "int" else numeric
             else:
-                # default: treat as string
-                series = series.astype(str)
+                # default: treat as string, preserving missing values
+                # (a plain astype(str) would turn NaN into the string "nan")
+                series = series.where(series.isna(), series.astype(str))
 
             result_cols[logical_name] = series
 
         return pd.DataFrame(result_cols)
+
+    def _warn_unresolved_files(
+        self, logical_name: str, misses: list[str], total: int, consequence: str
+    ) -> None:
+        if not misses:
+            return
+        examples = ", ".join(repr(miss) for miss in misses[:3])
+        warnings.warn(
+            f"Column '{logical_name}': {len(misses)} of {total} values did not "
+            f"resolve to an existing file ({consequence}). "
+            f"Examples: {examples}.",
+            DataLoadWarning,
+            stacklevel=3,
+        )
 
     def _read_delimited_file(self, file_path: Path) -> pd.DataFrame:
         sep = self._resolve_separator(file_path)
@@ -272,8 +303,18 @@ class BaseSchemaLoader(abc.ABC):
         return " ".join(cleaned.split()).casefold()
 
     def _resolve_file_path(
-        self, value: object, col_map: ColumnMapping, row: pd.Series | None = None
+        self,
+        value: object,
+        col_map: ColumnMapping,
+        row: pd.Series | None = None,
+        misses: list[str] | None = None,
     ) -> Any:
+        """Resolve *value* to an existing file path.
+
+        With the default ``direct`` strategy, a value that resolves to no
+        existing file is returned as the first constructed candidate path
+        and recorded in *misses* (when given) so the caller can warn.
+        """
         if pd.isna(value):
             return value
 
@@ -311,14 +352,26 @@ class BaseSchemaLoader(abc.ABC):
                 f"under base_audio_path={self.schema.base_audio_path!r}"
             )
 
+        if misses is not None:
+            misses.append(raw_value)
         if direct_candidates:
             return str(direct_candidates[0])
         return raw_value
 
     def _load_file_content(
-        self, value: object, col_map: ColumnMapping, row: pd.Series | None = None
+        self,
+        value: object,
+        col_map: ColumnMapping,
+        row: pd.Series | None = None,
+        misses: list[str] | None = None,
     ) -> Any:
-        """Resolve a file path (like ``file_path`` dtype) and return its text content."""
+        """Resolve a file path (like ``file_path`` dtype) and return its text content.
+
+        When the value does not resolve to an existing file, the cell becomes
+        missing (``None``) and the value is recorded in *misses* (when given)
+        so the caller can warn — a content column must never silently contain
+        a path instead of the file's text.
+        """
         if pd.isna(value):  # if missing value, skip loading
             return value
 
@@ -332,7 +385,9 @@ class BaseSchemaLoader(abc.ABC):
         path = Path(resolved)
         if path.is_file():
             return path.read_text(encoding=self.schema.encoding).strip()
-        return resolved
+        if misses is not None:
+            misses.append(raw)
+        return None
 
     def _build_direct_file_candidates(
         self,

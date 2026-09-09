@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
+import pandas as pd
 import pytest
 
+from datacollective.errors import DataLoadWarning
 from datacollective.schema import ColumnMapping, DatasetSchema
 from datacollective.schema_loaders.strategies.index import IndexLoader
 
@@ -622,3 +625,90 @@ class TestStrictMode:
         )
         df = IndexLoader(schema, tmp_path).load()
         assert df["transcription"].iloc[0] == "hi"
+
+
+class TestDataLoadWarnings:
+    def test_string_dtype_preserves_missing_values(self, tmp_path: Path) -> None:
+        """A missing cell must stay missing, not become the string 'nan'."""
+        _write(tmp_path / "meta.csv", "path,sentence\nc.mp3,hi\nc2.mp3,\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            format="csv",
+            index_file="meta.csv",
+            columns={"transcription": ColumnMapping(source_column="sentence")},
+        )
+        df = IndexLoader(schema, tmp_path).load()
+        assert df["transcription"].iloc[0] == "hi"
+        assert pd.isna(df["transcription"].iloc[1])
+
+    def test_unresolved_file_path_warns_and_keeps_path(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.csv", "path,sentence\nmissing.mp3,hi\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            format="csv",
+            index_file="meta.csv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
+            },
+        )
+        with pytest.warns(DataLoadWarning, match="audio_path.*1 of 1"):
+            df = IndexLoader(schema, tmp_path).load()
+        assert df["audio_path"].iloc[0].endswith("missing.mp3")
+
+    def test_resolved_file_path_does_not_warn(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.csv", "path,sentence\nclip.mp3,hi\n")
+        (tmp_path / "clip.mp3").write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            format="csv",
+            index_file="meta.csv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
+            },
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DataLoadWarning)
+            df = IndexLoader(schema, tmp_path).load()
+        assert df["audio_path"].iloc[0] == str(tmp_path / "clip.mp3")
+
+    def test_missing_file_content_warns_and_becomes_missing(
+        self, tmp_path: Path
+    ) -> None:
+        """A content column must never contain a path instead of file text."""
+        _write(tmp_path / "index.csv", "audio,transcript\nclip.wav,gone/clip.txt\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            format="csv",
+            index_file="index.csv",
+            columns={
+                "text": ColumnMapping(source_column="transcript", dtype="file_content"),
+            },
+        )
+        with pytest.warns(DataLoadWarning, match="text.*set to missing"):
+            df = IndexLoader(schema, tmp_path).load()
+        assert pd.isna(df["text"].iloc[0])
+
+    def test_unparseable_numeric_values_warn(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.csv", "age,score\n30,0.5\nbad,worse\n")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            format="csv",
+            index_file="meta.csv",
+            columns={
+                "age": ColumnMapping(source_column="age", dtype="int"),
+                "score": ColumnMapping(source_column="score", dtype="float"),
+            },
+        )
+        with pytest.warns(DataLoadWarning) as record:
+            df = IndexLoader(schema, tmp_path).load()
+
+        messages = [str(warning.message) for warning in record]
+        assert any("'age': 1 of 2" in m and "'bad'" in m for m in messages)
+        assert any("'score': 1 of 2" in m and "'worse'" in m for m in messages)
+        assert df["age"].iloc[0] == 30
+        assert pd.isna(df["age"].iloc[1])

@@ -62,12 +62,40 @@ silently fell back to index-based loading.
    relative path. A new optional `strict: true` field additionally disables
    the recursive search and fuzzy column-name matching.
 
-8. **Separator sniffing is removed.** Pre-0.6.0, a file whose declared or
+8. **Schemas are validated at parse time.** Unknown `dtype` values (e.g.
+   `"flaot"`) and unknown keys inside a column mapping entry (e.g. `dtpye:`)
+   now raise a `ValueError` at parse instead of being silently ignored or
+   cast to string. Unknown `root_strategy` values fail at parse rather than
+   at load. Unknown **top-level** keys still parse, but emit a
+   `SchemaValidationWarning` with a "did you mean …?" hint and land in the
+   `extra` catch-all.
+
+9. **Separator sniffing is removed.** Pre-0.6.0, a file whose declared or
    inferred separator parsed into a single column was re-parsed with a
    guessed delimiter. Now the declared separator is authoritative: a schema
    that relied on sniffing fails with "Required column … not found" listing
    the mushed single-column header. Fix by declaring the real separator
    explicitly (e.g. `separator: ";"`).
+
+10. **Dirty data warns instead of passing silently (`DataLoadWarning`).**
+    While loading, the SDK now emits a `DataLoadWarning` (visible even with
+    `enable_logging=False`) when values are lost or unresolved:
+
+    - `file_path` values (default `direct` strategy) that resolve to no
+      existing file — the constructed paths are kept as-is, but the warning
+      reports how many missed (usually a wrong `base_audio_path` or
+      `file_extension`);
+    - `file_content` values that resolve to no existing file — those cells
+      are now set to **missing** instead of silently containing a path
+      string;
+    - `int` / `float` cells that cannot be parsed — set to missing, with
+      example offending values listed;
+    - paired-glob text sidecars with no matching audio file — skipped, with
+      a count and examples (usually a wrong `audio_extension`).
+
+    `exact`/`contains` path search misses still raise `FileNotFoundError`.
+    Related output fix: the default `string` dtype now preserves missing
+    values instead of turning them into the literal string `"nan"`.
 
 > **Keep the `task` field.** Even though 0.6.0 no longer needs it for
 > dispatch, SDK versions **before** 0.6.0 require `task` and use it to select
@@ -91,8 +119,16 @@ For every `schema.yaml` in the registry:
       already be named `audio_path` and `transcription` — otherwise add a
       `columns` block that maps them.
 3. **Fix silent misconfigurations** that 0.6.0 now surfaces: typo'd
-   `root_strategy` values, and inert `columns` blocks on `multi_sections`
+   `root_strategy` values, typo'd `dtype` values or column-mapping keys
+   (now parse errors), and inert `columns` blocks on `multi_sections`
    schemas (now applied — verify the mappings are correct or remove them).
+4. **Declare the separator explicitly** (`separator: ";"`, or a correct
+   `format`) for any schema whose index file previously loaded only thanks
+   to separator sniffing — sniffing is gone, and a wrong separator now
+   surfaces as "Required column … not found".
+5. **Verify every migrated schema** against its extracted archive with the
+   recipe in [Verifying a migrated schema](#verifying-a-migrated-schema) —
+   a clean run loads with **zero warnings**.
 
 The sections below walk through each strategy.
 
@@ -317,6 +353,14 @@ audio_extension: ".webm"
 > dataset with `.txt` sidecars is expressible with exactly the schema above
 > (just with `task: "ASR"`).
 
+Also new in 0.6.0 (optional): the text variant now applies a declared
+`columns` block over its derived `audio_path` / `transcription` / `split`
+sources (rename, dtype, drop; `split` is kept). Pre-0.6.0 such a block was
+silently ignored — existing schemas do not carry one, so no migration is
+needed. Text files skipped for lack of a paired audio file now emit a
+`DataLoadWarning` with a count instead of disappearing silently — treat that
+warning during verification as a probable `audio_extension` mistake.
+
 ---
 
 ## Case 5: Paired-glob JSON schemas (`root_strategy: "paired_glob"`, `format: "json"`)
@@ -400,30 +444,68 @@ extract_files:
 ## Verifying a migrated schema
 
 Test the schema locally against the extracted dataset before submitting it to
-the registry:
+the registry. Escalating all SDK warnings to errors makes every problem a
+hard failure:
 
 ```python
+import warnings
 from pathlib import Path
+
 from datacollective.schema import _parse_schema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
 
+warnings.simplefilter("error", UserWarning)  # any SDK warning → hard failure
+
 schema = _parse_schema(Path("path/to/extracted/schema.yaml"))
 df = _load_dataset_from_schema(schema, extract_dir=Path("path/to/extracted/"))
+
 print(df.head())
+print(df.dtypes)
+assert len(df) > 0
 ```
 
-A migrated schema is correct when:
+A migrated schema is correct when the snippet completes with **no error and
+no warning**. Each failure mode points at a specific fix:
 
-- it loads without `ValueError` (strategy resolution),
-- it emits no `TaskValidationWarning` (run with
-  `python -W error::UserWarning …` or `warnings.simplefilter("error")` to
-  turn the warning into a hard failure during testing), **and**
-- for `ASR`/`TTS`, `{"audio_path", "transcription"} <= set(df.columns)`.
+| Signal | Meaning | Fix |
+|---|---|---|
+| `ValueError: Schema must specify 'root_strategy'` | Checklist step 1 missed. | Add `root_strategy`. |
+| `ValueError: Unknown root_strategy …` / unknown `dtype` / unknown mapping key | Typo in the schema (parse-time validation). | Correct the value/key. |
+| `SchemaValidationWarning: Unknown schema key 'X' — did you mean 'Y'?` | Misspelled top-level key, silently ignored. | Rename it (or delete leftovers like `content_mapping`). |
+| `ValueError: Ambiguous index_file …` | Duplicate index files at equal depth. | Set `index_file` to an explicit relative path. |
+| `KeyError: Required column … not found` listing one mushed header | Wrong separator (sniffing no longer rescues it). | Declare `separator` / fix `format`. |
+| `TaskValidationWarning: … missing column(s) […]` | Output misses the task contract. | Rename logical columns / add a `columns` block (checklist step 2). |
+| `DataLoadWarning: Column 'X': N of M values did not resolve …` | Audio/content paths don't resolve. | Fix `base_audio_path`, `file_extension`, `path_template`, or `path_match_strategy`. |
+| `DataLoadWarning: … could not be parsed as int/float` | Wrong `dtype` for the column's actual values. | Fix the `dtype` or accept missing values. |
+| `DataLoadWarning: … had no paired '<ext>' audio file` | Text sidecars skipped. | Fix `audio_extension`. |
+
+For fully deterministic schemas, additionally set `strict: true` (literal
+`index_file` path, exact column names) and confirm the load still passes.
+
+### Cross-version caveats
 
 Because the migrated schema keeps `task` and only *adds* fields that pre-0.6.0
 loaders either required anyway (`columns` renames) or ignored
-(`root_strategy: "index"` on index schemas, `columns` on `multi_sections`),
-sanity-check the pre-0.6.0 behavior too if the dataset must stay loadable by
-older SDKs — with one caveat: pre-0.6.0 `multi_sections` ignores the new
-`columns` block, so old SDKs return the raw section columns while 0.6.0
-returns the mapped ones.
+(`root_strategy: "index"` on index schemas), sanity-check the pre-0.6.0
+behavior too if the dataset must stay loadable by older SDKs. Fields that
+old SDKs parse but **ignore** produce diverging output between versions:
+
+- `columns` on `multi_sections` schemas: old SDKs return the raw section
+  columns, 0.6.0 returns the mapped ones;
+- `columns` on `glob` or paired-glob **text** schemas: old SDKs return the
+  default output, 0.6.0 returns the mapped one;
+- `strict` is ignored entirely by old SDKs (they keep searching/fuzzy-matching).
+
+Users upgrading do not need to clear previously extracted datasets: a
+`schema.yaml` cached next to an archive by an SDK before 0.6.0 has no
+`root_strategy`, so 0.6.0 treats it as a cache miss and re-downloads the
+migrated registry schema even when the archive checksum still matches.
+
+Prefer migrations that avoid these fields unless the divergence is acceptable,
+or accept that pre-0.6.0 users see the old column names until they upgrade.
+
+## Field reference
+
+The complete per-strategy field tables live in
+[Schema-Based Loading](schema_documentation.md), with full examples on the
+per-strategy pages under [docs/loaders/](loaders/index.md).

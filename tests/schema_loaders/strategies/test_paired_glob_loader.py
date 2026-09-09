@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 
+from datacollective.errors import DataLoadWarning
 from datacollective.schema import ColumnMapping, DatasetSchema
 from datacollective.schema_loaders.strategies.paired_glob import PairedGlobLoader
 
@@ -84,7 +85,8 @@ class TestPairedGlobText:
             file_pattern="**/*.txt",
             audio_extension=".webm",
         )
-        df = PairedGlobLoader(schema, tmp_path).load()
+        with pytest.warns(DataLoadWarning, match=r"1 of 2.*'001\.txt'"):
+            df = PairedGlobLoader(schema, tmp_path).load()
         assert len(df) == 1
         assert df["transcription"].iloc[0] == "world"
 
@@ -164,6 +166,45 @@ class TestPairedGlobText:
 
         assert Path(df["audio_path"].iloc[0]).is_absolute()
         assert df["audio_path"].iloc[0] == str(dataset_dir / "s" / "001.wav")
+
+
+class TestPairedGlobTextColumns:
+    def test_columns_applied_over_derived_sources(self, tmp_path: Path) -> None:
+        """Declared mappings rename/retype the derived columns; split is kept."""
+        d = tmp_path / "General"
+        d.mkdir()
+        _write(d / "001.txt", "hello")
+        (d / "001.wav").write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            root_strategy="paired_glob",
+            file_pattern="**/*.txt",
+            audio_extension=".wav",
+            columns={
+                "audio_path": ColumnMapping(source_column="audio_path"),
+                "text": ColumnMapping(source_column="transcription"),
+            },
+        )
+        df = PairedGlobLoader(schema, tmp_path).load()
+        assert list(df.columns) == ["audio_path", "text", "split"]
+        assert df["text"].iloc[0] == "hello"
+        assert df["split"].iloc[0] == "General"
+
+    def test_no_columns_keeps_default_output(self, tmp_path: Path) -> None:
+        d = tmp_path / "s"
+        d.mkdir()
+        _write(d / "001.txt", "hi")
+        (d / "001.wav").write_bytes(b"\x00")
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            root_strategy="paired_glob",
+            file_pattern="**/*.txt",
+            audio_extension=".wav",
+        )
+        df = PairedGlobLoader(schema, tmp_path).load()
+        assert list(df.columns) == ["audio_path", "transcription", "split"]
 
 
 def _write_json_sidecar(path: Path, filename: str, n_utts: int = 2) -> None:

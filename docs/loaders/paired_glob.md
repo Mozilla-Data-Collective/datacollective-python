@@ -13,9 +13,13 @@ with a sidecar file. Two variants exist, selected by the `format` field:
 
 The loader recursively finds all text files matching `file_pattern`, reads the
 transcription, and pairs each with the audio file sharing the same stem. The
-parent directory name is captured as a `split` column. The resulting DataFrame
-always contains `audio_path` and `transcription`, so it satisfies the ASR/TTS
+parent directory name is captured as a `split` column. The default DataFrame
+contains `audio_path` and `transcription`, so it satisfies the ASR/TTS
 contracts by construction.
+
+When the schema declares `columns`, the mappings are applied over the derived
+`audio_path` / `transcription` / `split` sources (rename, dtype conversion,
+drop); the `split` column is kept, mirroring the multi-split strategy.
 
 **Controlled by:**
 
@@ -23,6 +27,7 @@ contracts by construction.
 |---|---|---|
 | `file_pattern` | ✓ | Glob pattern used to find text files (e.g. `"**/*.txt"`). |
 | `audio_extension` | ✓ | Extension of the matching audio files (e.g. `".webm"`). |
+| `columns` | ✗ | Optional mappings over the derived `audio_path` / `transcription` / `split` sources. When omitted, the default output is returned. |
 
 ## JSON-sidecar variant (`format: "json"`)
 

@@ -37,6 +37,11 @@ def _resolve_schema(
     """
     schema_path = extract_dir / "schema.yaml"
 
+    # An empty checksum must never validate the cache (or be stamped into it):
+    # "" == "" would pin the cached schema forever for datasets whose API
+    # record has no checksum.
+    archive_checksum = archive_checksum or None
+
     # Try to load a cached schema first
     cached_schema = _load_cached_schema(schema_path)
 
@@ -46,10 +51,18 @@ def _resolve_schema(
         and cached_schema.checksum is not None
         and cached_schema.checksum == archive_checksum
     ):
-        logger.info(
-            "Archive checksum matches cached schema – skipping schema download."
-        )
-        return cached_schema
+        # Pre 0.6.0 SDK versions if root_strategy was missing, it defaulted to index
+        # Such a schema can no longer be loaded, so treat it as a cache miss and
+        # re-fetch the (migrated) registry copy.
+        if cached_schema.root_strategy is None:
+            logger.info(
+                "Cached schema has no 'root_strategy', re-downloading newer schema."
+            )
+        else:
+            logger.info(
+                "Archive checksum matches cached schema – skipping schema download."
+            )
+            return cached_schema
 
     # Cache miss or no archive checksum available -> fetch from the registry
     remote_schema = _get_dataset_schema(dataset_id)

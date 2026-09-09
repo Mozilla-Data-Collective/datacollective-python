@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from datacollective.errors import DataLoadWarning
 from datacollective.schema import ColumnMapping, DatasetSchema
 from datacollective.schema_loaders.strategies.multi_sections import MultiSectionsLoader
 
@@ -125,3 +126,66 @@ class TestMultiSectionsLoader:
         assert list(df.columns) == ["audio_path", "transcription", "section"]
         assert set(df["section"]) == {"General", "Chat"}
         assert set(df["transcription"]) == {"Hello from General", "Hello from Chat"}
+
+    def test_file_paths_resolve_relative_to_section_directory(
+        self, tmp_path: Path, recwarn: pytest.WarningsRecorder
+    ) -> None:
+        """``base_audio_path`` and ``file_path`` values are anchored at each
+        section directory (``section_root/<section>/``), not at the archive
+        root — every section has its own ``clips/`` folder."""
+        for section in ["General", "Chat"]:
+            _write(
+                tmp_path / "dataset" / section / "metadata.tsv",
+                f"audio\ttext\n{section.lower()}.wav\tHello from {section}\n",
+            )
+            _write(
+                tmp_path / "dataset" / section / "clips" / f"{section.lower()}.wav", ""
+            )
+
+        schema = DatasetSchema(
+            dataset_id="ds",
+            root_strategy="multi_sections",
+            section_root="dataset",
+            sections=["General", "Chat"],
+            index_file="metadata.tsv",
+            base_audio_path="clips/",
+            format="tsv",
+            columns={
+                "audio_path": ColumnMapping(source_column="audio", dtype="file_path"),
+                "transcription": ColumnMapping(source_column="text"),
+            },
+        )
+        df = MultiSectionsLoader(schema, tmp_path).load()
+
+        assert not [w for w in recwarn if issubclass(w.category, DataLoadWarning)]
+        resolved = {row.section: Path(row.audio_path) for row in df.itertuples()}
+        assert (
+            resolved["General"]
+            == (tmp_path / "dataset" / "General" / "clips" / "general.wav").resolve()
+        )
+        assert (
+            resolved["Chat"]
+            == (tmp_path / "dataset" / "Chat" / "clips" / "chat.wav").resolve()
+        )
+        assert all(p.is_file() for p in resolved.values())
+
+
+class TestSectionNameDerivation:
+    def test_nested_index_file_keeps_declared_section_name(
+        self, tmp_path: Path
+    ) -> None:
+        """The section column must be the declared section name, not the
+        immediate parent directory of a nested index file."""
+        _write(
+            tmp_path / "dataset" / "General" / "meta" / "index.tsv",
+            "audio\ttext\ngeneral.wav\tHello from General\n",
+        )
+        schema = DatasetSchema(
+            dataset_id="ds",
+            root_strategy="multi_sections",
+            sections=["General"],
+            section_root="dataset",
+            index_file="meta/index.tsv",
+        )
+        df = MultiSectionsLoader(schema, tmp_path).load()
+        assert list(df["section"]) == ["General"]
