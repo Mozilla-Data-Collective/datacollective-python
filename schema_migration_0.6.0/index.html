@@ -1,0 +1,1799 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+        <link rel="prev" href="../add_new_schema/">
+      
+      
+        <link rel="next" href="../extend_schema_loading_logic/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../docs/mdc_ccc.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Migrating Schemas to 0.6.0 - Mozilla Data Collective Python SDK</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#migrating-schemas-to-sdk-060" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="Mozilla Data Collective Python SDK" class="md-header__button md-logo" aria-label="Mozilla Data Collective Python SDK" data-md-component="logo">
+      
+  <img src="../docs/mdc_logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Mozilla Data Collective Python SDK
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Migrating Schemas to 0.6.0
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="black" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="grey" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Mozilla-Data-Collective/datacollective-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    datacollective-python
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="Mozilla Data Collective Python SDK" class="md-nav__button md-logo" aria-label="Mozilla Data Collective Python SDK" data-md-component="logo">
+      
+  <img src="../docs/mdc_logo.png" alt="logo">
+
+    </a>
+    Mozilla Data Collective Python SDK
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Mozilla-Data-Collective/datacollective-python" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    datacollective-python
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../upload/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Programmatic Uploads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Schema-Based Loading
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Schema-Based Loading
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema_documentation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    How it works
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../add_new_schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adding a New Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating Schemas to 0.6.0
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating Schemas to 0.6.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-changed-in-060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What changed in 0.6.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-1-index-based-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 1: Index-based schemas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 1: Index-based schemas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#before-pre-060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before (pre-0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#after-060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After (0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-case-index-schema-without-columns-raw-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sub-case: index schema without columns (raw loading)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-2-multi-split-schemas-root_strategy-multi_split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 2: Multi-split schemas (root_strategy: "multi_split")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 2: Multi-split schemas (root_strategy: &#34;multi_split&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#before-pre-060_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before (pre-0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#after-060_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After (0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-3-multi-sections-schemas-root_strategy-multi_sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 3: Multi-sections schemas (root_strategy: "multi_sections")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 3: Multi-sections schemas (root_strategy: &#34;multi_sections&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#before-pre-060_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before (pre-0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#after-060_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After (0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-4-paired-glob-text-schemas-root_strategy-paired_glob-text-sidecars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 4: Paired-glob text schemas (root_strategy: "paired_glob", text sidecars)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 4: Paired-glob text schemas (root_strategy: &#34;paired_glob&#34;, text sidecars)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valid-before-and-after" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Valid before and after
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-5-paired-glob-json-schemas-root_strategy-paired_glob-format-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 5: Paired-glob JSON schemas (root_strategy: "paired_glob", format: "json")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 5: Paired-glob JSON schemas (root_strategy: &#34;paired_glob&#34;, format: &#34;json&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valid-before-and-after_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Valid before and after
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-6-glob-schemas-root_strategy-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 6: Glob schemas (root_strategy: "glob")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 6: Glob schemas (root_strategy: &#34;glob&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valid-before-and-after_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Valid before and after
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifying-a-migrated-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verifying a migrated schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../extend_schema_loading_logic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Extending the Loading Logic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Loading Strategies
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Loading Strategies
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loaders/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loaders/multi_split/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-split
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loaders/multi_sections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-sections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loaders/paired_glob/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Paired-glob
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loaders/glob/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glob
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Internal Development
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Internal Development
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../library_development/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Library Development
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../release/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release Workflow
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-changed-in-060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What changed in 0.6.0
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#migration-checklist" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Migration checklist
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-1-index-based-schemas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 1: Index-based schemas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 1: Index-based schemas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#before-pre-060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before (pre-0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#after-060" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After (0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-case-index-schema-without-columns-raw-loading" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sub-case: index schema without columns (raw loading)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-2-multi-split-schemas-root_strategy-multi_split" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 2: Multi-split schemas (root_strategy: "multi_split")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 2: Multi-split schemas (root_strategy: &#34;multi_split&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#before-pre-060_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before (pre-0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#after-060_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After (0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-3-multi-sections-schemas-root_strategy-multi_sections" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 3: Multi-sections schemas (root_strategy: "multi_sections")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 3: Multi-sections schemas (root_strategy: &#34;multi_sections&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#before-pre-060_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Before (pre-0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#after-060_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        After (0.6.0)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-4-paired-glob-text-schemas-root_strategy-paired_glob-text-sidecars" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 4: Paired-glob text schemas (root_strategy: "paired_glob", text sidecars)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 4: Paired-glob text schemas (root_strategy: &#34;paired_glob&#34;, text sidecars)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valid-before-and-after" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Valid before and after
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-5-paired-glob-json-schemas-root_strategy-paired_glob-format-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 5: Paired-glob JSON schemas (root_strategy: "paired_glob", format: "json")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 5: Paired-glob JSON schemas (root_strategy: &#34;paired_glob&#34;, format: &#34;json&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valid-before-and-after_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Valid before and after
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-6-glob-schemas-root_strategy-glob" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Case 6: Glob schemas (root_strategy: "glob")
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Case 6: Glob schemas (root_strategy: &#34;glob&#34;)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#valid-before-and-after_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Valid before and after
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#verifying-a-migrated-schema" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Verifying a migrated schema
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="migrating-schemas-to-sdk-060">Migrating Schemas to SDK 0.6.0</h1>
+<p>SDK 0.6.0 changes how <code>schema.yaml</code> files are dispatched and validated. This
+guide explains what changed, how to tell whether a schema is affected, and how
+to migrate it — organised by loading strategy, with a before/after example for
+each case.</p>
+<h2 id="what-changed-in-060">What changed in 0.6.0</h2>
+<p><strong>Before 0.6.0</strong>, the <code>task</code> field selected the loader (<code>ASR</code>, <code>TTS</code>, <code>OTH</code>),
+each task loader supported only some strategies, and a missing <code>root_strategy</code>
+silently fell back to index-based loading.</p>
+<p><strong>Since 0.6.0:</strong></p>
+<ol>
+<li>
+<p><strong><code>root_strategy</code> is required.</strong> There is no default. A schema without it
+   fails with:</p>
+<div class="language-text highlight"><pre><span></span><code>ValueError: Schema must specify 'root_strategy'. Supported strategies:
+index, multi_split, multi_sections, paired_glob, glob
+</code></pre></div>
+</li>
+<li>
+<p><strong>Dispatch is strategy-based and task-agnostic.</strong> The <code>root_strategy</code> field
+   alone selects the loader; any strategy can be combined with any task
+   (e.g. <code>TTS</code> + <code>multi_split</code> is now valid).</p>
+</li>
+<li>
+<p><strong><code>task</code> is optional and only validates.</strong> When set to a task with a known
+   contract, the loaded DataFrame is expected to contain that task's logical
+   columns:</p>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>Required columns in the loaded DataFrame</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ASR</code></td>
+<td><code>audio_path</code>, <code>transcription</code></td>
+</tr>
+<tr>
+<td><code>TTS</code></td>
+<td><code>audio_path</code>, <code>transcription</code></td>
+</tr>
+<tr>
+<td><code>LLM</code></td>
+<td><code>text</code></td>
+</tr>
+<tr>
+<td><code>OTH</code> (or any other value)</td>
+<td><em>no validation</em></td>
+</tr>
+</tbody>
+</table>
+<p>A violation emits a <code>TaskValidationWarning</code> listing the missing and
+available columns — the DataFrame is <strong>still returned</strong>. The warning is
+issued through Python's <code>warnings</code> module, so it is shown even when
+package logging is disabled (<code>enable_logging=False</code>).</p>
+</li>
+<li>
+<p><strong><code>multi_sections</code> now applies <code>columns</code>.</strong> Previously column mappings were
+   silently ignored for this strategy; now they are applied when declared
+   (the <code>section</code> column is kept).</p>
+</li>
+<li>
+<p><strong>Unknown <code>root_strategy</code> values now error.</strong> Previously a typo (e.g.
+   <code>root_strategy: "multisplit"</code>) silently fell through to index-based
+   loading; now it raises
+   <code>ValueError: Unknown root_strategy 'multisplit'. Supported strategies: …</code>.</p>
+</li>
+</ol>
+<blockquote>
+<p><strong>Keep the <code>task</code> field.</strong> Even though 0.6.0 no longer needs it for
+dispatch, SDK versions <strong>before</strong> 0.6.0 require <code>task</code> and use it to select
+the loader. Registry schemas must keep it so both old and new SDKs can load
+the dataset.</p>
+</blockquote>
+<h2 id="migration-checklist">Migration checklist</h2>
+<p>For every <code>schema.yaml</code> in the registry:</p>
+<ol>
+<li><strong>Add <code>root_strategy</code></strong> if it is missing. Pre-0.6.0, only index-based
+   schemas could omit it, so a schema without <code>root_strategy</code> becomes
+   <code>root_strategy: "index"</code>.</li>
+<li><strong>Check the task contract.</strong> If <code>task</code> is <code>ASR</code> or <code>TTS</code>, the loaded
+   DataFrame should contain <code>audio_path</code> and <code>transcription</code> (every load
+   emits a <code>TaskValidationWarning</code> otherwise):<ul>
+<li>If the schema declares <code>columns</code>, those two must appear as <strong>logical
+  column names</strong> (the keys of the <code>columns</code> mapping). Rename keys like
+  <code>audio</code> → <code>audio_path</code> or <code>text</code> → <code>transcription</code> if needed.</li>
+<li>If the schema declares no <code>columns</code>, the <strong>raw file headers</strong> must
+  already be named <code>audio_path</code> and <code>transcription</code> — otherwise add a
+  <code>columns</code> block that maps them.</li>
+</ul>
+</li>
+<li><strong>Fix silent misconfigurations</strong> that 0.6.0 now surfaces: typo'd
+   <code>root_strategy</code> values, and inert <code>columns</code> blocks on <code>multi_sections</code>
+   schemas (now applied — verify the mappings are correct or remove them).</li>
+</ol>
+<p>The sections below walk through each strategy.</p>
+<hr />
+<h2 id="case-1-index-based-schemas">Case 1: Index-based schemas</h2>
+<p><strong>Who is affected:</strong> every schema without a <code>root_strategy</code> field. This was
+the implicit default, so this is the most common case.</p>
+<p><strong>Migration:</strong> add <code>root_strategy: "index"</code>. If the task is <code>ASR</code>/<code>TTS</code>, also
+make sure the logical column names include <code>audio_path</code> and <code>transcription</code>.</p>
+<p><strong>Symptom if not migrated:</strong>
+<code>ValueError: Schema must specify 'root_strategy'. …</code></p>
+<h3 id="before-pre-060">Before (pre-0.6.0)</h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-asr-dataset"</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"ASR"</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">"tsv"</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">"metadata.tsv"</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">base_audio_path</span><span class="p">:</span><span class="w"> </span><span class="s">"clips/"</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="w">  </span><span class="nt">audio</span><span class="p">:</span><span class="w">                        </span><span class="c1"># ← non-contract logical name</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"path"</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">  </span><span class="nt">text</span><span class="p">:</span><span class="w">                         </span><span class="c1"># ← non-contract logical name</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"sentence"</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
+</span></code></pre></div>
+<h3 id="after-060">After (0.6.0)</h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-asr-dataset"</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"index"</span><span class="w">          </span><span class="c1"># ← now required, no default</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"ASR"</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">"tsv"</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">"metadata.tsv"</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nt">base_audio_path</span><span class="p">:</span><span class="w"> </span><span class="s">"clips/"</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span><span class="w">                   </span><span class="c1"># ← renamed to satisfy the ASR contract</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"path"</span>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span><span class="w">                </span><span class="c1"># ← renamed to satisfy the ASR contract</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"sentence"</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
+</span></code></pre></div>
+<p>Renaming only changes the <strong>logical</strong> (output) column names — the
+<code>source_column</code> values stay whatever the file actually contains. If the old
+logical names had downstream consumers, note that the loaded DataFrame's
+column names change with them.</p>
+<h3 id="sub-case-index-schema-without-columns-raw-loading">Sub-case: index schema without <code>columns</code> (raw loading)</h3>
+<p>Pre-0.6.0, <code>TTS</code> and <code>OTH</code> index schemas could omit <code>columns</code> and return the
+raw file. That still works in 0.6.0, <strong>but</strong> a raw <code>ASR</code>/<code>TTS</code> schema now
+emits a <code>TaskValidationWarning</code> on every load unless the raw headers happen
+to be named <code>audio_path</code> and <code>transcription</code>. Add a minimal <code>columns</code> block:</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Before — loaded the raw file, columns were e.g. "wav" and "sentence"</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-tts-dataset"</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"TTS"</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">"meta.csv"</span>
+</span></code></pre></div>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># After — explicit strategy + mappings that satisfy the TTS contract</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-tts-dataset"</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"index"</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"TTS"</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">"meta.csv"</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"wav"</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"sentence"</span>
+</span><span id="__span-3-12"><a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
+</span></code></pre></div>
+<p>For <code>OTH</code> (or any task without a contract), adding <code>root_strategy: "index"</code>
+is the only required change — raw loading without <code>columns</code> keeps working.</p>
+<hr />
+<h2 id="case-2-multi-split-schemas-root_strategy-multi_split">Case 2: Multi-split schemas (<code>root_strategy: "multi_split"</code>)</h2>
+<p><strong>Who is affected:</strong> schemas already set <code>root_strategy: "multi_split"</code>, so no
+dispatch change is needed. Only the task contract applies.</p>
+<p><strong>Migration:</strong></p>
+<ul>
+<li>With <code>columns</code>: ensure the logical names include <code>audio_path</code> and
+  <code>transcription</code> (same rename as Case 1).</li>
+<li>Without <code>columns</code>: the raw split files' headers must already contain
+  <code>audio_path</code> and <code>transcription</code>; otherwise add a <code>columns</code> block. (Common
+  Voice-style files with <code>path</code>/<code>sentence</code> headers need mappings.)</li>
+</ul>
+<p><strong>Symptom if not migrated:</strong> a <code>TaskValidationWarning</code> on every load (the
+DataFrame is still returned).</p>
+<h3 id="before-pre-060_1">Before (pre-0.6.0)</h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-multisplit-dataset"</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"ASR"</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"multi_split"</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="nt">splits</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"train"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"dev"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"test"</span><span class="p p-Indicator">]</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nt">splits_file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"**/*.tsv"</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># no columns → raw file headers (path, sentence, …) + a "split" column</span>
+</span></code></pre></div>
+<h3 id="after-060_1">After (0.6.0)</h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-multisplit-dataset"</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"ASR"</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"multi_split"</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nt">splits</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"train"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"dev"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"test"</span><span class="p p-Indicator">]</span>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="nt">splits_file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"**/*.tsv"</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="nt">base_audio_path</span><span class="p">:</span><span class="w"> </span><span class="s">"clips/"</span>
+</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="nt">columns</span><span class="p">:</span><span class="w">                        </span><span class="c1"># ← added so the output satisfies the ASR contract</span>
+</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"path"</span>
+</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
+</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"sentence"</span>
+</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
+</span></code></pre></div>
+<p>The <code>split</code> column is added automatically in both cases.</p>
+<blockquote>
+<p>New in 0.6.0: <code>multi_split</code> is no longer ASR-only — it can be used with any
+task.</p>
+</blockquote>
+<hr />
+<h2 id="case-3-multi-sections-schemas-root_strategy-multi_sections">Case 3: Multi-sections schemas (<code>root_strategy: "multi_sections"</code>)</h2>
+<p><strong>Who is affected:</strong> all of them, in two ways:</p>
+<ol>
+<li>Pre-0.6.0 this strategy <strong>ignored</strong> <code>columns</code> and always returned the raw
+   per-section index columns plus <code>section</code>. In 0.6.0, <code>columns</code> is applied
+   when declared.</li>
+<li>These schemas were TTS-only, and the TTS contract now expects
+   <code>audio_path</code> + <code>transcription</code> in the output. Raw section files rarely use
+   those exact header names, so most <code>multi_sections</code> schemas with
+   <code>task: "TTS"</code> need a <code>columns</code> block added to load without warnings.</li>
+</ol>
+<p><strong>Migration:</strong> add a <code>columns</code> block mapping the section files' headers to
+<code>audio_path</code>/<code>transcription</code>. If a schema already carried an (inert) <code>columns</code>
+block, verify the mappings are actually correct — they now take effect.</p>
+<p><strong>Symptom if not migrated:</strong> a <code>TaskValidationWarning: Loaded dataset does
+not satisfy the 'TTS' task contract: missing column(s) ['audio_path',
+'transcription'] …</code> on every load (the DataFrame is still returned).</p>
+<h3 id="before-pre-060_2">Before (pre-0.6.0)</h3>
+<p>Layout: <code>dataset/General/metadata.tsv</code>, <code>dataset/Chat/metadata.tsv</code>, each with
+headers <code>audio</code> and <code>text</code>.</p>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-sections-dataset"</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"TTS"</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"multi_sections"</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="nt">section_root</span><span class="p">:</span><span class="w"> </span><span class="s">"dataset"</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="nt">sections</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"General"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"Chat"</span><span class="p p-Indicator">]</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">"metadata.tsv"</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">"tsv"</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># → raw columns: audio, text, section</span>
+</span></code></pre></div>
+<h3 id="after-060_2">After (0.6.0)</h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-sections-dataset"</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"TTS"</span>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"multi_sections"</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="nt">section_root</span><span class="p">:</span><span class="w"> </span><span class="s">"dataset"</span>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="nt">sections</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"General"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"Chat"</span><span class="p p-Indicator">]</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nt">index_file</span><span class="p">:</span><span class="w"> </span><span class="s">"metadata.tsv"</span>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">"tsv"</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="nt">columns</span><span class="p">:</span><span class="w">                        </span><span class="c1"># ← now applied; output: audio_path, transcription, section</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"audio"</span>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"text"</span>
+</span><span id="__span-7-14"><a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
+</span></code></pre></div>
+<p>The <code>section</code> column is always kept, with or without mappings.</p>
+<hr />
+<h2 id="case-4-paired-glob-text-schemas-root_strategy-paired_glob-text-sidecars">Case 4: Paired-glob text schemas (<code>root_strategy: "paired_glob"</code>, text sidecars)</h2>
+<p><strong>Who is affected:</strong> nobody — <strong>no migration needed</strong>.</p>
+<p>These schemas already set <code>root_strategy</code>, and the loader constructs the
+output columns itself (<code>audio_path</code>, <code>transcription</code>, <code>split</code>), so the
+ASR/TTS contract is satisfied by construction.</p>
+<h3 id="valid-before-and-after">Valid before and after</h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-paired-tts-dataset"</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"TTS"</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"paired_glob"</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nt">file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"**/*.txt"</span>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nt">audio_extension</span><span class="p">:</span><span class="w"> </span><span class="s">".webm"</span>
+</span></code></pre></div>
+<blockquote>
+<p>New in 0.6.0: the text-sidecar variant is no longer TTS-only. Pre-0.6.0,
+<code>task: "ASR"</code> with <code>paired_glob</code> demanded <code>format: "json"</code>; now an ASR
+dataset with <code>.txt</code> sidecars is expressible with exactly the schema above
+(just with <code>task: "ASR"</code>).</p>
+</blockquote>
+<hr />
+<h2 id="case-5-paired-glob-json-schemas-root_strategy-paired_glob-format-json">Case 5: Paired-glob JSON schemas (<code>root_strategy: "paired_glob"</code>, <code>format: "json"</code>)</h2>
+<p><strong>Who is affected:</strong> only schemas whose <code>columns</code> use non-contract logical
+names. <code>root_strategy</code> and <code>format: "json"</code> were already required, and the
+required fields are unchanged (<code>file_pattern</code>, <code>columns</code>; optional
+<code>record_path</code>).</p>
+<p><strong>Migration:</strong> verify the <code>columns</code> keys include <code>audio_path</code> and
+<code>transcription</code> when <code>task</code> is <code>ASR</code>/<code>TTS</code>; rename the logical keys if not
+(same as Case 1).</p>
+<p><strong>Symptom if not migrated:</strong> a <code>TaskValidationWarning</code> on every load,
+listing the missing contract columns (the DataFrame is still returned).</p>
+<h3 id="valid-before-and-after_1">Valid before and after</h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-json-asr-dataset"</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"ASR"</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"paired_glob"</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="s">"json"</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="nt">file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"**/*.merged.json"</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="nt">record_path</span><span class="p">:</span><span class="w"> </span><span class="s">"transcriptions"</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="nt">columns</span><span class="p">:</span>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">  </span><span class="nt">audio_path</span><span class="p">:</span><span class="w">                   </span><span class="c1"># ← contract column</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"audio.filename"</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"file_path"</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">    </span><span class="nt">path_match_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"exact"</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">  </span><span class="nt">transcription</span><span class="p">:</span><span class="w">                </span><span class="c1"># ← contract column</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"text"</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"string"</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">  </span><span class="nt">speaker_id</span><span class="p">:</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="w">    </span><span class="nt">source_column</span><span class="p">:</span><span class="w"> </span><span class="s">"speaker"</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="w">    </span><span class="nt">dtype</span><span class="p">:</span><span class="w"> </span><span class="s">"category"</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="w">    </span><span class="nt">optional</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</span></code></pre></div>
+<hr />
+<h2 id="case-6-glob-schemas-root_strategy-glob">Case 6: Glob schemas (<code>root_strategy: "glob"</code>)</h2>
+<p><strong>Who is affected:</strong> nobody with <code>task: "OTH"</code> — <strong>no migration needed</strong>.</p>
+<p><code>root_strategy</code> was already required for glob, the fields are unchanged, and
+<code>OTH</code> has no contract. The glob loader's output is fixed
+(<code>audio_path</code>, <code>language</code>, <code>speaker_id</code>, and <code>split</code> when <code>splits</code> is set);
+it does not apply <code>columns</code>.</p>
+<h3 id="valid-before-and-after_2">Valid before and after</h3>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">dataset_id</span><span class="p">:</span><span class="w"> </span><span class="s">"my-glob-dataset"</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nt">task</span><span class="p">:</span><span class="w"> </span><span class="s">"OTH"</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="nt">root_strategy</span><span class="p">:</span><span class="w"> </span><span class="s">"glob"</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nt">file_pattern</span><span class="p">:</span><span class="w"> </span><span class="s">"**/*.wav"</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="nt">splits</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="s">"Train"</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="s">"Dev"</span><span class="p p-Indicator">]</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="nt">extract_files</span><span class="p">:</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"Train.tar.gz"</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="s">"Dev.tar.gz"</span>
+</span></code></pre></div>
+<blockquote>
+<p>Caution: avoid combining <code>glob</code> with <code>task: "ASR"</code> or <code>task: "TTS"</code>. The
+glob output can never contain a <code>transcription</code> column, so every load would
+emit a <code>TaskValidationWarning</code>.</p>
+</blockquote>
+<hr />
+<h2 id="verifying-a-migrated-schema">Verifying a migrated schema</h2>
+<p>Test the schema locally against the extracted dataset before submitting it to
+the registry:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">_parse_schema</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">_load_dataset_from_schema</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">schema</span> <span class="o">=</span> <span class="n">_parse_schema</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"path/to/extracted/schema.yaml"</span><span class="p">))</span>
+</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="n">df</span> <span class="o">=</span> <span class="n">_load_dataset_from_schema</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">extract_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">"path/to/extracted/"</span><span class="p">))</span>
+</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+</span></code></pre></div>
+<p>A migrated schema is correct when:</p>
+<ul>
+<li>it loads without <code>ValueError</code> (strategy resolution),</li>
+<li>it emits no <code>TaskValidationWarning</code> (run with
+  <code>python -W error::UserWarning …</code> or <code>warnings.simplefilter("error")</code> to
+  turn the warning into a hard failure during testing), <strong>and</strong></li>
+<li>for <code>ASR</code>/<code>TTS</code>, <code>{"audio_path", "transcription"} &lt;= set(df.columns)</code>.</li>
+</ul>
+<p>Because the migrated schema keeps <code>task</code> and only <em>adds</em> fields that pre-0.6.0
+loaders either required anyway (<code>columns</code> renames) or ignored
+(<code>root_strategy: "index"</code> on index schemas, <code>columns</code> on <code>multi_sections</code>),
+sanity-check the pre-0.6.0 behavior too if the dataset must stay loadable by
+older SDKs — with one caveat: pre-0.6.0 <code>multi_sections</code> ignores the new
+<code>columns</code> block, so old SDKs return the raw section columns while 0.6.0
+returns the mapped ones.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["content.code.copy", "content.tabs.link"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -9,10 +9,10 @@
       
       
       
-        <link rel="prev" href="../add_new_schema/">
+        <link rel="prev" href="../schema_migration_0.6.0/">
       
       
-        <link rel="next" href="../loaders/asr/">
+        <link rel="next" href="../loaders/">
       
       
         
@@ -412,6 +412,34 @@
                 
   
   
+  
+  
+    <li class="md-nav__item">
+      <a href="../schema_migration_0.6.0/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating Schemas to 0.6.0
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
     
   
   
@@ -475,15 +503,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-how-to-add-a-new-task-type" class="md-nav__link">
+  <a href="#1-how-to-add-a-new-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. How to add a new task type
+        1. How to add a new strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. How to add a new task type">
+    <nav class="md-nav" aria-label="1. How to add a new strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -519,23 +547,6 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-how-to-extend-or-update-strategies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. How to extend or update strategies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. How to extend or update strategies">
-      <ul class="md-nav__list">
-        
           <li class="md-nav__item">
   <a href="#loading-strategies-strategy-enum" class="md-nav__link">
     <span class="md-ellipsis">
@@ -547,19 +558,19 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#adding-a-new-strategy" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-how-to-add-a-task-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Adding a new strategy
+        2. How to add a task contract
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -626,17 +637,17 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3_5" >
         
           
-          <label class="md-nav__link" for="__nav_3_4" id="__nav_3_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3_5" id="__nav_3_5_label" tabindex="0">
             
   
   
   <span class="md-ellipsis">
     
   
-    Loaders
+    Loading Strategies
   
 
     
@@ -647,12 +658,12 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_5">
             <span class="md-nav__icon md-icon"></span>
             
   
-    Loaders
+    Loading Strategies
   
 
           </label>
@@ -665,14 +676,14 @@
   
   
     <li class="md-nav__item">
-      <a href="../loaders/asr/" class="md-nav__link">
+      <a href="../loaders/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    ASR
+    Index
   
 
     
@@ -693,14 +704,98 @@
   
   
     <li class="md-nav__item">
-      <a href="../loaders/tts/" class="md-nav__link">
+      <a href="../loaders/multi_split/" class="md-nav__link">
         
   
   
   <span class="md-ellipsis">
     
   
-    TTS
+    Multi-split
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loaders/multi_sections/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Multi-sections
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loaders/paired_glob/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Paired-glob
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../loaders/glob/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Glob
   
 
     
@@ -893,15 +988,15 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#1-how-to-add-a-new-task-type" class="md-nav__link">
+  <a href="#1-how-to-add-a-new-strategy" class="md-nav__link">
     <span class="md-ellipsis">
       
-        1. How to add a new task type
+        1. How to add a new strategy
       
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="1. How to add a new task type">
+    <nav class="md-nav" aria-label="1. How to add a new strategy">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -937,23 +1032,6 @@
   
 </li>
         
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#2-how-to-extend-or-update-strategies" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        2. How to extend or update strategies
-      
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="2. How to extend or update strategies">
-      <ul class="md-nav__list">
-        
           <li class="md-nav__item">
   <a href="#loading-strategies-strategy-enum" class="md-nav__link">
     <span class="md-ellipsis">
@@ -965,19 +1043,19 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#adding-a-new-strategy" class="md-nav__link">
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-how-to-add-a-task-contract" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Adding a new strategy
+        2. How to add a task contract
       
     </span>
   </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1041,25 +1119,26 @@
 
 
 <h1 id="extending-schema-loading-logic">Extending Schema Loading Logic</h1>
-<p>This document is for <strong>developers</strong> who want to add support for new tasks or implement new loading strategies within the MDC Python SDK.</p>
-<h2 id="1-how-to-add-a-new-task-type">1. How to add a new task type</h2>
-<p>Supporting a new task (e.g., <strong>MT</strong> — Machine Translation) involves creating a new loader class and registering it.</p>
+<p>This document is for <strong>developers</strong> who want to add new loading strategies or task contracts within the MDC Python SDK.</p>
+<p>Dispatch is <strong>strategy-based</strong>: the schema's required <code>root_strategy</code> field selects the loader class, and any strategy can be combined with any task. The optional <code>task</code> field only adds a validation step — the loaded DataFrame is checked for the task's required logical columns, and a <code>TaskValidationWarning</code> is emitted when any are missing.</p>
+<h2 id="1-how-to-add-a-new-strategy">1. How to add a new strategy</h2>
+<p>Supporting a new strategy (e.g. <strong>manifest</strong> — one JSON manifest per dataset) involves creating a new loader class and registering it.</p>
 <h3 id="step-1-create-the-loader-class">Step 1: Create the loader class</h3>
-<p>Create a new file under <code>src/datacollective/schema_loaders/tasks/</code>, for example <code>mt.py</code>:</p>
+<p>Create a new file under <code>src/datacollective/schema_loaders/strategies/</code>, for example <code>manifest.py</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetSchema</span>
 </span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseSchemaLoader</span>
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">MTLoader</span><span class="p">(</span><span class="n">BaseSchemaLoader</span><span class="p">):</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="sd">"""Load a machine-translation dataset."""</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">class</span><span class="w"> </span><span class="nc">ManifestLoader</span><span class="p">(</span><span class="n">BaseSchemaLoader</span><span class="p">):</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="w">    </span><span class="sd">"""Load a dataset described by a single JSON manifest."""</span>
 </span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
 </span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="n">DatasetSchema</span><span class="p">,</span> <span class="n">extract_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
 </span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">extract_dir</span><span class="p">)</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="c1"># Validate required schema fields</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        <span class="c1"># Validate required schema fields up front</span>
 </span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="n">schema</span><span class="o">.</span><span class="n">index_file</span><span class="p">:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"MT schema must specify 'index_file'"</span><span class="p">)</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"manifest schema must specify 'index_file'"</span><span class="p">)</span>
 </span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>
 </span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
 </span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>        <span class="c1"># BaseSchemaLoader provides shared helpers:</span>
@@ -1094,20 +1173,22 @@
 </tbody>
 </table>
 <h3 id="step-3-register-the-loader">Step 3: Register the loader</h3>
-<p>Register your new class in <code>src/datacollective/schema_loaders/registry.py</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.tasks.mt</span><span class="w"> </span><span class="kn">import</span> <span class="n">MTLoader</span>
+<ol>
+<li><strong>Add to the Enum</strong>: add your strategy to the <code>Strategy</code> enum in <code>src/datacollective/schema_loaders/base.py</code>.</li>
+<li><strong>Register the class</strong> in <code>src/datacollective/schema_loaders/registry.py</code>:</li>
+</ol>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective.schema_loaders.strategies.manifest</span><span class="w"> </span><span class="kn">import</span> <span class="n">ManifestLoader</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">_TASK_REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseSchemaLoader</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="s2">"ASR"</span><span class="p">:</span> <span class="n">ASRLoader</span><span class="p">,</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="s2">"TTS"</span><span class="p">:</span> <span class="n">TTSLoader</span><span class="p">,</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="s2">"OTH"</span><span class="p">:</span> <span class="n">OTHLoader</span><span class="p">,</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="s2">"MT"</span><span class="p">:</span>  <span class="n">MTLoader</span><span class="p">,</span>  <span class="c1"># Add your new task here</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="p">}</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">_STRATEGY_REGISTRY</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="n">Strategy</span><span class="p">,</span> <span class="n">Type</span><span class="p">[</span><span class="n">BaseSchemaLoader</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">Strategy</span><span class="o">.</span><span class="n">INDEX</span><span class="p">:</span> <span class="n">IndexLoader</span><span class="p">,</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="o">...</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">Strategy</span><span class="o">.</span><span class="n">MANIFEST</span><span class="p">:</span> <span class="n">ManifestLoader</span><span class="p">,</span>  <span class="c1"># Add your new strategy here</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">}</span>
 </span></code></pre></div>
-<h2 id="2-how-to-extend-or-update-strategies">2. How to extend or update strategies</h2>
-<p>Strategies define the high-level approach to locating data (e.g., using an index file vs. globbing).</p>
+<ol>
+<li><strong>Update Schema</strong>: if the strategy requires new YAML fields, add them to <code>DatasetSchema</code> in <code>src/datacollective/schema.py</code>.</li>
+</ol>
 <h3 id="loading-strategies-strategy-enum">Loading Strategies (<code>Strategy</code> enum)</h3>
-<p>Strategies are defined in the <code>Strategy</code> enum in <code>src/datacollective/schema_loaders/base.py</code>:</p>
 <table>
 <thead>
 <tr>
@@ -1118,33 +1199,47 @@
 </thead>
 <tbody>
 <tr>
+<td><code>Strategy.INDEX</code></td>
+<td><code>"index"</code></td>
+<td>Loads a single delimited index file, optionally applying column mappings.</td>
+</tr>
+<tr>
 <td><code>Strategy.MULTI_SPLIT</code></td>
 <td><code>"multi_split"</code></td>
-<td>Loads multiple split files matching a pattern (ASR).</td>
+<td>Loads multiple split files matching a pattern, adding a <code>split</code> column.</td>
 </tr>
 <tr>
 <td><code>Strategy.MULTI_SECTIONS</code></td>
 <td><code>"multi_sections"</code></td>
-<td>Loads one index file per section directory, adding a <code>section</code> column (TTS).</td>
+<td>Loads one index file per section directory, adding a <code>section</code> column.</td>
 </tr>
 <tr>
 <td><code>Strategy.PAIRED_GLOB</code></td>
 <td><code>"paired_glob"</code></td>
-<td>Pairs audio files with sidecar files: <code>.txt</code> transcriptions (TTS) or JSON metadata/utterance files (ASR, with <code>format: "json"</code> and optional <code>record_path</code>).</td>
+<td>Pairs audio files with sidecar files: <code>.txt</code> transcriptions, or JSON metadata/utterance files (with <code>format: "json"</code> and optional <code>record_path</code>).</td>
 </tr>
 <tr>
 <td><code>Strategy.GLOB</code></td>
 <td><code>"glob"</code></td>
-<td>Walks directory-structured datasets, deriving metadata from the path hierarchy (OTH).</td>
+<td>Walks directory-structured datasets, deriving metadata from each file's path — via <code>columns</code> mappings over path-derived sources, or a default output when omitted.</td>
 </tr>
 </tbody>
 </table>
-<h3 id="adding-a-new-strategy">Adding a new strategy</h3>
-<ol>
-<li><strong>Add to the Enum</strong>: Add your new strategy to the <code>Strategy</code> class in <code>base.py</code>.</li>
-<li><strong>Implement Logic</strong>: Add a branch in the relevant loader's <code>load()</code> method to handle the new strategy.</li>
-<li><strong>Update Schema</strong>: If the strategy requires new YAML fields, add them to <code>DatasetSchema</code> in <code>src/datacollective/schema.py</code>.</li>
-</ol>
+<h2 id="2-how-to-add-a-task-contract">2. How to add a task contract</h2>
+<p>The optional <code>task</code> field checks the loaded DataFrame against the task's required logical columns. Contracts live in <code>src/datacollective/schema_loaders/contracts.py</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">TASK_CONTRACTS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="s2">"ASR"</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"audio_path"</span><span class="p">,</span> <span class="s2">"transcription"</span><span class="p">}),</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>    <span class="s2">"TTS"</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"audio_path"</span><span class="p">,</span> <span class="s2">"transcription"</span><span class="p">}),</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="s2">"LLM"</span><span class="p">:</span> <span class="nb">frozenset</span><span class="p">({</span><span class="s2">"text"</span><span class="p">}),</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="c1"># Add your new task contract here, e.g.</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="c1"># "MT": frozenset({"source_text", "target_text"}),</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">}</span>
+</span></code></pre></div>
+<p>A contract violation emits a <code>TaskValidationWarning</code> (via Python's <code>warnings</code> module, so it is visible even when package logging is disabled) and the DataFrame is still returned. Schemas whose task has no contract (e.g. <code>OTH</code>), or with no task at all, load without validation.</p>
+<blockquote>
+<p><strong>Note for registry schemas:</strong> keep the <code>task</code> field in existing <code>schema.yaml</code>
+files — older SDK versions still require it.</p>
+</blockquote>
 <h2 id="3-architecture-overview">3. Architecture Overview</h2>
 <h3 id="data-flow">Data Flow</h3>
 <p>When a user calls <code>load_dataset("id")</code>:</p>
@@ -1153,10 +1248,11 @@
 <li><strong><code>_extract_archive()</code></strong>: Extracts it to a local directory. (Skipped if already extracted)</li>
 <li><strong><code>_resolve_schema()</code></strong>: Locates or downloads <code>schema.yaml</code>.</li>
 <li><strong><code>_parse_schema()</code></strong>: Validates YAML into a <code>DatasetSchema</code> object.</li>
-<li><strong><code>_load_dataset_from_schema()</code></strong>: <ul>
+<li><strong><code>_load_dataset_from_schema()</code></strong>:<ul>
 <li>If the schema specifies <code>extract_files</code>, extracts inner archives (skipped when already extracted).</li>
-<li>Finds the correct loader in the <strong>Registry</strong>.</li>
+<li>Resolves the strategy loader from the <strong>Registry</strong> via the required <code>root_strategy</code> field (missing or unknown values raise a <code>ValueError</code>).</li>
 <li>Calls <code>loader.load()</code>.</li>
+<li>Checks the loaded DataFrame against the task contract (when one exists) and emits a <code>TaskValidationWarning</code> on violations.</li>
 <li>Returns the final <strong>pandas DataFrame</strong>.</li>
 </ul>
 </li>
@@ -1176,19 +1272,23 @@
 </tr>
 <tr>
 <td><code>datacollective.schema_loaders.base</code></td>
-<td>Abstract base class and strategy definitions.</td>
+<td>Abstract base class, shared helpers, and strategy definitions.</td>
 </tr>
 <tr>
 <td><code>datacollective.schema_loaders.registry</code></td>
-<td>Task-to-loader mapping.</td>
+<td>Strategy-to-loader mapping and load orchestration.</td>
+</tr>
+<tr>
+<td><code>datacollective.schema_loaders.contracts</code></td>
+<td>Task contracts and their validation.</td>
 </tr>
 <tr>
 <td><code>datacollective.schema_loaders.cache_schema</code></td>
 <td>Local schema caching and checksum validation.</td>
 </tr>
 <tr>
-<td><code>datacollective.schema_loaders.tasks.*</code></td>
-<td>Implementation of task-specific logic (ASR, TTS, OTH).</td>
+<td><code>datacollective.schema_loaders.strategies.*</code></td>
+<td>One loader per strategy (index, multi_split, multi_sections, paired_glob, glob).</td>
 </tr>
 </tbody>
 </table>
