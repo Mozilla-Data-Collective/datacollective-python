@@ -56,7 +56,7 @@ def get_dataset_details(dataset_id: str) -> DatasetDetails:
         raise ValueError("`dataset_id` must be a non-empty string")
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
-    resp = _send_api_request(method="GET", url=url)
+    resp = _send_api_request(method="GET", url=url, include_auth_headers=False)
     return DatasetDetails.model_validate(resp.json())
 
 
