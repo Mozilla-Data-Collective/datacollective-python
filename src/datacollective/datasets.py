@@ -38,6 +38,8 @@ def get_dataset_details(dataset_id: str) -> DatasetDetails:
     """
     Return dataset details from the MDC API.
 
+    This is a public endpoint: no API key (`MDC_API_KEY`) is required and none is sent.
+
     Args:
         dataset_id: The dataset ID (as shown in MDC platform) or slug.
 
@@ -47,7 +49,6 @@ def get_dataset_details(dataset_id: str) -> DatasetDetails:
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
-        PermissionError: If access is denied (403).
         RuntimeError: If rate limit is exceeded (429).
         requests.HTTPError: For other non-2xx responses.
         pydantic.ValidationError: If the API response is missing the `id` field.
