@@ -48,6 +48,12 @@ silently fell back to index-based loading.
    loading; now it raises
    `ValueError: Unknown root_strategy 'multisplit'. Supported strategies: …`.
 
+6. **`content_mapping` is removed.** The field was never consumed by any
+   loader ("reserved for future use"); its use case is covered by the glob
+   strategy's `columns` mapping. Schemas still carrying the block parse fine —
+   it lands in the schema's `extra` catch-all and is ignored, so no migration
+   is needed beyond optionally deleting it.
+
 > **Keep the `task` field.** Even though 0.6.0 no longer needs it for
 > dispatch, SDK versions **before** 0.6.0 require `task` and use it to select
 > the loader. Registry schemas must keep it so both old and new SDKs can load

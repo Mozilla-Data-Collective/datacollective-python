@@ -200,16 +200,6 @@ class TestParseSchema:
         assert s.columns["audio"].source_column == 0
         assert s.has_header is False
 
-    def test_content_mapping_parsed(self) -> None:
-        raw: dict[str, Any] = {
-            "dataset_id": "ds1",
-            "task": "LM",
-            "content_mapping": {"text": "file_content", "meta_source": "file_name"},
-        }
-        s = _parse_schema(raw)
-        assert s.content_mapping is not None
-        assert s.content_mapping.text == "file_content"
-
     def test_unknown_keys_captured_in_extra(self) -> None:
         raw: dict[str, Any] = {
             "dataset_id": "ds1",
@@ -254,7 +244,6 @@ class TestParseSchema:
             "root_strategy": "paired_glob",
             "file_pattern": "**/*.txt",
             "audio_extension": ".webm",
-            "content_mapping": {"text": "fc"},
             "splits": ["train"],
             "splits_file_pattern": "**/*.csv",
             "checksum": "ck",
