@@ -46,34 +46,39 @@ Pytest skips the live E2E tests automatically if either variable is missing.
 
 ## OpenAPI contract test
 
-The platform publishes its API contract at `https://mozilladatacollective.com/api/openapi.json`. 
-The SDK has `tests/test_openapi_contract.py` to ensure that the manually maintained mirrored models
-and contract are aligned. 
+The platform publishes its API contract at `<base-url>/api/openapi.json`, generated from
+the same schemas its routes run on. The SDK's models are written by hand, so
+`tests/test_openapi_contract.py` checks that they still agree with that contract.
 
 ### What it checks
 
 - Every endpoint the SDK calls exists in the spec with the same HTTP method.
-- The `Task` and `Visibility` enums equal the values the update request accepts,
-  and `Visibility` is a subset of what responses may return. The SDK enum covers 
-  only settable values and read models keep `visibility` a plain string so 
-  observe-only values (e.g. `hidden`) still parse.
-- The draft, update and submit field sets equal the corresponding request schemas
-  in both directions: the SDK never sends a field the platform rejects, and the
-  platform never accepts a field the SDK cannot set.
-- Every field declared on `Dataset`, `DatasetSubmission` and `DatasetDetails`
-  exists in the spec's response schemas, so no field silently reads as `None`.
+- The `Task` and `Visibility` enums equal the values the update request accepts.
+  `Visibility` is additionally a subset of what responses may return: the SDK enum
+  covers only settable values, and `DatasetDetails` is tolerant of unknown values so
+  observe-only ones (e.g. `hidden`) still parse.
+- The update and submit field sets equal the corresponding request schemas in both
+  directions: the SDK never sends a field the platform rejects, and the platform never
+  accepts a field the SDK cannot set. The draft field set only has to be accepted by the
+  create request and cover its required fields, since the SDK creates drafts with the
+  minimum payload and sends everything else via PATCH.
+- Every field declared on a read model exists in the schema of the payload it parses:
+  `DatasetDetails` against the dataset response and `DatasetSubmission` against the
+  submission response. A field on the shared `Dataset` base therefore has to exist in
+  both payloads; otherwise it would silently read as `None` on one of them.
 - The upload and download payloads match, and the response keys the SDK relies
   on (`downloadUrl`, `sizeBytes`, `fileUploadId`, `uploadId`, `url`, `partNumber`)
   are marked required by the spec.
 
-When the spec and the SDK disagree, the test fails and stays red until the SDK model is 
-updated (or the platform updates the spec).
+When the spec and the SDK disagree, the test fails and stays red until the SDK model is
+updated (or the platform updates the spec). There is deliberately no allowlist of known
+drift.
 
 ### Which spec it runs against
 
-By default the test reads a snapshot at `tests/fixtures/openapi.json`,
-so the unit test suite is deterministic and offline. You can refresh the snapshot with 
-the latest spec by running:
+By default the test reads the snapshot at `tests/fixtures/openapi.json`, so the unit
+test suite is deterministic and offline. Refresh the snapshot from production, the API the
+released SDK talks to by default:
 
 ```bash
 curl -sL https://mozilladatacollective.com/api/openapi.json \
@@ -87,9 +92,22 @@ diff shows what moved in the contract and how the SDK adapted.
 You can also set `MDC_OPENAPI_SPEC` to a file path or URL to run against a different spec:
 
 ```bash
-MDC_OPENAPI_SPEC=https://mozilladatacollective.com/api/openapi.json
-MDC_OPENAPI_SPEC=../platform/openapi.json
+MDC_OPENAPI_SPEC=https://dev.mozilladatacollective.com/api/openapi.json pytest tests/test_openapi_contract.py  # upcoming changes
+MDC_OPENAPI_SPEC=../platform/openapi.json pytest tests/test_openapi_contract.py
 ```
+
+### How drift is detected
+
+The platform is allowed to change its API before the SDK catches up, so nothing here
+gates platform merges. Instead:
+
+- **SDK pull requests** run the contract test against the snapshot (`tests.yml`). This
+  is the only place the test blocks anything: an SDK change that disagrees with the
+  recorded contract.
+- **`openapi-contract.yml`** runs the test against the live production spec daily and on
+  `workflow_dispatch` (optionally with a different `spec_url`, e.g. dev, to preview
+  upcoming changes). When it goes red, production has moved: refresh the snapshot as
+  above, adapt the models and open a PR.
 
 ## Related workflows
 
