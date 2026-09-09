@@ -19,19 +19,20 @@ Under the hood, `load_dataset()` performs the following steps automatically:
 1. **Resolve the schema**: check local cache or the schema registry for `schema.yaml`. If the dataset is not registered this step raises a warning, so we never download an unsupported archive.
 2. **Download** the archive (with resume support). The schema we fetched in step 1 tells the loader how the files are structured.
 3. **Extract** the `.tar.gz` / `.zip` to a local directory.
-4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model) and dispatch to the task-specific loader (ASR, TTS, OTH, …), which returns the final **DataFrame**.
+4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model) and dispatch to the loader for the schema's `root_strategy` (index, glob, …), which returns the final **DataFrame**. When the schema declares a `task` with a known contract (ASR, TTS, LLM), the loaded DataFrame is checked for the task's required logical columns; a `TaskValidationWarning` is emitted if any are missing (the DataFrame is still returned).
 
 The schema file describes:
 
-- **What task** the dataset is for (ASR, TTS, …).
 - **How to find** the data files (index file path, glob pattern, etc.).
 - **How to map** raw columns / files into a clean DataFrame.
+- Optionally, **what task** the dataset is for (ASR, TTS, …), which the loaded DataFrame is checked against (violations emit a warning).
 
 ### Minimal example
 
 ```yaml
 dataset_id: "common-voice-gsw-24"
 task: "ASR"
+root_strategy: "index"
 format: "tsv"
 index_file: "train.tsv"
 columns:
@@ -56,17 +57,18 @@ Every schema **must** have:
 | Field | Type | Required | Description |
 |---|---|---|---|
 | `dataset_id` | `str` | ✓ | Unique dataset identifier on MDC. |
-| `task` | `str` | ✓ | Task type: determines which loader is used (`"ASR"`, `"TTS"`, `"OTH"`). |
+| `root_strategy` | `str` | ✓ | Loading strategy: `"index"`, `"multi_split"`, `"multi_sections"`, `"paired_glob"`, or `"glob"`. There is no default — every schema must set it explicitly. |
+| `task` | `str` | ✗ | *(optional)* Task type as defined on the MDC Platform (`"ASR"`, `"TTS"`, …). When set to a task with a known contract, the loaded DataFrame is checked for the task's required logical columns (e.g. ASR/TTS: `audio_path` + `transcription`; LLM: `text`); missing columns emit a `TaskValidationWarning` (shown even with `enable_logging=False`) but the DataFrame is still returned. Tasks without a contract (e.g. `"OTH"`) load without validation. |
+
 
 ### Loading strategies
 
 The remaining fields depend on which **strategy** the dataset uses.  The
-strategy is selected with the `root_strategy` field; when it is omitted, the
-loader defaults to the index-based strategy:
+strategy is selected with the required `root_strategy` field:
 
 | Strategy | When to use                                                         | Key fields |
 |---|---------------------------------------------------------------------|---|
-| **Index-based** (default) | A metadata file (CSV / TSV / pipe-delimited) lists each sample.     | `index_file`, `columns` |
+| **Index-based** | A metadata file (CSV / TSV / pipe-delimited) lists each sample.     | `root_strategy: "index"`, `index_file`, `columns` |
 | **Multi-split** | Multiple split files (train, dev, test, …) each containing samples. | `root_strategy: "multi_split"`, `splits` |
 | **Paired-glob** | Each audio file has a matching sidecar file (`.txt` for TTS, JSON for ASR), no index file at all. | `root_strategy: "paired_glob"`, `file_pattern`, `audio_extension` (TTS) / `format: "json"`, `record_path`, `columns` (ASR) |
 | **Multi-sections** | Multiple section directories, each with its own index file. | `root_strategy: "multi_sections"`, `sections`, `section_root`, `index_file` |
@@ -76,6 +78,7 @@ loader defaults to the index-based strategy:
 
 | Field | Default | Required | Description |
 |---|---|---|---|
+| `root_strategy` | — | ✓ | Must be `"index"`. |
 | `format` | Inferred from `index_file` when possible | ✗ | Optional format hint: `"csv"`, `"tsv"`, or `"pipe"`. Useful when the file extension is misleading. |
 | `index_file` | — | ✓ | Path to the metadata file, relative to the dataset root. |
 | `columns` | — | ✓ | Mapping of logical column names → source columns (see below). |
@@ -83,6 +86,12 @@ loader defaults to the index-based strategy:
 | `separator` | Inferred from `format` or `index_file` | ✗ | Explicit column separator override (e.g. `"\|"`). |
 | `has_header` | `true` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
 | `encoding` | `"utf-8"` | ✗ | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
+| `strict` | `false` | ✗ | Disable archive heuristics for deterministic loading: `index_file` must exist at its literal path relative to the dataset root (no recursive search) and source column names must match exactly (no fuzzy matching). Applies to every strategy that reads delimited files. |
+
+The `index_file` lookup is deterministic even without `strict`: the literal
+relative path wins when it exists; otherwise the tree is searched recursively
+and the shallowest match is used — multiple matches at the same depth raise an
+error instead of picking one arbitrarily.
 
 ### Multi-split fields
 
@@ -104,6 +113,7 @@ transcription; pairing is done on the filename stem:
 | `root_strategy` | — | ✓ | Must be `"paired_glob"`. |
 | `file_pattern` | — | ✓ | Glob pattern to find text files (e.g. `"**/*.txt"`). |
 | `audio_extension` | — | ✓ | Extension of the matching audio files (e.g. `".webm"`). |
+| `columns` | — | ✗ | Optional mappings applied over the derived `audio_path` / `transcription` / `split` sources (rename, dtype, drop). The `split` column is kept. When omitted, the default `audio_path` / `transcription` / `split` output is returned. |
 
 **ASR (JSON sidecars)** — each audio file has a matching JSON file holding the
 audio filename, metadata, and (optionally) a list of time-aligned utterance
@@ -118,7 +128,7 @@ records:
 | `record_path` | — | ✗ | Top-level JSON key holding a list of records (e.g. `"transcriptions"`); each record becomes one row and the remaining top-level keys are repeated per row. When omitted, each JSON file yields one row. |
 | `audio_extension` | — | ✗ | Extension of the paired audio files (e.g. `".wav"`). Pairing normally comes from a filename field inside the JSON, mapped as a `file_path` column with `path_match_strategy: "exact"`. |
 
-See [ASR loader](./loaders/asr.md) for a complete example.
+See the [paired-glob strategy](./loaders/paired_glob.md) for a complete example.
 
 ### Multi-sections fields
 
@@ -129,8 +139,9 @@ See [ASR loader](./loaders/asr.md) for a complete example.
 | `section_root` | — | ✓ | Directory containing the section subdirectories, relative to the dataset root. |
 | `index_file` | — | ✓ | Name of the per-section index file, resolved as `section_root/<section>/<index_file>`. |
 
-Each section's index file is read as-is (no column mappings) and a `section`
-column with the directory name is added before concatenation.
+Column mappings are applied to each section's index file when `columns` is
+declared (otherwise the raw columns are returned), and a `section` column with
+the directory name is added before concatenation.
 
 ### Glob fields
 
@@ -138,6 +149,7 @@ column with the directory name is added before concatenation.
 |---|---|---|---|
 | `root_strategy` | — | ✓ | Must be `"glob"`. |
 | `file_pattern` | — | ✓ | Glob pattern to match files (e.g. `"**/*.wav"`). |
+| `columns` | — | ✗ | Mapping of logical column names to **path-derived sources**: `path`, `name`, `stem`, `parent`, `parents[N]`, `content` (file text). When omitted, the default output is `audio_path`, `language` (parent directory), `speaker_id` (grandparent directory). See the [glob strategy](./loaders/glob.md) page. |
 | `splits` | — | ✗ | List of subdirectory names to glob through. Each becomes a value in the `split` column. When omitted, the glob runs from the dataset root. |
 
 ### Inner archive extraction
@@ -151,9 +163,13 @@ This field is task-agnostic — it works with any loader.
 
 ## Column mapping
 
-Used by **index-based** and **multi-split** strategies.  Each key under
-`columns` is the **logical** column name that will appear in the resulting
-DataFrame:
+Used by every strategy. Each key under `columns` is the **logical** column
+name that will appear in the resulting DataFrame.  For the glob strategy,
+`source_column` names a path-derived source (`path`, `parent`, `content`, …)
+instead of an index-file column — see the [glob strategy](./loaders/glob.md)
+page; for the paired-glob text variant it names one of the derived
+`audio_path` / `transcription` / `split` sources.  For the index-based
+strategies:
 
 ```yaml
 columns:
@@ -249,23 +265,18 @@ columns:
 | `int` | Numeric coercion → nullable `Int64`. |
 | `float` | Numeric coercion → `float64`. |
 
-## Content mapping
-
-**Reserved for future use** — `content_mapping` is accepted by the schema
-parser but not consumed by any current loader. It is intended for glob-based
-tasks (e.g. LM) to describe how file contents become DataFrame columns:
-
-```yaml
-content_mapping:
-  text: "file_content"     # each file's text → "text" column
-  meta_source: "file_name" # filename → "meta_source" column
-```
+Column mappings are validated at parse time: an unknown `dtype` value or an
+unknown key inside a mapping entry (e.g. `dtpye:`) raises a `ValueError`
+instead of being silently ignored. Unknown **top-level** schema keys emit a
+`SchemaValidationWarning` (with a "did you mean …?" hint for near-misses) and
+are kept under the `extra` catch-all, and unknown `root_strategy` values fail
+at parse time.
 
 ---
 
 ## Complete examples
 
-For full examples for each task and strategy, visit the respective task documentation pages under [docs/loaders/](./loaders/).
+For full examples for each strategy, visit the respective strategy documentation pages under [docs/loaders/](./loaders/).
 
 ## Schema caching
 

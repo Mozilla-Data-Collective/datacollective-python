@@ -21,7 +21,7 @@ pip install datacollective
 
 ## Getting an API Key
 
-To use the Mozilla Data Collective API, you need an API key:
+To download or upload datasets through the Mozilla Data Collective API, you need an API key:
 
 1. Sign up to the [Mozilla Data Collective](https://mozilladatacollective.com) platform.
 2. Create or retrieve an API key from your Account -> Credentials page.
@@ -33,7 +33,7 @@ The client reads configuration from environment variables and `.env` files.
 
 ### Environment variables
 
-Required:
+Required for downloading and uploading datasets:
 
 - `MDC_API_KEY` - Your Mozilla Data Collective API key.
 
@@ -262,7 +262,8 @@ moment you access it.
 
 ## Get dataset details
 
-You can retrieve info from the datasheet of a dataset without downloading it:
+You can retrieve info from the datasheet of a dataset without downloading it.
+This is a public endpoint, so it works without an API key:
 
 ```python
 from datacollective import get_dataset_details

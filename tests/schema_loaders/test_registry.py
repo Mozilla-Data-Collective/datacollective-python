@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import pytest
 
+from datacollective.errors import TaskValidationWarning
 from datacollective.schema import ColumnMapping, DatasetSchema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
 
@@ -13,9 +15,8 @@ def _write(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-class TestLoadDatasetFromSchema:
-    def test_dispatches_asr(self, tmp_path: Path) -> None:
-        """An ASR index-based schema should be dispatched to ASRLoader and produce a DataFrame."""
+class TestStrategyDispatch:
+    def test_dispatches_index(self, tmp_path: Path) -> None:
         _write(
             tmp_path / "train.tsv",
             "path\tsentence\nclip1.mp3\thello\nclip2.mp3\tworld\n",
@@ -23,7 +24,7 @@ class TestLoadDatasetFromSchema:
 
         schema = DatasetSchema(
             dataset_id="test",
-            task="ASR",
+            root_strategy="index",
             format="tsv",
             index_file="train.tsv",
             columns={
@@ -37,34 +38,14 @@ class TestLoadDatasetFromSchema:
         assert len(df) == 2
         assert list(df.columns) == ["audio_path", "transcription"]
 
-    def test_dispatches_tts_index(self, tmp_path: Path) -> None:
-        """A TTS index-based schema should be dispatched to TTSLoader."""
-        _write(tmp_path / "meta.csv", "audio,text\nc1.wav,hello\n")
-
-        schema = DatasetSchema(
-            dataset_id="test-tts",
-            task="TTS",
-            format="csv",
-            index_file="meta.csv",
-            columns={
-                "audio": ColumnMapping(source_column="audio", dtype="file_path"),
-                "text": ColumnMapping(source_column="text"),
-            },
-        )
-        df = _load_dataset_from_schema(schema, tmp_path)
-        assert len(df) == 1
-        assert "audio" in df.columns
-
-    def test_dispatches_tts_paired_glob(self, tmp_path: Path) -> None:
-        """A TTS paired-glob schema should be dispatched to TTSLoader."""
+    def test_dispatches_paired_glob(self, tmp_path: Path) -> None:
         d = tmp_path / "split"
         d.mkdir()
         _write(d / "001.txt", "hello")
         (d / "001.wav").write_bytes(b"\x00")
 
         schema = DatasetSchema(
-            dataset_id="test-tts-pg",
-            task="TTS",
+            dataset_id="test-pg",
             root_strategy="paired_glob",
             file_pattern="**/*.txt",
             audio_extension=".wav",
@@ -74,8 +55,175 @@ class TestLoadDatasetFromSchema:
         assert "audio_path" in df.columns
         assert "transcription" in df.columns
 
-    def test_dispatches_oth_index(self, tmp_path: Path) -> None:
-        """An OTH index-based schema should load via OTHLoader and apply column mappings."""
+    def test_dispatches_multi_split(self, tmp_path: Path) -> None:
+        _write(tmp_path / "train.tsv", "path\tsentence\nc1.mp3\thello\n")
+        _write(tmp_path / "dev.tsv", "path\tsentence\nc2.mp3\tworld\n")
+
+        schema = DatasetSchema(
+            dataset_id="test-ms",
+            root_strategy="multi_split",
+            splits=["train", "dev"],
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert len(df) == 2
+        assert set(df["split"]) == {"train", "dev"}
+
+    def test_dispatches_multi_sections(self, tmp_path: Path) -> None:
+        for section in ("General", "Chat"):
+            _write(
+                tmp_path / "dataset" / section / "metadata.tsv",
+                f"audio\ttext\n{section.lower()}.wav\tHello from {section}\n",
+            )
+
+        schema = DatasetSchema(
+            dataset_id="test-msec",
+            root_strategy="multi_sections",
+            section_root="dataset",
+            sections=["General", "Chat"],
+            index_file="metadata.tsv",
+            format="tsv",
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert len(df) == 2
+        assert set(df["section"]) == {"General", "Chat"}
+
+    def test_dispatches_glob(self, tmp_path: Path) -> None:
+        _write(tmp_path / "spk1" / "en" / "a.wav", "")
+        _write(tmp_path / "spk2" / "fr" / "b.wav", "")
+
+        schema = DatasetSchema(
+            dataset_id="test-glob",
+            root_strategy="glob",
+            file_pattern="**/*.wav",
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert len(df) == 2
+        assert list(df.columns) == ["audio_path", "language", "speaker_id"]
+        assert set(df["language"]) == {"en", "fr"}
+        assert set(df["speaker_id"]) == {"spk1", "spk2"}
+
+    def test_any_strategy_works_with_any_task(self, tmp_path: Path) -> None:
+        """Strategies are task-agnostic: e.g. TTS + multi_split is expressible."""
+        _write(tmp_path / "train.tsv", "path\tsentence\nc1.mp3\thello\n")
+
+        schema = DatasetSchema(
+            dataset_id="test-tts-ms",
+            task="TTS",
+            root_strategy="multi_split",
+            splits=["train"],
+            columns={
+                "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
+                "transcription": ColumnMapping(source_column="sentence"),
+            },
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert len(df) == 1
+        assert {"audio_path", "transcription", "split"} <= set(df.columns)
+
+    def test_glob_requires_file_pattern(self, tmp_path: Path) -> None:
+        schema = DatasetSchema(dataset_id="test-glob", root_strategy="glob")
+        with pytest.raises(ValueError, match="must specify 'file_pattern'"):
+            _load_dataset_from_schema(schema, tmp_path)
+
+    def test_index_requires_index_file(self, tmp_path: Path) -> None:
+        schema = DatasetSchema(dataset_id="test-idx", root_strategy="index")
+        with pytest.raises(ValueError, match="index_file"):
+            _load_dataset_from_schema(schema, tmp_path)
+
+    def test_missing_root_strategy_raises(self, tmp_path: Path) -> None:
+        schema = DatasetSchema(dataset_id="ds", index_file="train.tsv")
+        with pytest.raises(ValueError, match="must specify 'root_strategy'"):
+            _load_dataset_from_schema(schema, tmp_path)
+
+    def test_unknown_strategy_raises_at_parse(self, tmp_path: Path) -> None:
+        with pytest.raises(ValueError, match="Unknown root_strategy"):
+            DatasetSchema(dataset_id="ds", root_strategy="unknown_strategy")
+
+
+class TestTaskContracts:
+    def test_asr_contract_satisfied(self, tmp_path: Path) -> None:
+        _write(tmp_path / "train.tsv", "path\tsentence\nc1.mp3\thello\n")
+
+        schema = DatasetSchema(
+            dataset_id="test-asr",
+            root_strategy="index",
+            task="ASR",
+            format="tsv",
+            index_file="train.tsv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
+                "transcription": ColumnMapping(source_column="sentence"),
+            },
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert {"audio_path", "transcription"} <= set(df.columns)
+
+    def test_contract_satisfied_emits_no_warning(self, tmp_path: Path) -> None:
+        _write(tmp_path / "train.tsv", "path\tsentence\nc1.mp3\thello\n")
+
+        schema = DatasetSchema(
+            dataset_id="test-asr-clean",
+            root_strategy="index",
+            task="ASR",
+            format="tsv",
+            index_file="train.tsv",
+            columns={
+                "audio_path": ColumnMapping(source_column="path", dtype="file_path"),
+                "transcription": ColumnMapping(source_column="sentence"),
+            },
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", TaskValidationWarning)
+            _load_dataset_from_schema(schema, tmp_path)
+
+    def test_non_contract_columns_warn_and_still_load(self, tmp_path: Path) -> None:
+        """Mappings that don't produce the contract columns warn, but load."""
+        _write(tmp_path / "train.tsv", "path\tsentence\nc1.mp3\thello\n")
+
+        schema = DatasetSchema(
+            dataset_id="test-asr-bad",
+            root_strategy="index",
+            task="ASR",
+            format="tsv",
+            index_file="train.tsv",
+            columns={
+                "audio": ColumnMapping(source_column="path", dtype="file_path"),
+                "text": ColumnMapping(source_column="sentence"),
+            },
+        )
+        with pytest.warns(TaskValidationWarning, match="audio_path"):
+            df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["audio", "text"]
+
+    def test_raw_load_violating_contract_warns_post_load(self, tmp_path: Path) -> None:
+        """A columns-less index schema loads raw and warns about the contract."""
+        _write(tmp_path / "train.tsv", "path\tsentence\nc1.mp3\thello\n")
+
+        schema = DatasetSchema(
+            dataset_id="test-asr-raw",
+            root_strategy="index",
+            task="ASR",
+            format="tsv",
+            index_file="train.tsv",
+        )
+        with pytest.warns(TaskValidationWarning, match="ASR"):
+            df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["path", "sentence"]
+
+    def test_unknown_task_loads_without_validation(self, tmp_path: Path) -> None:
+        _write(tmp_path / "data.tsv", "a\tb\n1\t2\n")
+
+        schema = DatasetSchema(
+            dataset_id="test-unknown",
+            root_strategy="index",
+            task="BRAND_NEW_TASK",
+            format="tsv",
+            index_file="data.tsv",
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["a", "b"]
+
+    def test_oth_task_has_no_contract(self, tmp_path: Path) -> None:
         _write(
             tmp_path / "data.tsv",
             "id\tsentence\tlang\n1\thello\ten\n2\tbonjour\tfr\n",
@@ -83,6 +231,7 @@ class TestLoadDatasetFromSchema:
 
         schema = DatasetSchema(
             dataset_id="test-oth",
+            root_strategy="index",
             task="OTH",
             format="tsv",
             index_file="data.tsv",
@@ -97,36 +246,65 @@ class TestLoadDatasetFromSchema:
         assert list(df.columns) == ["id", "sentence", "lang"]
         assert df["lang"].dtype.name == "category"
 
-    def test_dispatches_oth_glob(self, tmp_path: Path) -> None:
-        """An OTH glob schema should load via OTHLoader and derive metadata from the path."""
-        _write(tmp_path / "spk1" / "en" / "a.wav", "")
-        _write(tmp_path / "spk2" / "fr" / "b.wav", "")
+    def test_no_task_loads_without_validation(self, tmp_path: Path) -> None:
+        _write(tmp_path / "data.csv", "a,b\n1,2\n")
 
         schema = DatasetSchema(
-            dataset_id="test-oth",
+            dataset_id="test-no-task",
+            root_strategy="index",
+            format="csv",
+            index_file="data.csv",
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["a", "b"]
+
+    def test_glob_with_columns_satisfies_llm_contract(self, tmp_path: Path) -> None:
+        """Glob column mappings can produce contract columns (LLM: text)."""
+        d = tmp_path / "en"
+        d.mkdir()
+        _write(d / "a.txt", "hello world")
+
+        schema = DatasetSchema(
+            dataset_id="test-llm-glob",
+            task="LLM",
+            root_strategy="glob",
+            file_pattern="**/*.txt",
+            columns={
+                "text": ColumnMapping(source_column="content"),
+                "language": ColumnMapping(source_column="parent", dtype="category"),
+            },
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", TaskValidationWarning)
+            df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["text", "language"]
+        assert df["text"].iloc[0] == "hello world"
+
+    def test_glob_with_oth_task_loads_without_warning(self, tmp_path: Path) -> None:
+        """Glob's default output (audio_path/...) and OTH has no contract."""
+        _write(tmp_path / "spk1" / "en" / "a.wav", "")
+
+        schema = DatasetSchema(
+            dataset_id="test-oth-glob",
             task="OTH",
             root_strategy="glob",
             file_pattern="**/*.wav",
         )
         df = _load_dataset_from_schema(schema, tmp_path)
-        assert len(df) == 2
-        assert list(df.columns) == ["audio_path", "language", "speaker_id"]
-        assert set(df["language"]) == {"en", "fr"}
-        assert set(df["speaker_id"]) == {"spk1", "spk2"}
+        assert len(df) == 1
 
-    def test_oth_glob_requires_file_pattern(self, tmp_path: Path) -> None:
-        schema = DatasetSchema(dataset_id="test-oth", task="OTH", root_strategy="glob")
-        with pytest.raises(ValueError, match="must specify 'file_pattern'"):
-            _load_dataset_from_schema(schema, tmp_path)
+    def test_paired_glob_text_variant_satisfies_contract(self, tmp_path: Path) -> None:
+        d = tmp_path / "split"
+        d.mkdir()
+        _write(d / "001.txt", "hello")
+        (d / "001.wav").write_bytes(b"\x00")
 
-    def test_oth_requires_index_file(self, tmp_path: Path) -> None:
-        schema = DatasetSchema(dataset_id="test-oth", task="OTH")
-        with pytest.raises(
-            ValueError, match="'root_strategy: glob'.*or an 'index_file'"
-        ):
-            _load_dataset_from_schema(schema, tmp_path)
-
-    def test_unknown_task_raises(self, tmp_path: Path) -> None:
-        schema = DatasetSchema(dataset_id="ds", task="UNKNOWN_TASK")
-        with pytest.raises(ValueError, match="No schema loader registered"):
-            _load_dataset_from_schema(schema, tmp_path)
+        schema = DatasetSchema(
+            dataset_id="test-tts-pg",
+            task="TTS",
+            root_strategy="paired_glob",
+            file_pattern="**/*.txt",
+            audio_extension=".wav",
+        )
+        df = _load_dataset_from_schema(schema, tmp_path)
+        assert {"audio_path", "transcription"} <= set(df.columns)

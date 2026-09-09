@@ -28,8 +28,14 @@ Create a file named `schema.yaml`. Start with the basic required fields:
 
 ```yaml
 dataset_id: "your-dataset-id"   # The unique ID of the dataset on MDC
-task: "ASR"                    # ASR, TTS, or OTH
+root_strategy: "index"          # index, multi_split, multi_sections, paired_glob, or glob
+task: "ASR"                     # e.g. ASR, TTS, or OTH
 ```
+
+The `task` is used to check that the loaded DataFrame contains
+the task's required columns (e.g. ASR/TTS: `audio_path` + `transcription`).
+If any are missing, loading emits a `TaskValidationWarning` but still
+returns the DataFrame.
 
 Then add the fields for your chosen strategy.
 
@@ -38,6 +44,7 @@ If your dataset has a `metadata.tsv` file:
 
 ```yaml
 dataset_id: "your-dataset-id"
+root_strategy: "index"
 task: "ASR"
 index_file: "metadata.tsv"
 base_audio_path: "clips/"      # Folder where audio files are located
@@ -59,6 +66,7 @@ compose the real path from metadata columns declaratively:
 
 ```yaml
 dataset_id: "your-dataset-id"
+root_strategy: "index"
 task: "ASR"
 index_file: "data/metadata.csv"
 base_audio_path: "data/${Split}/"

@@ -40,6 +40,30 @@ def test_get_dataset_details_live_api(
     assert dataset_slug.strip()
 
 
+def test_get_dataset_details_live_api_without_api_key(
+    live_api_env: None,
+    dev_dataset_id: str,
+    monkeypatch,
+) -> None:
+    """NOTE: This test calls a live MDC API endpoint (dev).
+
+    GET /datasets/{id} is public: it must succeed with no API key configured.
+    """
+    monkeypatch.delenv("MDC_API_KEY", raising=False)
+    details = None
+
+    try:
+        details = get_dataset_details(dev_dataset_id)
+    except Exception as exc:
+        skip_if_rate_limited(exc)
+
+    assert details is not None
+    assert details.id == dev_dataset_id
+    # `download_dataset` / `load_dataset` rely on these fields from the public payload.
+    assert isinstance(details.filename, str) and details.filename.strip()
+    assert isinstance(details.checksum, str) and details.checksum.strip()
+
+
 def test_download_dataset_live_api(
     live_download_dir: Path,
     dev_dataset_id: str,

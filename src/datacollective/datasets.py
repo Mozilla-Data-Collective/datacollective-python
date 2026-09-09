@@ -38,6 +38,8 @@ def get_dataset_details(dataset_id: str) -> DatasetDetails:
     """
     Return dataset details from the MDC API.
 
+    This is a public endpoint: no API key (`MDC_API_KEY`) is required and none is sent.
+
     Args:
         dataset_id: The dataset ID (as shown in MDC platform) or slug.
 
@@ -47,7 +49,6 @@ def get_dataset_details(dataset_id: str) -> DatasetDetails:
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
-        PermissionError: If access is denied (403).
         RuntimeError: If rate limit is exceeded (429).
         requests.HTTPError: For other non-2xx responses.
         pydantic.ValidationError: If the API response is missing the `id` field.
@@ -56,7 +57,7 @@ def get_dataset_details(dataset_id: str) -> DatasetDetails:
         raise ValueError("`dataset_id` must be a non-empty string")
 
     url = f"{_get_api_url()}/datasets/{dataset_id}"
-    resp = _send_api_request(method="GET", url=url)
+    resp = _send_api_request(method="GET", url=url, include_auth_headers=False)
     return DatasetDetails.model_validate(resp.json())
 
 
@@ -161,7 +162,7 @@ def load_dataset(
     If there is a directory with the same name as the archive file without the suffix extension, we assume
     it has already been extracted, and it will not be re-extracted unless `overwrite_extracted=True`.
 
-    Uses the dataset schema to determine task-specific loading logic.
+    Uses the dataset schema to determine the loading strategy.
 
     Automatically resumes interrupted downloads if a .checksum file exists from a
     previous attempt.
@@ -208,7 +209,7 @@ def load_dataset(
     dataset_details = get_dataset_details(dataset_id)
     archive_filename = _require_archive_filename(dataset_details)
     _id = dataset_details.id
-    archive_checksum = dataset_details.checksum or ""
+    archive_checksum = dataset_details.checksum or None
 
     # try to fetch schema from registry
     schema = _get_dataset_schema(_id)
