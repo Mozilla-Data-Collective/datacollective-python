@@ -1363,7 +1363,7 @@
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>datacollective
 </span></code></pre></div>
 <h2 id="getting-an-api-key">Getting an API Key</h2>
-<p>To use the Mozilla Data Collective API, you need an API key:</p>
+<p>To download or upload datasets through the Mozilla Data Collective API, you need an API key:</p>
 <ol>
 <li>Sign up to the <a href="https://mozilladatacollective.com">Mozilla Data Collective</a> platform.</li>
 <li>Create or retrieve an API key from your Account -&gt; Credentials page.</li>
@@ -1372,7 +1372,7 @@
 <h2 id="configuration">Configuration</h2>
 <p>The client reads configuration from environment variables and <code>.env</code> files.</p>
 <h3 id="environment-variables">Environment variables</h3>
-<p>Required:</p>
+<p>Required for downloading and uploading datasets:</p>
 <ul>
 <li><code>MDC_API_KEY</code> - Your Mozilla Data Collective API key.</li>
 </ul>
@@ -1560,7 +1560,8 @@ Audio decoding requires extra dependencies, which you can install with
 audio file is decoded (and resampled, if you specify a <code>sampling_rate</code>) at the
 moment you access it.</p>
 <h2 id="get-dataset-details">Get dataset details</h2>
-<p>You can retrieve info from the datasheet of a dataset without downloading it:</p>
+<p>You can retrieve info from the datasheet of a dataset without downloading it.
+This is a public endpoint, so it works without an API key:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_dataset_details</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">get_dataset_details</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">)</span>
