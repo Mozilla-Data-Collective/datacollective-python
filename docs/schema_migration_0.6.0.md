@@ -342,9 +342,17 @@ columns:
 **Who is affected:** nobody with `task: "OTH"` — **no migration needed**.
 
 `root_strategy` was already required for glob, the fields are unchanged, and
-`OTH` has no contract. The glob loader's output is fixed
-(`audio_path`, `language`, `speaker_id`, and `split` when `splits` is set);
-it does not apply `columns`.
+`OTH` has no contract, and the pre-0.6.0 fields work unchanged: without
+`columns`, the loader keeps producing its default output (`audio_path`,
+`language`, `speaker_id`, and `split` when `splits` is set).
+
+
+New in 0.6.0 (optional): glob schemas may declare a `columns` mapping over
+path-derived sources (`path`, `name`, `stem`, `parent`, `parents[N]`,
+`content`) to control the output columns instead of relying on the default —
+see the [glob strategy](loaders/glob.md) page. Existing schemas do not need
+this to migrate.
+
 
 ### Valid before and after
 
@@ -359,9 +367,12 @@ extract_files:
   - "Dev.tar.gz"
 ```
 
-> Caution: avoid combining `glob` with `task: "ASR"` or `task: "TTS"`. The
-> glob output can never contain a `transcription` column, so every load would
-> emit a `TaskValidationWarning`.
+
+> Caution: avoid combining `glob` with `task: "ASR"` or `task: "TTS"` unless
+> a `columns` mapping actually produces the contract columns — the default
+> glob output has no `transcription` column, so every load would emit a
+> `TaskValidationWarning`.
+
 
 ---
 

@@ -142,6 +142,7 @@ the directory name is added before concatenation.
 |---|---|---|---|
 | `root_strategy` | — | ✓ | Must be `"glob"`. |
 | `file_pattern` | — | ✓ | Glob pattern to match files (e.g. `"**/*.wav"`). |
+| `columns` | — | ✗ | Mapping of logical column names to **path-derived sources**: `path`, `name`, `stem`, `parent`, `parents[N]`, `content` (file text). When omitted, the default output is `audio_path`, `language` (parent directory), `speaker_id` (grandparent directory). See the [glob strategy](./loaders/glob.md) page. |
 | `splits` | — | ✗ | List of subdirectory names to glob through. Each becomes a value in the `split` column. When omitted, the glob runs from the dataset root. |
 
 ### Inner archive extraction
@@ -155,9 +156,12 @@ This field is task-agnostic — it works with any loader.
 
 ## Column mapping
 
-Used by the **index-based**, **multi-split**, **multi-sections** and 
-**paired-glob (JSON)**. Each key under `columns` is the **logical** column name that will appear in the resulting
-DataFrame:
+Used by the **index-based**, **multi-split**, **multi-sections**, **paired-glob (JSON)** 
+and **glob** strategies. Each key under `columns` is
+the **logical** column name that will appear in the resulting DataFrame.  For
+the glob strategy, `source_column` names a path-derived source (`path`,
+`parent`, `content`, …) instead of an index-file column — see the
+[glob strategy](./loaders/glob.md) page.  For all other strategies:
 
 ```yaml
 columns:
@@ -255,14 +259,19 @@ columns:
 
 ## Content mapping
 
-**Reserved for future use** — `content_mapping` is accepted by the schema
-parser but not consumed by any current loader. It is intended for glob-based
-tasks (e.g. LM) to describe how file contents become DataFrame columns:
+**Deprecated / unused** — `content_mapping` is accepted by the schema parser
+but not consumed by any loader. Its intended use case (mapping file contents
+and filenames into DataFrame columns for glob-based text datasets) is covered
+by the glob strategy's `columns` mapping with the `content` / `name` sources:
 
 ```yaml
-content_mapping:
-  text: "file_content"     # each file's text → "text" column
-  meta_source: "file_name" # filename → "meta_source" column
+root_strategy: "glob"
+file_pattern: "**/*.txt"
+columns:
+  text:
+    source_column: "content"   # each file's text → "text" column
+  file_name:
+    source_column: "name"      # filename → "file_name" column
 ```
 
 ---

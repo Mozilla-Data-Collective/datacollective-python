@@ -259,8 +259,30 @@ class TestTaskContracts:
         df = _load_dataset_from_schema(schema, tmp_path)
         assert list(df.columns) == ["a", "b"]
 
-    def test_glob_strategy_skips_declared_contract_check(self, tmp_path: Path) -> None:
-        """Glob output is fixed (audio_path/...), so declared columns are not checked."""
+    def test_glob_with_columns_satisfies_llm_contract(self, tmp_path: Path) -> None:
+        """Glob column mappings can produce contract columns (LLM: text)."""
+        d = tmp_path / "en"
+        d.mkdir()
+        _write(d / "a.txt", "hello world")
+
+        schema = DatasetSchema(
+            dataset_id="test-llm-glob",
+            task="LLM",
+            root_strategy="glob",
+            file_pattern="**/*.txt",
+            columns={
+                "text": ColumnMapping(source_column="content"),
+                "language": ColumnMapping(source_column="parent", dtype="category"),
+            },
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", TaskValidationWarning)
+            df = _load_dataset_from_schema(schema, tmp_path)
+        assert list(df.columns) == ["text", "language"]
+        assert df["text"].iloc[0] == "hello world"
+
+    def test_glob_with_oth_task_loads_without_warning(self, tmp_path: Path) -> None:
+        """Glob's default output (audio_path/...) and OTH has no contract."""
         _write(tmp_path / "spk1" / "en" / "a.wav", "")
 
         schema = DatasetSchema(
