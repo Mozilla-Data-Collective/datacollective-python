@@ -155,9 +155,9 @@ class TestParseSchema:
         with pytest.raises(ValueError, match="dataset_id"):
             _parse_schema({"task": "ASR"})
 
-    def test_missing_task_raises(self) -> None:
-        with pytest.raises(ValueError, match="dataset_id.*task"):
-            _parse_schema({"dataset_id": "ds1"})
+    def test_missing_task_is_allowed(self) -> None:
+        s = _parse_schema({"dataset_id": "ds1"})
+        assert s.task is None
 
     def test_invalid_yaml_type_raises(self) -> None:
         with pytest.raises(ValueError, match="Expected a dict"):

@@ -9,42 +9,74 @@ import pandas as pd
 
 from datacollective.logging_utils import get_logger
 from datacollective.schema import DatasetSchema
-from datacollective.schema_loaders.base import BaseSchemaLoader
-from datacollective.schema_loaders.tasks.asr import ASRLoader
-from datacollective.schema_loaders.tasks.oth import OTHLoader
-from datacollective.schema_loaders.tasks.tts import TTSLoader
+from datacollective.schema_loaders.base import BaseSchemaLoader, Strategy
+from datacollective.schema_loaders.contracts import _validate_task_contract
+from datacollective.schema_loaders.strategies import (
+    GlobLoader,
+    IndexLoader,
+    MultiSectionsLoader,
+    MultiSplitLoader,
+    PairedGlobLoader,
+)
 
 logger = get_logger(__name__)
 
 
-_TASK_REGISTRY: dict[str, Type[BaseSchemaLoader]] = {
-    "ASR": ASRLoader,
-    "OTH": OTHLoader,
-    "TTS": TTSLoader,
+_STRATEGY_REGISTRY: dict[Strategy, Type[BaseSchemaLoader]] = {
+    Strategy.INDEX: IndexLoader,
+    Strategy.MULTI_SPLIT: MultiSplitLoader,
+    Strategy.MULTI_SECTIONS: MultiSectionsLoader,
+    Strategy.PAIRED_GLOB: PairedGlobLoader,
+    Strategy.GLOB: GlobLoader,
 }
 
 
-def _get_task_loader(task: str) -> Type[BaseSchemaLoader]:
+def _resolve_strategy(schema: DatasetSchema) -> Strategy:
     """
-    Return the loader class for *task*.
+    Resolve the loading strategy for *schema*.
 
     Raises:
-        ValueError: If no loader is registered for the given task.
+        ValueError: If ``root_strategy`` is not set or names an unknown strategy.
     """
-    key = task.upper()
-    if key not in _TASK_REGISTRY:
-        supported = ", ".join(sorted(_TASK_REGISTRY))
+    supported = ", ".join(member.value for member in Strategy)
+    if not schema.root_strategy:
         raise ValueError(
-            f"No schema loader registered for task '{key}'. "
-            f"Supported tasks: {supported}"
+            f"Schema must specify 'root_strategy'. Supported strategies: {supported}"
         )
-    return _TASK_REGISTRY[key]
+    try:
+        return Strategy(schema.root_strategy)
+    except ValueError:
+        raise ValueError(
+            f"Unknown root_strategy '{schema.root_strategy}'. "
+            f"Supported strategies: {supported}"
+        ) from None
+
+
+def _get_strategy_loader(strategy: Strategy) -> Type[BaseSchemaLoader]:
+    """
+    Return the loader class for *strategy*.
+
+    Raises:
+        ValueError: If no loader is registered for the given strategy.
+    """
+    if strategy not in _STRATEGY_REGISTRY:
+        supported = ", ".join(sorted(_STRATEGY_REGISTRY))
+        raise ValueError(
+            f"No schema loader registered for strategy '{strategy}'. "
+            f"Supported strategies: {supported}"
+        )
+    return _STRATEGY_REGISTRY[strategy]
 
 
 def _load_dataset_from_schema(schema: DatasetSchema, extract_dir: Path) -> pd.DataFrame:
     """
-    Instantiate the appropriate loader for *schema.task* and return the
+    Instantiate the loader for the schema's ``root_strategy`` and return the
     loaded `~pandas.DataFrame`.
+
+    When the schema declares a task with a known contract (see
+    `~datacollective.schema_loaders.contracts.TASK_CONTRACTS`), the loaded
+    DataFrame is validated against it; a violation emits a
+    `TaskValidationWarning` but the DataFrame is still returned.
 
     Args:
         schema: Parsed dataset schema.
@@ -56,10 +88,15 @@ def _load_dataset_from_schema(schema: DatasetSchema, extract_dir: Path) -> pd.Da
     if schema.extract_files:
         _extract_inner_archives(schema.extract_files, extract_dir)
 
-    loader_cls = _get_task_loader(schema.task)
+    strategy = _resolve_strategy(schema)
+    loader_cls = _get_strategy_loader(strategy)
+
     loader = loader_cls(schema=schema, extract_dir=extract_dir)
     logger.info(f"Loading dataset '{schema.dataset_id}' with {loader_cls.__name__}")
-    return loader.load()
+    df = loader.load()
+
+    _validate_task_contract(df, schema.task)
+    return df
 
 
 def _extract_inner_archives(extract_files: list[str], extract_dir: Path) -> None:
