@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import warnings
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, overload
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Literal, overload
 
 import pandas as pd
 
@@ -10,7 +11,16 @@ from datacollective.api_utils import (
     _get_api_url,
     _send_api_request,
 )
-from datacollective.models import DatasetDetails, _require_archive_filename
+from datacollective.models import (
+    DatasetDetails,
+    DatasetFilters,
+    DatasetList,
+    License,
+    Task,
+    _normalize_filter_values,
+    _require_archive_filename,
+    _validate_option,
+)
 from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
     DOWNLOAD_SOURCE_SAVE,
@@ -30,6 +40,11 @@ if TYPE_CHECKING:
     from datasets import Dataset, DatasetDict
 
 RETURN_FORMATS = ("pandas", "hf")
+SORT_OPTIONS = ("relevance", "newest", "size")
+SORT_DIRECTIONS = ("asc", "desc")
+UPLOAD_DATE_OPTIONS = ("today", "thisWeek", "thisMonth", "thisYear")
+PRICING_OPTIONS = ("compensated", "free")
+MAX_PAGE_SIZE = 100
 
 logger = get_logger(__name__)
 
@@ -243,6 +258,119 @@ def load_dataset(
     if return_format == "hf":
         return _convert_to_hf(df, schema)
     return df
+
+
+def list_datasets(
+    query: str | None = None,
+    *,
+    results_per_page: int | None = None,
+    page_number: int | None = None,
+    task: Task | str | Sequence[Task | str] | None = None,
+    locale: str | Sequence[str] | None = None,
+    license_abbr: License | str | Sequence[License | str] | None = None,
+    file_format: str | Sequence[str] | None = None,
+    sort: Literal["relevance", "newest", "size"] | None = None,
+    sort_direction: Literal["asc", "desc"] | None = None,
+    upload_date: Literal["today", "thisWeek", "thisMonth", "thisYear"] | None = None,
+    has_sample: bool | None = None,
+    pricing: Literal["compensated", "free"] | None = None,
+) -> DatasetList:
+    """
+    List or search the public dataset catalog of the MDC platform.
+
+    This is a public endpoint: no API key (`MDC_API_KEY`) is required.
+    Results are paginated; use `page_number` together with the returned `total` to walk
+    through the whole catalog. The values accepted by the `task`, `locale`,
+    `license_abbr` and `file_format` filters can be discovered with `list_dataset_filters`.
+    Filtering on a value absent from those lists matches nothing rather than failing.
+
+    Args:
+        query: Free-text search string (e.g. `swahili speech`). Matches all datasets when omitted.
+        results_per_page: Results per page, between 1 and 100. The platform defaults to 24.
+        page_number: 1-based page number. Defaults to the first page.
+        task: ML task(s) to keep, either a `Task` enum value or its string value (e.g. `ASR`).
+            Pass a list to match any of several tasks.
+        locale: Language/locale code(s) to keep (e.g. `en`, `de-DE`). Pass a list to match any.
+        license_abbr: License abbreviation(s) to keep, either a `License` enum value or a string
+            (e.g. `CC0-1.0`). Pass a list to match any.
+        file_format: File format(s) to keep (e.g. `WAV`, `TSV`). Pass a list to match any.
+        sort: Result ordering: `relevance`, `newest` or `size`.
+        sort_direction: `asc` or `desc`, applied to `sort`.
+        upload_date: Only datasets published within the given window:
+            `today`, `thisWeek`, `thisMonth` or `thisYear`.
+        has_sample: When True, only datasets that provide a sample file.
+        pricing: free or compensated datasets
+
+    Returns:
+        A DatasetList with the matching `items` for the requested page and the
+        `total` number of matches across all pages.
+
+    Raises:
+        ValueError: If an argument is out of range or not one of the accepted options.
+        RuntimeError: If rate limit is exceeded (429).
+        requests.HTTPError: For other non-2xx responses (e.g. 400 for a filter value the API rejects).
+        pydantic.ValidationError: If the API response does not match the expected shape.
+    """
+    if query is not None and not query.strip():
+        raise ValueError("`query` must be a non-empty string when provided")
+    if results_per_page is not None and not 1 <= results_per_page <= MAX_PAGE_SIZE:
+        raise ValueError(
+            f"`results_per_page` must be between 1 and {MAX_PAGE_SIZE}, got {results_per_page}"
+        )
+    if page_number is not None and page_number < 1:
+        raise ValueError(
+            f"`page_number` must be a positive (1-based) integer, got {page_number}"
+        )
+    _validate_option("sort", sort, SORT_OPTIONS)
+    _validate_option("sort_direction", sort_direction, SORT_DIRECTIONS)
+    _validate_option("upload_date", upload_date, UPLOAD_DATE_OPTIONS)
+    _validate_option("pricing", pricing, PRICING_OPTIONS)
+
+    params: dict[str, Any] = {
+        "q": query.strip() if query is not None else None,
+        "limit": results_per_page,
+        "page": page_number,
+        "task": _normalize_filter_values("task", task),
+        "locale": _normalize_filter_values("locale", locale),
+        "license": _normalize_filter_values("license", license_abbr),
+        "format": _normalize_filter_values("format", file_format),
+        "sort": sort,
+        "sortDirection": sort_direction,
+        "uploadDate": upload_date,
+        # The API treats any truthy string as "has a sample"; omitting it means "no filter".
+        "sample": "true" if has_sample else None,
+        "pricing": pricing,
+    }
+    params = {key: value for key, value in params.items() if value is not None}
+
+    url = f"{_get_api_url()}/datasets"
+    resp = _send_api_request(
+        method="GET", url=url, params=params, include_auth_headers=False
+    )
+    return DatasetList.model_validate(resp.json())
+
+
+def list_dataset_filters() -> DatasetFilters:
+    """
+    Return the filter values that `list_datasets` currently accepts.
+
+    This is a public endpoint: no API key (`MDC_API_KEY`) is required.
+
+    Every value except a task is drawn from the published catalog, so it appears
+    only while some dataset carries it; the task vocabulary is fixed.
+
+    Returns:
+        A DatasetFilters model with the available `tasks`, `locales`, `licenses`
+        and `formats`.
+
+    Raises:
+        RuntimeError: If rate limit is exceeded (429).
+        requests.HTTPError: For other non-2xx responses.
+        pydantic.ValidationError: If the API response does not match the expected shape.
+    """
+    url = f"{_get_api_url()}/datasets/filters"
+    resp = _send_api_request(method="GET", url=url, include_auth_headers=False)
+    return DatasetFilters.model_validate(resp.json())
 
 
 def save_dataset_to_disk(
