@@ -118,7 +118,15 @@ def _send_api_request(
         from datacollective.errors import RateLimitError
 
         raise RateLimitError(response=resp)
-    resp.raise_for_status()
+    try:
+        resp.raise_for_status()
+    except requests.HTTPError as exc:
+        # Surface the API's message (e.g. which query parameter was
+        # rejected with 400) instead of only the generic status line.
+        detail = _extract_error_detail(resp)
+        if detail:
+            raise requests.HTTPError(f"{exc} — {detail}", response=resp) from None
+        raise
 
     return resp
 
