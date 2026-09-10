@@ -278,3 +278,48 @@ def test_submission_shared_fields_still_validated() -> None:
     with pytest.raises(ValidationError):
         DatasetSubmission(locale="   ")
     assert DatasetSubmission(locale=" en-US ").locale == "en-US"
+
+
+def test_dataset_details_parses_catalog_fields_and_keeps_extra_fields() -> None:
+    details = DatasetDetails.model_validate(
+        {
+            "id": "cmt95wvb80027qb6e2vezm3d9",
+            "task": "NEW_TASK",
+            "sizeBytes": 1024,
+            "organization": {"name": "Mozilla", "slug": "mozilla"},
+            "pricing": {
+                "isPaid": True,
+                "basePriceCents": 10000,
+                "totalPriceCents": 10500,
+            },
+            "datasetUrl": "https://mozilladatacollective.com/datasets/cmt95wvb80027qb6e2vezm3d9",
+            "newField": 1,
+        }
+    )
+
+    assert details.sizeBytes == 1024
+    assert details.organization is not None
+    assert details.organization.name == "Mozilla"
+    assert details.pricing is not None
+    assert details.pricing.totalPriceCents == 10500
+    assert details.submissionId is None
+    # Unknown task values and new fields must not break validation.
+    assert details.task == "NEW_TASK"
+    assert details.model_extra == {"newField": 1}
+
+
+def test_dataset_filters_tolerates_new_keys() -> None:
+    from datacollective.models import DatasetFilters
+
+    filters = DatasetFilters.model_validate(
+        {
+            "tasks": ["ASR"],
+            "locales": ["el"],
+            "licenses": ["CC0-1.0"],
+            "formats": ["MP3"],
+            "organizations": ["mozilla"],
+        }
+    )
+
+    assert filters.tasks == ["ASR"]
+    assert filters.model_extra == {"organizations": ["mozilla"]}
