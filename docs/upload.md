@@ -81,6 +81,7 @@ submission = DatasetSubmission(
                          "followed for this dataset, including any approvals "
                          "or considerations related to data collection and usage.",
     showContactInfo=False,  # Whether to publicly display the contact information above
+    showComplianceAttributes=False,  # Whether to publicly display the dataset's compliance attributes
     visibility=Visibility.PUBLIC,  # public | private | restricted
     isPaid=False,  # True = the dataset is compensated and requires `basePriceCents`,
                    # False (default) = the dataset is free to access
