@@ -104,10 +104,21 @@ gates platform merges. Instead:
 - **SDK pull requests** run the contract test against the snapshot (`tests.yml`). This
   is the only place the test blocks anything: an SDK change that disagrees with the
   recorded contract.
-- **`openapi-contract.yml`** runs the test against the live production spec daily and on
-  `workflow_dispatch` (optionally with a different `spec_url`, e.g. dev, to preview
-  upcoming changes). When it goes red, production has moved: refresh the snapshot as
-  above, adapt the models and open a PR.
+- **`openapi-contract.yml`** runs daily (and on `workflow_dispatch`, optionally with a
+  different `spec_url`). It fetches the production spec and, when it differs from the
+  committed snapshot, opens or updates a pull request on the
+  `chore/refresh-openapi-snapshot` branch with the new file. The PR body carries the
+  contract test result:
+    - green: the contract change is compatible with the SDK models; review and merge.
+    - red: the platform contract moved. Check out the branch, adapt the models until the
+      test passes, and push to the same branch.
+
+  The job needs the repository setting *Allow GitHub Actions to create and approve pull
+  requests*. By default it uses the workflow's own token, and GitHub does not run
+  `pull_request` workflows for PRs created that way, so the CI checks on the PR stay
+  empty until someone pushes to the branch. Requires a fine-grained personal access token with
+  `contents: write` and `pull-requests: write` as the `OPENAPI_REFRESH_TOKEN` secret to
+  get the normal checks on the PR as well.
 
 ## Related workflows
 
