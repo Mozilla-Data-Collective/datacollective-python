@@ -225,6 +225,10 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
         None,
         description="Whether to publicly display the dataset contact information.",
     )
+    showComplianceAttributes: bool | None = Field(
+        None,
+        description="Whether to publicly display the dataset's compliance attributes.",
+    )
     # Submission-specific fields defined by the user
     createdByFullName: str | None = Field(None, description="Creator's name.")
     createdByEmail: str | None = Field(None, description="Creator's email.")
@@ -514,6 +518,7 @@ UPDATE_FIELDS = {
     "intendedUsage",
     "ethicalReviewProcess",
     "showContactInfo",
+    "showComplianceAttributes",
     "visibility",
     "exclusivityOptOut",
     "autoApproveAccessRequests",
