@@ -1,4 +1,4 @@
-name: OpenAPI contract (production)
+name: OpenAPI Contract Drift Detection
 
 # Runs the OpenAPI contract test against the *live* production spec.
 on:
