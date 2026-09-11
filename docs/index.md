@@ -81,6 +81,14 @@ either through the `.env` file or by executing on your terminal:
 export MDC_LOG_PATH=/path/to/save/the/log/files
 ```
 
+### Progress output
+
+Download and upload progress bars use stderr, leaving stdout available for your
+program's output. Bars are only shown when stderr is connected to a terminal;
+set `show_progress=False` to disable them. Unsupported progress characters are
+replaced to match the terminal's encoding. Detailed logs enabled with
+`enable_logging=True` also use stderr and remain available when it is redirected.
+
 ## Basic Usage
 
 
