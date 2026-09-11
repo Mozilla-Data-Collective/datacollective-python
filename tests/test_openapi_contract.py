@@ -93,14 +93,35 @@ def _enum_values(schema: dict[str, Any], schemas: dict[str, Any]) -> set[str]:
     """
     schema = _resolve(schema, schemas)
     values: set[str] = set()
-    for branch in schema.get("anyOf", schema.get("oneOf", [schema])):
-        branch = _resolve(branch, schemas)
+    for branch in _branches(schema, schemas):
         values.update(v for v in branch.get("enum", []) if isinstance(v, str) and v)
     return values
 
 
-def _properties(schema: dict[str, Any]) -> set[str]:
-    return set(schema.get("properties", {}))
+def _branches(schema: dict[str, Any], schemas: dict[str, Any]) -> list[dict[str, Any]]:
+    """
+    Flatten a schema into its concrete branches.
+
+    ``anyOf``/``oneOf`` (alternatives) and ``allOf`` (composition) are all
+    expanded recursively so callers can inspect ``enum`` or ``properties``
+    regardless of how the platform composed the schema.
+    """
+    schema = _resolve(schema, schemas)
+    parts = [
+        part for key in ("anyOf", "oneOf", "allOf") for part in schema.get(key, [])
+    ]
+    if not parts:
+        return [schema]
+    return [leaf for part in parts for leaf in _branches(part, schemas)]
+
+
+def _properties(schema: dict[str, Any], schemas: dict[str, Any]) -> set[str]:
+    """Property names of a schema, including those contributed via ``allOf``."""
+    return {
+        name
+        for branch in _branches(schema, schemas)
+        for name in branch.get("properties", {})
+    }
 
 
 def _required(schema: dict[str, Any]) -> set[str]:
@@ -125,6 +146,13 @@ def dataset_schema(schemas: dict[str, Any]) -> dict[str, Any]:
 @pytest.fixture(scope="module")
 def submission_schema(schemas: dict[str, Any]) -> dict[str, Any]:
     envelope = _resolve(schemas["SubmissionEnvelope"], schemas)
+    return _resolve(envelope["properties"]["submission"], schemas)
+
+
+@pytest.fixture(scope="module")
+def mutation_submission_schema(schemas: dict[str, Any]) -> dict[str, Any]:
+    """The ``submission`` payload returned by create, update and submit."""
+    envelope = _resolve(schemas["SubmissionMutationEnvelope"], schemas)
     return _resolve(envelope["properties"]["submission"], schemas)
 
 
@@ -188,7 +216,7 @@ Check Upload Submissions
 
 def test_draft_fields_match_create_request(schemas: dict[str, Any]) -> None:
     schema = _resolve(schemas["CreateSubmissionRequest"], schemas)
-    accepted = _properties(schema)
+    accepted = _properties(schema, schemas)
     # The SDK deliberately creates drafts with the minimum payload and sends the
     # rest via PATCH, so this check is one-directional: nothing the SDK sends may
     # be rejected, and every required field must be one the SDK sends.
@@ -196,8 +224,10 @@ def test_draft_fields_match_create_request(schemas: dict[str, Any]) -> None:
     assert _required(schema) <= DRAFT_FIELDS
 
 
-def test_update_fields_match_update_request(update_schema: dict[str, Any]) -> None:
-    accepted = _properties(update_schema)
+def test_update_fields_match_update_request(
+    schemas: dict[str, Any], update_schema: dict[str, Any]
+) -> None:
+    accepted = _properties(update_schema, schemas)
     # Everything the SDK may send must be accepted by the platform, and
     # everything the platform accepts should be settable via the SDK.
     assert UPDATE_FIELDS == accepted, sorted(UPDATE_FIELDS ^ accepted)
@@ -205,7 +235,7 @@ def test_update_fields_match_update_request(update_schema: dict[str, Any]) -> No
 
 def test_submit_fields_match_submit_request(schemas: dict[str, Any]) -> None:
     schema = _resolve(schemas["SubmitForReviewRequest"], schemas)
-    accepted = _properties(schema)
+    accepted = _properties(schema, schemas)
     assert SUBMIT_FIELDS == accepted, sorted(SUBMIT_FIELDS ^ accepted)
     assert _required(schema) <= SUBMIT_FIELDS
 
@@ -218,15 +248,34 @@ None) fails here. Fields shared via `Dataset` must exist in both payloads.
 """
 
 
-def test_submission_fields_exist_in_spec(submission_schema: dict[str, Any]) -> None:
-    missing = set(DatasetSubmission.model_fields) - _properties(submission_schema)
+def test_submission_fields_exist_in_spec(
+    schemas: dict[str, Any],
+    submission_schema: dict[str, Any],
+    mutation_submission_schema: dict[str, Any],
+) -> None:
+    # GET returns SubmissionEnvelope; create/update/submit return
+    # SubmissionMutationEnvelope. The SDK's model must exist in both.
+    declared = set(DatasetSubmission.model_fields)
+    missing = declared - _properties(submission_schema, schemas)
+    assert not missing, sorted(missing)
+    missing = declared - _properties(mutation_submission_schema, schemas)
     assert not missing, sorted(missing)
 
 
-def test_dataset_details_fields_exist_in_spec(
-    dataset_schema: dict[str, Any],
+def test_mutation_response_carries_submission_id(
+    schemas: dict[str, Any], mutation_submission_schema: dict[str, Any]
 ) -> None:
-    missing = set(DatasetDetails.model_fields) - _properties(dataset_schema)
+    # submissions.create_submission_with_upload reads `submission.id` from the
+    # create response and raises when it is absent.
+    envelope = _resolve(schemas["SubmissionMutationEnvelope"], schemas)
+    assert "submission" in _required(envelope)
+    assert "id" in _required(mutation_submission_schema)
+
+
+def test_dataset_details_fields_exist_in_spec(
+    schemas: dict[str, Any], dataset_schema: dict[str, Any]
+) -> None:
+    missing = set(DatasetDetails.model_fields) - _properties(dataset_schema, schemas)
     assert not missing, sorted(missing)
     # `id` is required on the SDK model and `filename` raises when absent.
     assert {"id", "filename"} <= _required(dataset_schema)
@@ -241,7 +290,7 @@ def test_download_session_fields(schemas: dict[str, Any]) -> None:
     schema = _resolve(schemas["DownloadSession"], schemas)
     # download._build_download_plan reads these keys and requires the first two.
     assert {"downloadUrl", "sizeBytes"} <= _required(schema)
-    assert "checksum" in _properties(schema)
+    assert "checksum" in _properties(schema, schemas)
 
 
 """
@@ -252,7 +301,9 @@ Check upload session spec
 def test_upload_initiate_payload_matches_spec(schemas: dict[str, Any]) -> None:
     schema = _resolve(schemas["InitiateFileUploadRequest"], schemas)
     sent = set(_UploadInitiatePayload.model_fields)
-    assert sent <= _properties(schema), sorted(sent - _properties(schema))
+    assert sent <= _properties(schema, schemas), sorted(
+        sent - _properties(schema, schemas)
+    )
     assert _required(schema) <= sent
 
 
@@ -265,14 +316,16 @@ def test_upload_initiate_response_fields(schemas: dict[str, Any]) -> None:
 def test_presigned_part_response_fields(schemas: dict[str, Any]) -> None:
     schema = _resolve(schemas["FileUploadPartUrl"], schemas)
     assert {"url", "partNumber"} <= _required(schema)
-    assert set(PresignedPartUrl.model_fields) <= _properties(schema)
+    assert set(PresignedPartUrl.model_fields) <= _properties(schema, schemas)
 
 
 def test_upload_complete_payload_matches_spec(schemas: dict[str, Any]) -> None:
     schema = _resolve(schemas["CompleteFileUploadRequest"], schemas)
     # `fileUploadId` goes in the URL, not the body.
     sent = set(_CompleteUploadPayload.model_fields) - {"fileUploadId"}
-    assert sent == _properties(schema), sorted(sent ^ _properties(schema))
+    assert sent == _properties(schema, schemas), sorted(
+        sent ^ _properties(schema, schemas)
+    )
     part_schema = _resolve(schema["properties"]["parts"]["items"], schemas)
-    assert set(UploadPart.model_fields) == _properties(part_schema)
+    assert set(UploadPart.model_fields) == _properties(part_schema, schemas)
     assert _required(part_schema) <= set(UploadPart.model_fields)
