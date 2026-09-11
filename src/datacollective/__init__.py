@@ -3,6 +3,8 @@
 from datacollective.datasets import (
     download_dataset,
     get_dataset_details,
+    list_dataset_filters,
+    list_datasets,
     load_dataset,
     save_dataset_to_disk,
 )
@@ -12,6 +14,8 @@ from datacollective.errors import (
 )
 from datacollective.models import (
     DatasetDetails,
+    DatasetFilters,
+    DatasetList,
     DatasetSubmission,
     License,
     Task,
@@ -30,6 +34,8 @@ __all__ = [
     "save_dataset_to_disk",
     "load_dataset",
     "get_dataset_details",
+    "list_datasets",
+    "list_dataset_filters",
     "create_submission_draft",
     "update_submission",
     "submit_submission",
@@ -37,6 +43,8 @@ __all__ = [
     "upload_dataset_file",
     "upload_sample_file",
     "DatasetDetails",
+    "DatasetList",
+    "DatasetFilters",
     "DatasetSubmission",
     "License",
     "Task",
@@ -47,4 +55,4 @@ __all__ = [
 ]
 
 # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
-__version__ = "0.6.1"
+__version__ = "0.6.2"
