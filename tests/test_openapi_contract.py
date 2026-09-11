@@ -7,8 +7,8 @@ The spec snapshot lives at ``tests/fixtures/openapi.json``. Refresh it from prod
         | python -m json.tool > tests/fixtures/openapi.json
 
 You can also set ``MDC_OPENAPI_SPEC`` to a file path or URL to test against a different
-spec, e.g. the live one. The scheduled ``openapi-contract.yml`` workflow does exactly that
-against production.
+spec, e.g. the live one. The scheduled ``openapi-contract.yml`` workflow refreshes the
+snapshot from production and opens a pull request when it changed.
 """
 
 from __future__ import annotations
