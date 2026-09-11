@@ -117,12 +117,12 @@ class NonEmptyStrModel(BaseModel):
 class Dataset(BaseModel):
     """
     Dataset fields shared by the platform's dataset and dataset-submission
-    API payloads.
+    API payloads. Only fields present in *both* payloads belong here.
 
     DatasetDetails inherits this class and is tolerant to new fields that are
     not declared here in order to prevent breaking changes when the API returns new fields.
-    DatasetSubmission inherits this class and overrides the enum-like fields with
-    strict types for validation.
+    DatasetSubmission inherits this class, adds the submission-only datasheet
+    fields and overrides the enum-like fields with strict types for validation.
 
     Note: Fields are camelCase to match the API payloads.
     """
@@ -146,6 +146,55 @@ class Dataset(BaseModel):
         None,
         description="Full license name for custom licenses.",
     )
+    isPaid: bool | None = Field(
+        None,
+        description="Whether the dataset is compensated, i.e. has a price. Defaults to `False` on the platform when left unset.",
+    )
+    basePriceCents: int | None = Field(
+        None,
+        description=(
+            "Price of the dataset in USD cents (e.g. `100_000` is $1,000.00). Required when "
+            "`isPaid` is True. The platform validates that the price is within an acceptable "
+            "range and rejects the submission otherwise."
+        ),
+    )
+    # Defined by the API and not user-editable
+    id: str | None = Field(
+        None, description="Unique identifier as returned by the API."
+    )
+    slug: str | None = Field(
+        None,
+        description="URL-friendly slug generated from the name. Determined by the API.",
+    )
+    createdAt: str | None = Field(
+        None,
+        description="Timestamp when the record was created. Set by the API upon creation.",
+    )
+
+
+class DatasetSubmission(NonEmptyStrModel, Dataset):
+    """
+    DatasetSubmission schema aligned with the DB representation used
+    for draft creation, metadata updates, and final submission.
+
+    Shared datasheet fields come from Dataset. This model adds the fields
+    that only exist on submissions and overrides the enum-like ones with
+    strict types so user input is validated before it is sent to the API.
+    """
+
+    task: Task | None = Field(
+        None,
+        description="ML task type — must be one of the Task enum values listed in api.md.",
+    )
+    licenseAbbreviation: License | str | None = Field(
+        None,
+        description="Either one of the predefined License enum values or, optionally, a custom abbreviated license name.",
+    )
+    visibility: Visibility | None = Field(
+        None,
+        description="Dataset visibility: `public`, `private`, or `restricted`.",
+    )
+    # Submission-specific datasheet fields defined by the user
     licenseUrl: str | None = Field(
         None,
         description="Optional URL to the license text for custom licenses.",
@@ -176,66 +225,6 @@ class Dataset(BaseModel):
         None,
         description="Whether to publicly display the dataset contact information.",
     )
-    visibility: str | None = Field(
-        None,
-        description="Dataset visibility (e.g., `public`, `private`, `restricted`).",
-    )
-    isPaid: bool | None = Field(
-        None,
-        description="Whether the dataset is compensated, i.e. has a price. Defaults to `False` on the platform when left unset.",
-    )
-    basePriceCents: int | None = Field(
-        None,
-        description=(
-            "Price of the dataset in USD cents (e.g. `100_000` is $1,000.00). Required when "
-            "`isPaid` is True. The platform validates that the price is within an acceptable "
-            "range and rejects the submission otherwise."
-        ),
-    )
-    # Defined by the API and not user-editable
-    id: str | None = Field(
-        None, description="Unique identifier as returned by the API."
-    )
-    organizationId: str | None = Field(
-        None,
-        description="Identifier for the organization that owns the dataset.",
-    )
-    slug: str | None = Field(
-        None,
-        description="URL-friendly slug generated from the name. Determined by the API.",
-    )
-    createdAt: str | None = Field(
-        None,
-        description="Timestamp when the record was created. Set by the API upon creation.",
-    )
-    updatedAt: str | None = Field(
-        None,
-        description="Timestamp when the record was last updated. Updated by the API on changes.",
-    )
-
-
-class DatasetSubmission(NonEmptyStrModel, Dataset):
-    """
-    DatasetSubmission schema aligned with the DB representation used
-    for draft creation, metadata updates, and final submission.
-
-    Shared datasheet fields come from Dataset. This model overrides
-    the enum-like ones with strict types so user input is validated before
-    it is sent to the API.
-    """
-
-    task: Task | None = Field(
-        None,
-        description="ML task type — must be one of the Task enum values listed in api.md.",
-    )
-    licenseAbbreviation: License | str | None = Field(
-        None,
-        description="Either one of the predefined License enum values or, optionally, a custom abbreviated license name.",
-    )
-    visibility: Visibility | None = Field(
-        None,
-        description="Dataset visibility: `public`, `private`, or `restricted`.",
-    )
     # Submission-specific fields defined by the user
     createdByFullName: str | None = Field(None, description="Creator's name.")
     createdByEmail: str | None = Field(None, description="Creator's email.")
@@ -257,6 +246,10 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
         ),
     )
     # Submission-specific fields defined by the API and not user-editable
+    organizationId: str | None = Field(
+        None,
+        description="Identifier for the organization that owns the dataset.",
+    )
     createdBy: str | None = Field(
         None, description="Identifier for the user who created the submission."
     )
@@ -275,6 +268,11 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
     submittedAt: str | None = Field(
         None,
         description="Timestamp when the submission was finalized and submitted. Set by the API upon submission.",
+    )
+
+    updatedAt: str | None = Field(
+        None,
+        description="Timestamp when the record was last updated. Updated by the API on changes.",
     )
 
     @model_validator(mode="after")
