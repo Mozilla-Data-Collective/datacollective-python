@@ -371,8 +371,8 @@ class DatasetDetails(Dataset):
 
     Tolerant of platform schema changes by design: fields the API adds are
     kept as extra attributes, fields the API removes simply read as None,
-    and enum-like fields (`task`) are plain strings so new platform values
-    don't fail validation. Only `id` is required.
+    and enum-like fields (`task`, `visibility`) are plain strings so new
+    platform values don't fail validation. Only `id` is required.
 
     Dict-style access (`details["id"]`, `details.get("checksum")`) is
     supported for backward compatibility with the previous dict return type.
