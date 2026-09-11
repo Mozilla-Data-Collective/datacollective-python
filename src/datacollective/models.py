@@ -117,8 +117,7 @@ class NonEmptyStrModel(BaseModel):
 class Dataset(BaseModel):
     """
     Dataset fields shared by the platform's dataset and dataset-submission
-    API payloads. Only fields present in *both* payloads belong here; the
-    OpenAPI contract test (tests/test_openapi_contract.py) enforces this.
+    API payloads. Only fields present in *both* payloads belong here.
 
     DatasetDetails inherits this class and is tolerant to new fields that are
     not declared here in order to prevent breaking changes when the API returns new fields.
