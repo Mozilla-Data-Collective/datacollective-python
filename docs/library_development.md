@@ -116,7 +116,7 @@ gates platform merges. Instead:
   The job needs the repository setting *Allow GitHub Actions to create and approve pull
   requests*. By default it uses the workflow's own token, and GitHub does not run
   `pull_request` workflows for PRs created that way, so the CI checks on the PR stay
-  empty until someone pushes to the branch. Requires a fine-grained personal access token with
+  empty until someone pushes to the branch. Optionally, add a fine-grained personal access token with
   `contents: write` and `pull-requests: write` as the `OPENAPI_REFRESH_TOKEN` secret to
   get the normal checks on the PR as well.
 
