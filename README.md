@@ -85,6 +85,20 @@ from datacollective import get_dataset_details
 details = get_dataset_details("your-dataset-id")
 ```
 
+
+> [!TIP]
+> Don't know the dataset ID yet? Browse or search the public catalog straight from Python, no API key needed:
+>
+> ```python
+> from datacollective import list_datasets, list_dataset_filters
+>
+> filters = list_dataset_filters()      # available tasks, locales, licenses and formats
+> page = list_datasets("swahili speech", task="ASR", results_per_page=10)
+> print(page.total)                      # matches across all pages
+> for dataset in page:
+>     print(dataset.id, dataset.slug, dataset.name)
+> ```
+
 6. **Load the dataset into a pandas DataFrame _(**Alpha version:** Only certain MDC datasets are supported right now)_**:
 
 ```

@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
 from enum import Enum
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Sequence
 
 from pydantic import (
     BaseModel,
@@ -116,12 +117,12 @@ class NonEmptyStrModel(BaseModel):
 class Dataset(BaseModel):
     """
     Dataset fields shared by the platform's dataset and dataset-submission
-    API payloads.
+    API payloads. Only fields present in *both* payloads belong here.
 
     DatasetDetails inherits this class and is tolerant to new fields that are
     not declared here in order to prevent breaking changes when the API returns new fields.
-    DatasetSubmission inherits this class and overrides the enum-like fields with
-    strict types for validation.
+    DatasetSubmission inherits this class, adds the submission-only datasheet
+    fields and overrides the enum-like fields with strict types for validation.
 
     Note: Fields are camelCase to match the API payloads.
     """
@@ -145,6 +146,55 @@ class Dataset(BaseModel):
         None,
         description="Full license name for custom licenses.",
     )
+    isPaid: bool | None = Field(
+        None,
+        description="Whether the dataset is compensated, i.e. has a price. Defaults to `False` on the platform when left unset.",
+    )
+    basePriceCents: int | None = Field(
+        None,
+        description=(
+            "Price of the dataset in USD cents (e.g. `100_000` is $1,000.00). Required when "
+            "`isPaid` is True. The platform validates that the price is within an acceptable "
+            "range and rejects the submission otherwise."
+        ),
+    )
+    # Defined by the API and not user-editable
+    id: str | None = Field(
+        None, description="Unique identifier as returned by the API."
+    )
+    slug: str | None = Field(
+        None,
+        description="URL-friendly slug generated from the name. Determined by the API.",
+    )
+    createdAt: str | None = Field(
+        None,
+        description="Timestamp when the record was created. Set by the API upon creation.",
+    )
+
+
+class DatasetSubmission(NonEmptyStrModel, Dataset):
+    """
+    DatasetSubmission schema aligned with the DB representation used
+    for draft creation, metadata updates, and final submission.
+
+    Shared datasheet fields come from Dataset. This model adds the fields
+    that only exist on submissions and overrides the enum-like ones with
+    strict types so user input is validated before it is sent to the API.
+    """
+
+    task: Task | None = Field(
+        None,
+        description="ML task type — must be one of the Task enum values listed in api.md.",
+    )
+    licenseAbbreviation: License | str | None = Field(
+        None,
+        description="Either one of the predefined License enum values or, optionally, a custom abbreviated license name.",
+    )
+    visibility: Visibility | None = Field(
+        None,
+        description="Dataset visibility: `public`, `private`, or `restricted`.",
+    )
+    # Submission-specific datasheet fields defined by the user
     licenseUrl: str | None = Field(
         None,
         description="Optional URL to the license text for custom licenses.",
@@ -175,65 +225,9 @@ class Dataset(BaseModel):
         None,
         description="Whether to publicly display the dataset contact information.",
     )
-    visibility: str | None = Field(
+    showComplianceAttributes: bool | None = Field(
         None,
-        description="Dataset visibility (e.g., `public`, `private`, `restricted`).",
-    )
-    isPaid: bool | None = Field(
-        None,
-        description="Whether the dataset is compensated, i.e. has a price. Defaults to `False` on the platform when left unset.",
-    )
-    basePriceCents: int | None = Field(
-        None,
-        description=(
-            "Price of the dataset in USD cents (e.g. `100_000` is $1,000.00). Required when "
-            "`isPaid` is True. The platform validates that the price is within an acceptable "
-            "range and rejects the submission otherwise."
-        ),
-    )
-    # Defined by the API and not user-editable
-    id: str | None = Field(
-        None, description="Unique identifier as returned by the API."
-    )
-    organizationId: str | None = Field(
-        None,
-        description="Identifier for the organization that owns the dataset.",
-    )
-    slug: str | None = Field(
-        None,
-        description="URL-friendly slug generated from the name. Determined by the API.",
-    )
-    createdAt: str | None = Field(
-        None,
-        description="Timestamp when the record was created. Set by the API upon creation.",
-    )
-    updatedAt: str | None = Field(
-        None,
-        description="Timestamp when the record was last updated. Updated by the API on changes.",
-    )
-
-
-class DatasetSubmission(NonEmptyStrModel, Dataset):
-    """
-    DatasetSubmission schema aligned with the DB representation used
-    for draft creation, metadata updates, and final submission.
-
-    Shared datasheet fields come from Dataset. This model overrides
-    the enum-like ones with strict types so user input is validated before
-    it is sent to the API.
-    """
-
-    task: Task | None = Field(
-        None,
-        description="ML task type — must be one of the Task enum values listed in api.md.",
-    )
-    licenseAbbreviation: License | str | None = Field(
-        None,
-        description="Either one of the predefined License enum values or, optionally, a custom abbreviated license name.",
-    )
-    visibility: Visibility | None = Field(
-        None,
-        description="Dataset visibility: `public`, `private`, or `restricted`.",
+        description="Whether to publicly display the dataset's compliance attributes.",
     )
     # Submission-specific fields defined by the user
     createdByFullName: str | None = Field(None, description="Creator's name.")
@@ -256,6 +250,10 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
         ),
     )
     # Submission-specific fields defined by the API and not user-editable
+    organizationId: str | None = Field(
+        None,
+        description="Identifier for the organization that owns the dataset.",
+    )
     createdBy: str | None = Field(
         None, description="Identifier for the user who created the submission."
     )
@@ -274,6 +272,11 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
     submittedAt: str | None = Field(
         None,
         description="Timestamp when the submission was finalized and submitted. Set by the API upon submission.",
+    )
+
+    updatedAt: str | None = Field(
+        None,
+        description="Timestamp when the record was last updated. Updated by the API on changes.",
     )
 
     @model_validator(mode="after")
@@ -326,9 +329,44 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
         return "usd" if self.isPaid else None
 
 
+class DatasetOrganization(BaseModel):
+    """Organization that published a dataset."""
+
+    model_config = ConfigDict(extra="allow")
+
+    name: str | None = Field(None, description="Display name of the organization.")
+    slug: str | None = Field(None, description="URL-friendly slug of the organization.")
+
+
+class DatasetPricing(BaseModel):
+    """Pricing of a dataset. All price fields are `None` for free datasets."""
+
+    model_config = ConfigDict(extra="allow")
+
+    isPaid: bool | None = Field(
+        None, description="Whether the dataset is compensated (has a price)."
+    )
+    basePriceCents: int | None = Field(
+        None, description="Base price set by the provider, in USD cents."
+    )
+    currency: str | None = Field(None, description="Currency code (`usd`).")
+    platformFeeRate: str | None = Field(
+        None,
+        description="Platform fee rate applied on top of the base price (e.g. `0.05`).",
+    )
+    platformFeeCents: int | None = Field(None, description="Platform fee in USD cents.")
+    totalPriceCents: int | None = Field(
+        None,
+        description="Total price paid by the buyer (base + platform fee), in USD cents.",
+    )
+
+
 class DatasetDetails(Dataset):
     """
     Dataset details as returned by the MDC API (read model).
+
+    Returned by `get_dataset_details` and, one per entry, by `list_datasets`:
+    the platform serves the same dataset payload from both endpoints.
 
     Tolerant of platform schema changes by design: fields the API adds are
     kept as extra attributes, fields the API removes simply read as None,
@@ -348,6 +386,23 @@ class DatasetDetails(Dataset):
     checksum: str | None = Field(
         None, description="Checksum of the current dataset file version."
     )
+    sizeBytes: int | float | None = Field(
+        None, description="Size of the dataset archive in bytes."
+    )
+    organization: DatasetOrganization | None = Field(
+        None, description="Organization that published the dataset."
+    )
+    pricing: DatasetPricing | None = Field(
+        None,
+        description="Pricing information. Prefer this over the top-level `isPaid`/`basePriceCents`, which the API has deprecated.",
+    )
+    datasetUrl: str | None = Field(
+        None, description="URL of the dataset page on the MDC platform."
+    )
+    submissionId: str | None = Field(
+        None,
+        description="Identifier of the underlying submission. Only present for datasets owned by the caller.",
+    )
 
     def __contains__(self, key: object) -> bool:
         # Mirrors the previous dict semantics: only keys the API actually
@@ -365,6 +420,58 @@ class DatasetDetails(Dataset):
             return self[key]
         except KeyError:
             return default
+
+
+class DatasetList(BaseModel):
+    """
+    One page of the public dataset catalog, as returned by `list_datasets`.
+
+    Supports `len()`, iteration and indexing over `items` for convenience.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    items: list[DatasetDetails] = Field(
+        default_factory=list, description="Datasets on this page."
+    )
+    total: int = Field(
+        ...,
+        description="Number of matching datasets across the whole result set, not just this page.",
+    )
+
+    def __len__(self) -> int:
+        return len(self.items)
+
+    def __iter__(self) -> Iterator[DatasetDetails]:  # type: ignore[override]
+        return iter(self.items)
+
+    def __getitem__(self, index: int) -> DatasetDetails:
+        return self.items[index]
+
+
+class DatasetFilters(BaseModel):
+    """
+    The values `list_datasets` can currently be narrowed by, as returned by
+    `list_dataset_filters`.
+
+    Every value except a task is drawn from the published catalog, so it appears
+    only while some dataset carries it; the task vocabulary is fixed.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    tasks: list[str] = Field(
+        default_factory=list, description="Available `task` values."
+    )
+    locales: list[str] = Field(
+        default_factory=list, description="Available `locale` values."
+    )
+    licenses: list[str] = Field(
+        default_factory=list, description="Available `license` (abbreviation) values."
+    )
+    formats: list[str] = Field(
+        default_factory=list, description="Available `format` values."
+    )
 
 
 FINAL_SUBMISSION_REQUIRED_FIELDS = (
@@ -411,6 +518,7 @@ UPDATE_FIELDS = {
     "intendedUsage",
     "ethicalReviewProcess",
     "showContactInfo",
+    "showComplianceAttributes",
     "visibility",
     "exclusivityOptOut",
     "autoApproveAccessRequests",
@@ -497,3 +605,33 @@ def _require_archive_filename(details: DatasetDetails) -> str:
             f"Dataset '{details.id}' details did not include an archive filename."
         )
     return details.filename
+
+
+def _validate_option(name: str, value: str | None, allowed: tuple[str, ...]) -> None:
+    if value is not None and value not in allowed:
+        raise ValueError(
+            f"Invalid {name} '{value}'. Supported values: {', '.join(allowed)}"
+        )
+
+
+def _normalize_filter_values(
+    name: str, value: Task | License | str | Sequence[Task | License | str] | None
+) -> list[str] | None:
+    """Turn a single filter value or a sequence of them into a list of API strings."""
+    if value is None:
+        return None
+    raw_values: Sequence[Task | License | str]
+    if isinstance(value, (str, Enum)):
+        raw_values = [value]
+    else:
+        raw_values = value
+
+    normalized: list[str] = []
+    for item in raw_values:
+        item_str = item.value if isinstance(item, Enum) else str(item)
+        if not item_str.strip():
+            raise ValueError(f"`{name}` values must be non-empty strings")
+        normalized.append(item_str.strip())
+    if not normalized:
+        raise ValueError(f"`{name}` must contain at least one value when provided")
+    return normalized

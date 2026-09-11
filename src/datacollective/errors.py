@@ -42,6 +42,32 @@ class DownloadError(Exception):
         return "Download failed. Unfortunately this dataset does not support resuming downloads — please try again."
 
 
+class SchemaValidationWarning(UserWarning):
+    """Emitted when a schema contains unknown keys (kept under ``extra``).
+
+    Issued via :mod:`warnings`, so it is shown even when package logging is
+    disabled (``enable_logging=False``).
+    """
+
+
+class DataLoadWarning(UserWarning):
+    """Emitted when values are lost or unresolved while loading a dataset
+    (e.g. unresolvable file paths, unparseable numeric cells, skipped
+    sidecar files).
+
+    Issued via :mod:`warnings`, so it is shown even when package logging is
+    disabled (``enable_logging=False``).
+    """
+
+
+class TaskValidationWarning(UserWarning):
+    """Emitted when a loaded dataset does not satisfy its task's column contract.
+
+    Issued via :mod:`warnings`, so it is shown even when package logging is
+    disabled (``enable_logging=False``).
+    """
+
+
 class MissingDependencyError(ImportError):
     """Raised when an optional dependency required for a feature is not installed."""
 

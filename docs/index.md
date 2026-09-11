@@ -21,7 +21,7 @@ pip install datacollective
 
 ## Getting an API Key
 
-To use the Mozilla Data Collective API, you need an API key:
+To download or upload datasets through the Mozilla Data Collective API, you need an API key:
 
 1. Sign up to the [Mozilla Data Collective](https://mozilladatacollective.com) platform.
 2. Create or retrieve an API key from your Account -> Credentials page.
@@ -33,7 +33,7 @@ The client reads configuration from environment variables and `.env` files.
 
 ### Environment variables
 
-Required:
+Required for downloading and uploading datasets:
 
 - `MDC_API_KEY` - Your Mozilla Data Collective API key.
 
@@ -270,13 +270,76 @@ moment you access it.
 
 ## Get dataset details
 
-You can retrieve info from the datasheet of a dataset without downloading it:
+You can retrieve info from the datasheet of a dataset without downloading it.
+This is a public endpoint, so it works without an API key:
 
 ```python
 from datacollective import get_dataset_details
 
 info = get_dataset_details("your-dataset-id")
 print(info)
+```
+
+## Browse and search the dataset catalog
+
+You can list or search all published datasets. Results are
+paginated and each entry is a `DatasetDetails`, the same model returned by
+`get_dataset_details`.
+
+```python
+from datacollective import list_datasets
+
+# Free-text search, narrowed down with filters
+page = list_datasets(
+    "swahili speech",
+    task="ASR",  # a Task enum value or string, or a list of them
+    license_abbr="CC0-1.0",  # a License enum value or string, or a list of them
+    locale=["sw", "sw-KE"],  # any of the given locales
+    sort="newest",
+    results_per_page=20,
+    page_number=1,
+)
+
+print(f"{page.total} datasets match, showing {len(page)}")
+for dataset in page:
+    size_gb = (dataset.sizeBytes or 0) / 1e9
+    print(f"{dataset.id}  {dataset.name}  ({dataset.task}, {dataset.locale}, {size_gb:.1f} GB)")
+```
+
+Other filters: `format` (e.g. `"WAV"`), `upload_date` (`"today"`, `"thisWeek"`,
+`"thisMonth"`, `"thisYear"`), `has_sample=True` for datasets with a sample file,
+`pricing` (`"free"` or `"compensated"`) and `sort_direction` (`"asc"`/`"desc"`).
+`limit` accepts 1 to 100 results per page (the platform defaults to 24).
+
+To walk through every page, increase `page` until you have collected `total` items:
+
+```python
+from datacollective import list_datasets
+
+page_number, collected = 1, []
+while True:
+    page = list_datasets(task="TTS", results_per_page=100, page_number=page_number)
+    collected.extend(page.items)
+    if not page.items or len(collected) >= page.total:
+        break
+    page_number += 1
+```
+
+### Discover the available filter values
+
+The `task`, `locale`, `license` and `format` values that the catalog can currently
+be filtered by are exposed as well. Every value except a task is drawn from the
+published catalog, so it only appears while some dataset carries it. Filtering on a
+value absent from these lists matches nothing rather than failing:
+
+```python
+from datacollective import list_dataset_filters
+
+filters = list_dataset_filters()
+print(filters.tasks)     # e.g. ['ASR', 'TTS', 'NLP', ...]
+print(filters.locales)   # e.g. ['el', 'en', 'sw', ...]
+print(filters.licenses)  # e.g. ['CC0-1.0', 'CC-BY-4.0', ...]
+print(filters.formats)   # e.g. ['MP3', 'WAV', 'TSV', ...]
 ```
 
 ### Automatic Download Resume

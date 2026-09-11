@@ -23,7 +23,15 @@
 
 ::: datacollective.schema_loaders.cache_schema
 
-::: datacollective.schema_loaders.tasks.asr
+::: datacollective.schema_loaders.contracts
 
-::: datacollective.schema_loaders.tasks.tts
+::: datacollective.schema_loaders.strategies.index
+
+::: datacollective.schema_loaders.strategies.multi_split
+
+::: datacollective.schema_loaders.strategies.multi_sections
+
+::: datacollective.schema_loaders.strategies.paired_glob
+
+::: datacollective.schema_loaders.strategies.glob
 

@@ -1,0 +1,73 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pandas as pd
+
+from datacollective.logging_utils import get_logger
+from datacollective.schema import DatasetSchema
+from datacollective.schema_loaders.base import BaseSchemaLoader
+
+logger = get_logger(__name__)
+
+
+class MultiSectionsLoader(BaseSchemaLoader):
+    """Load a dataset organised as one index file per section directory.
+
+    Each section directory under ``section_root`` holds its own index file.
+    A ``section`` column (the directory name) is added to each part, column
+    mappings are applied when declared, and the parts are concatenated.
+    """
+
+    def __init__(self, schema: DatasetSchema, extract_dir: Path) -> None:
+        super().__init__(schema, extract_dir)
+        if not schema.sections:
+            raise ValueError(
+                "multi_sections schema must specify 'sections' (list of section names)"
+            )
+        if not schema.section_root:
+            raise ValueError("multi_sections schema must specify 'section_root'")
+        if not schema.index_file:
+            raise ValueError("multi_sections schema must specify 'index_file'")
+
+    def load(self) -> pd.DataFrame:
+        parts: list[pd.DataFrame] = []
+        for section_name, section_path in self._resolve_sections():
+            section_df = self._read_delimited_file(section_path)
+
+            # Anchor relative paths (``base_audio_path``, ``file_path`` values)
+            # at the section directory, mirroring how the index strategy
+            # anchors them at the directory of the resolved index file.
+            self._dataset_root = self._derive_dataset_root(
+                section_path, self.schema.index_file
+            )
+            if self.schema.columns:
+                section_df = self._apply_column_mappings(section_df)
+            section_df["section"] = section_name
+            parts.append(section_df)
+
+        self._dataset_root = None
+        return pd.concat(parts, ignore_index=True)
+
+    def _resolve_sections(self) -> list[tuple[str, Path]]:
+        """
+        Get the ``(section name, index file path)`` pair for each declared
+        section, i.e. each subdirectory that includes an index file.
+        """
+        assert self.schema.sections is not None
+        assert self.schema.index_file is not None
+        assert self.schema.section_root is not None
+
+        section_paths = []
+        for section in self.schema.sections:
+            section_path = (
+                self.extract_dir
+                / Path(self.schema.section_root)
+                / Path(section)
+                / self.schema.index_file
+            )
+            if not section_path.exists():
+                raise FileNotFoundError(f"Index file '{section_path}' not found ")
+            section_paths.append((section, section_path))
+
+        return section_paths
