@@ -252,14 +252,21 @@ def test_submission_fields_exist_in_spec(
     schemas: dict[str, Any],
     submission_schema: dict[str, Any],
     mutation_submission_schema: dict[str, Any],
+    update_schema: dict[str, Any],
 ) -> None:
-    # GET returns SubmissionEnvelope; create/update/submit return
-    # SubmissionMutationEnvelope. The SDK's model must exist in both.
+    # `DatasetSubmission` is a write model, so each declared field must be
+    # something the platform either returns on a submission (GET returns
+    # SubmissionEnvelope; create/update/submit return SubmissionMutationEnvelope)
+    # or accepts on PATCH. A write-only field such as `showComplianceAttributes`
+    # is legitimate; a field the platform neither returns nor accepts is not.
     declared = set(DatasetSubmission.model_fields)
-    missing = declared - _properties(submission_schema, schemas)
-    assert not missing, sorted(missing)
-    missing = declared - _properties(mutation_submission_schema, schemas)
-    assert not missing, sorted(missing)
+    accepted = _properties(update_schema, schemas)
+    for returned in (
+        _properties(submission_schema, schemas),
+        _properties(mutation_submission_schema, schemas),
+    ):
+        missing = declared - (returned | accepted)
+        assert not missing, sorted(missing)
 
 
 def test_mutation_response_carries_submission_id(
