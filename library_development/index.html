@@ -807,6 +807,50 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#coding-standards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coding Standards
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#api-endpoint-overrides" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -910,6 +954,50 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#coding-standards" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Coding Standards
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#documentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Documentation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#general-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        General Best Practices
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#api-endpoint-overrides" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -964,6 +1052,36 @@
 
 <h1 id="library-development">Library Development</h1>
 <p>This page is intended for developers of this library with access to development environments.</p>
+<h2 id="coding-standards">Coding Standards</h2>
+<ul>
+<li>Follow PEP8 for Python formatting.</li>
+<li>Add comments only when they improve clarity. Avoid redundant comments.</li>
+<li>Aim for code that reads naturally and is easy to follow.</li>
+<li>Keep functions small and focused on a single responsibility.</li>
+<li>Reuse existing utilities and patterns before introducing new abstractions.</li>
+<li>Public functions intended for library users should be exported in the appropriate <code>__init__.py</code>.</li>
+<li>Private functions and internal helpers should be prefixed with an underscore, for example <code>_my_function</code>.</li>
+</ul>
+<h2 id="testing">Testing</h2>
+<ul>
+<li>Test changes locally before merging.</li>
+<li>Add tests for behavior changes and bug fixes when appropriate.</li>
+<li>Avoid redundant or excessive tests that add maintenance burden without improving confidence.</li>
+<li>Prefer precise, meaningful tests that verify observable behavior.</li>
+</ul>
+<h2 id="documentation">Documentation</h2>
+<ul>
+<li>Update documentation for any change in behavior, public API, configuration, or developer workflow.</li>
+<li>Keep documentation consistent with the current codebase and existing style.</li>
+<li>Use concise examples when they make usage clearer.</li>
+</ul>
+<h2 id="general-best-practices">General Best Practices</h2>
+<ul>
+<li>Prefer readability over cleverness.</li>
+<li>Handle errors explicitly where appropriate.</li>
+<li>Avoid introducing unnecessary dependencies.</li>
+<li>Preserve backward compatibility unless a breaking change is absolutely necessary.</li>
+</ul>
 <h2 id="api-endpoint-overrides">API endpoint overrides</h2>
 <p>The SDK defaults to the production API endpoint, so normal usage should not set
 <code>MDC_API_URL</code>.</p>
