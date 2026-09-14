@@ -2,6 +2,36 @@
 
 This page is intended for developers of this library with access to development environments.
 
+## Coding Standards
+
+- Follow PEP8 for Python formatting.
+- Add comments only when they improve clarity. Avoid redundant comments.
+- Aim for code that reads naturally and is easy to follow.
+- Keep functions small and focused on a single responsibility.
+- Reuse existing utilities and patterns before introducing new abstractions.
+- Public functions intended for library users should be exported in the appropriate `__init__.py`.
+- Private functions and internal helpers should be prefixed with an underscore, for example `_my_function`.
+
+## Testing
+
+- Test changes locally before merging.
+- Add tests for behavior changes and bug fixes when appropriate.
+- Avoid redundant or excessive tests that add maintenance burden without improving confidence.
+- Prefer precise, meaningful tests that verify observable behavior.
+
+## Documentation
+
+- Update documentation for any change in behavior, public API, configuration, or developer workflow.
+- Keep documentation consistent with the current codebase and existing style.
+- Use concise examples when they make usage clearer.
+
+## General Best Practices
+
+- Prefer readability over cleverness.
+- Handle errors explicitly where appropriate.
+- Avoid introducing unnecessary dependencies.
+- Preserve backward compatibility unless a breaking change is absolutely necessary.
+
 ## API endpoint overrides
 
 The SDK defaults to the production API endpoint, so normal usage should not set
