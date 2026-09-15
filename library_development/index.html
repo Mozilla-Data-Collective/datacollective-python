@@ -873,6 +873,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#openapi-contract-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenAPI contract test
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OpenAPI contract test">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#which-spec-it-runs-against" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which spec it runs against
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-drift-is-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How drift is detected
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#related-workflows" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1020,6 +1070,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#openapi-contract-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        OpenAPI contract test
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="OpenAPI contract test">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-it-checks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What it checks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#which-spec-it-runs-against" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which spec it runs against
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-drift-is-detected" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How drift is detected
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#related-workflows" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1110,6 +1210,68 @@ default API endpoint by setting <code>MDC_API_URL</code> in your shell or <code>
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>pytest<span class="w"> </span>-v
 </span></code></pre></div>
 <p>Pytest skips the live E2E tests automatically if either variable is missing.</p>
+<h2 id="openapi-contract-test">OpenAPI contract test</h2>
+<p>The platform publishes its API contract at <code>&lt;base-url&gt;/api/openapi.json</code>, generated from
+the same schemas its routes run on. The SDK's models are written by hand, so
+<code>tests/test_openapi_contract.py</code> checks that they still agree with that contract.</p>
+<h3 id="what-it-checks">What it checks</h3>
+<ul>
+<li>Every endpoint the SDK calls exists in the spec with the same HTTP method.</li>
+<li>The <code>Task</code> and <code>Visibility</code> enums equal the values the update request accepts.
+  <code>Visibility</code> is additionally a subset of what responses may return: the SDK enum
+  covers only settable values, and <code>DatasetDetails</code> is tolerant of unknown values so
+  observe-only ones (e.g. <code>hidden</code>) still parse.</li>
+<li>The update and submit field sets equal the corresponding request schemas in both
+  directions: the SDK never sends a field the platform rejects, and the platform never
+  accepts a field the SDK cannot set. The draft field set only has to be accepted by the
+  create request and cover its required fields, since the SDK creates drafts with the
+  minimum payload and sends everything else via PATCH.</li>
+<li>Every field declared on a read model exists in the schema of the payload it parses:
+  <code>DatasetDetails</code> against the dataset response and <code>DatasetSubmission</code> against the
+  submission response. A field on the shared <code>Dataset</code> base therefore has to exist in
+  both payloads; otherwise it would silently read as <code>None</code> on one of them.</li>
+<li>The upload and download payloads match, and the response keys the SDK relies
+  on (<code>downloadUrl</code>, <code>sizeBytes</code>, <code>fileUploadId</code>, <code>uploadId</code>, <code>url</code>, <code>partNumber</code>)
+  are marked required by the spec.</li>
+</ul>
+<p>When the spec and the SDK disagree, the test fails and stays red until the SDK model is
+updated (or the platform updates the spec). There is deliberately no allowlist of known
+drift.</p>
+<h3 id="which-spec-it-runs-against">Which spec it runs against</h3>
+<p>By default the test reads the snapshot at <code>tests/fixtures/openapi.json</code>, so the unit
+test suite is deterministic and offline. Refresh the snapshot from production, the API the
+released SDK talks to by default:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>curl<span class="w"> </span>-sL<span class="w"> </span>https://mozilladatacollective.com/api/openapi.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="w">    </span><span class="p">|</span><span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>json.tool<span class="w"> </span>&gt;<span class="w"> </span>tests/fixtures/openapi.json
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>pytest<span class="w"> </span>tests/test_openapi_contract.py
+</span></code></pre></div>
+<p>Commit the refreshed snapshot together with any model changes it required, so the
+diff shows what moved in the contract and how the SDK adapted.</p>
+<p>You can also set <code>MDC_OPENAPI_SPEC</code> to a file path or URL to run against a different spec:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nv">MDC_OPENAPI_SPEC</span><span class="o">=</span>https://dev.mozilladatacollective.com/api/openapi.json<span class="w"> </span>pytest<span class="w"> </span>tests/test_openapi_contract.py<span class="w">  </span><span class="c1"># upcoming changes</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="nv">MDC_OPENAPI_SPEC</span><span class="o">=</span>../platform/openapi.json<span class="w"> </span>pytest<span class="w"> </span>tests/test_openapi_contract.py
+</span></code></pre></div>
+<h3 id="how-drift-is-detected">How drift is detected</h3>
+<p>The platform is allowed to change its API before the SDK catches up, so nothing here
+gates platform merges. Instead:</p>
+<ul>
+<li><strong>SDK pull requests</strong> run the contract test against the snapshot (<code>tests.yml</code>). This
+  is the only place the test blocks anything: an SDK change that disagrees with the
+  recorded contract.</li>
+<li><strong><code>openapi-contract.yml</code></strong> runs daily (and on <code>workflow_dispatch</code>, optionally with a
+  different <code>spec_url</code>). It fetches the production spec and, when it differs from the
+  committed snapshot, opens or updates a GitHub issue labelled <code>openapi-contract</code>
+  (one issue at a time; reruns update its body). The issue carries the snapshot diff,
+  a command to refresh the snapshot locally, and the contract test result:<ul>
+<li>green: the contract change is compatible with the SDK models; refresh the snapshot
+  and commit it.</li>
+<li>red: the platform contract moved. Refresh the snapshot, adapt the models until the
+  test passes, and open a PR.</li>
+</ul>
+</li>
+</ul>
+<p>Once the committed snapshot matches production again, the next run closes the issue
+  automatically. The job only needs the workflow's own token with <code>issues: write</code>.</p>
 <h2 id="related-workflows">Related workflows</h2>
 <ul>
 <li>For release steps, see <a href="../release/">Release Workflow</a>.</li>
