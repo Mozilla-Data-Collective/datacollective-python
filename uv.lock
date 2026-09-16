@@ -424,6 +424,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+arrow = [
+    { name = "pyarrow" },
+]
 hf = [
     { name = "datasets" },
 ]
@@ -433,6 +436,7 @@ dev = [
     { name = "bump-my-version" },
     { name = "datasets" },
     { name = "pre-commit" },
+    { name = "pyarrow" },
     { name = "pytest" },
     { name = "pytest-cov" },
 ]
