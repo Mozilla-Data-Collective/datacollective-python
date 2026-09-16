@@ -2,6 +2,7 @@
 
 from datacollective.datasets import (
     download_dataset,
+    export_dataset,
     get_dataset_details,
     list_dataset_filters,
     list_datasets,
@@ -33,6 +34,7 @@ __all__ = [
     "download_dataset",
     "save_dataset_to_disk",
     "load_dataset",
+    "export_dataset",
     "get_dataset_details",
     "list_datasets",
     "list_dataset_filters",

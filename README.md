@@ -114,6 +114,16 @@ dataset = load_dataset("your-dataset-id", return_format="hf")
 
 Returns a `Dataset`, or a `DatasetDict` keyed by split name for datasets with multiple splits. See [our docs](https://Mozilla-Data-Collective.github.io/datacollective-python/#return-as-huggingface-dataset-object) for more details, including how to lazily decode audio with the `Audio()` feature.
 
+8. **Or export it to Parquet files** (requires the optional `arrow` extra: `pip install / uv add "datacollective[arrow]"`):
+
+```
+from datacollective import export_dataset
+
+paths = export_dataset("your-dataset-id", "exports/your-dataset")
+```
+
+Writes one `.parquet` file (or one per split for multi-split datasets) that pandas, polars, DuckDB and HuggingFace `datasets` can read directly. File columns such as audio hold paths relative to the extracted dataset directory, so the files contain nothing machine-specific and can be shared. See [our docs](https://Mozilla-Data-Collective.github.io/datacollective-python/#export-as-parquet) for details.
+
 ## Programmatic submissions and uploads
 
 > [!ΝΟΤΕ]

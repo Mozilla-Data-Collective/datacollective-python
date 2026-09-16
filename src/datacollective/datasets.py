@@ -27,6 +27,11 @@ from datacollective.download import (
     _download_dataset,
     DOWNLOAD_SOURCE_LOAD,
 )
+from datacollective.arrow_utils import (
+    _convert_to_arrow,
+    _require_pyarrow,
+    _write_parquet,
+)
 from datacollective.hf_utils import _convert_to_hf, _require_datasets
 from datacollective.logging_utils import (
     _enable_logging,
@@ -34,12 +39,13 @@ from datacollective.logging_utils import (
 )
 from datacollective.schema_loaders.cache_schema import _resolve_schema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
-from datacollective.schema import _get_dataset_schema
+from datacollective.schema import DatasetSchema, _get_dataset_schema
 
 if TYPE_CHECKING:
     from datasets import Dataset, DatasetDict
 
 RETURN_FORMATS = ("pandas", "hf")
+EXPORT_FORMATS = ("parquet",)
 SORT_OPTIONS = ("relevance", "newest", "size")
 SORT_DIRECTIONS = ("asc", "desc")
 UPLOAD_DATE_OPTIONS = ("today", "thisWeek", "thisMonth", "thisYear")
@@ -221,6 +227,37 @@ def load_dataset(
     _enable_logging(enable_logging)
     logger.info(f"Loading dataset {dataset_id}")
 
+    df, schema, _ = _load_dataframe(
+        dataset_id=dataset_id,
+        download_directory=download_directory,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+        overwrite_extracted=overwrite_extracted,
+    )
+
+    if return_format == "hf":
+        return _convert_to_hf(df, schema)
+    return df
+
+
+def _load_dataframe(
+    dataset_id: str,
+    download_directory: str | None,
+    show_progress: bool,
+    overwrite_existing: bool,
+    overwrite_extracted: bool,
+) -> tuple[pd.DataFrame, DatasetSchema, Path]:
+    """Shared pipeline behind `load_dataset` and `export_dataset`.
+
+    Fetches the dataset details, checks a schema exists in the registry,
+    downloads (if needed) and extracts (if needed) the archive, resolves the
+    schema and loads the dataset into a DataFrame.
+
+    Returns:
+        The loaded DataFrame, the schema that produced it, and the directory
+        the archive was extracted into (the root that ``file_path`` columns
+        point into).
+    """
     dataset_details = get_dataset_details(dataset_id)
     archive_filename = _require_archive_filename(dataset_details)
     _id = dataset_details.id
@@ -254,10 +291,94 @@ def load_dataset(
 
     schema = _resolve_schema(_id, extract_dir, archive_checksum)
     df = _load_dataset_from_schema(schema, extract_dir)
+    return df, schema, extract_dir
 
-    if return_format == "hf":
-        return _convert_to_hf(df, schema)
-    return df
+
+def export_dataset(
+    dataset_id: str,
+    output_dir: str | Path,
+    *,
+    format: Literal["parquet"] = "parquet",
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
+    overwrite_extracted: bool = False,
+    enable_logging: bool = False,
+) -> Path | dict[str, Path]:
+    """
+    Download (if needed), extract (if needed), load the dataset and export it to Parquet.
+
+    Runs the same pipeline as `load_dataset` (so the same download and extraction
+    caching applies) and then writes the loaded dataset as Parquet files under
+    `output_dir`, which is created if it does not exist. Requires the optional
+    dependency datacollective[arrow] (`pyarrow`).
+
+    Output layout:
+
+    - Single-split datasets: one file, `<output_dir>/<dataset_id>.parquet`.
+    - Multi-split datasets: one file per split, `<output_dir>/<dataset_id>-<split>.parquet`
+      (e.g. `<dataset_id>-train.parquet`, `<dataset_id>-test.parquet`), with the
+      `split` column dropped. This mirrors the `DatasetDict` returned by
+      `load_dataset(..., return_format="hf")`.
+
+    Columns keep the dtypes produced by `load_dataset`, except that file columns
+    (e.g. audio) are stored as **paths relative to the extracted dataset directory**
+    (POSIX-style, e.g. `clips/abc.mp3`) rather than the absolute local paths of the
+    pandas output. The files therefore contain nothing machine-specific and can be
+    shared; a consumer joins the paths with their own extraction directory of the
+    same archive (`<download_directory>/<archive name without extension>`). The
+    audio bytes themselves are not embedded. Every schema-declared column carries
+    an Arrow field-metadata entry `mdc:dtype` (e.g. `file_path`), and the files
+    carry `mdc:dataset_id`, `mdc:task` and `mdc:sdk_version` table metadata, so
+    downstream readers can tell paths from plain text.
+
+    The files can be read back with any Parquet reader, e.g. `pandas.read_parquet`,
+    `polars.read_parquet`, DuckDB's `read_parquet('<output_dir>/*.parquet')`, or
+    HuggingFace `datasets.load_dataset("parquet", data_files={...})`.
+
+    Args:
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
+        output_dir: Directory where the Parquet file(s) are written. Created if missing.
+            Existing files with the same names are overwritten.
+        format: Export format. Only `"parquet"` is supported.
+        download_directory: Directory where to save the downloaded archive file.
+            If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
+        show_progress: Whether to show a progress bar during download.
+        overwrite_existing: Whether to overwrite existing archive.
+        overwrite_extracted: Whether to overwrite existing extracted files by re-extracting the archive file.
+        enable_logging: Whether to enable SDK logging to console and a local log file.
+
+    Returns:
+        The path of the written Parquet file, or a dict mapping split name to
+        path for datasets with multiple splits.
+
+    Raises:
+        ValueError: If dataset_id is empty, schema is unsupported, or `format`
+            is invalid.
+        MissingDependencyError: If `pyarrow` is not installed.
+        FileNotFoundError: If the dataset does not exist (404).
+        PermissionError: If access is denied (403) or a directory is not writable.
+        RuntimeError: If rate limit is exceeded (429), the dataset has no schema, or
+            unexpected response format.
+        requests.HTTPError: For other non-2xx responses.
+    """
+    _validate_option("format", format, EXPORT_FORMATS)
+    # Raise error here if the optional dependency is missing before any download
+    _require_pyarrow()
+
+    _enable_logging(enable_logging)
+    logger.info(f"Exporting dataset {dataset_id} to {format}")
+
+    df, schema, extract_dir = _load_dataframe(
+        dataset_id=dataset_id,
+        download_directory=download_directory,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+        overwrite_extracted=overwrite_extracted,
+    )
+
+    tables = _convert_to_arrow(df, schema, dataset_root=extract_dir)
+    return _write_parquet(tables, Path(output_dir), file_stem=schema.dataset_id)
 
 
 def list_datasets(
