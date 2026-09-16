@@ -8,7 +8,7 @@ This library helps you:
 - Authenticate with the Mozilla Data Collective.
 - Download datasets to local storage.
 - Load supported datasets into AI-friendly formats, such as pandas DataFrames
-  and HuggingFace Datasets.
+  and HuggingFace Datasets, or export them to Parquet.
 
 ## Installation
 
@@ -259,6 +259,74 @@ print(sample["array"])          # numpy array with the decoded waveform
 This keeps memory usage low: the dataset only stores the file paths, and each
 audio file is decoded (and resampled, if you specify a `sampling_rate`) at the
 moment you access it.
+
+### Export as Parquet
+
+You can also export a supported dataset to [Apache Parquet](https://parquet.apache.org/)
+files, an Arrow-based columnar format that pandas, polars, DuckDB, Spark and
+HuggingFace `datasets` all read natively. This requires the optional `arrow`
+dependency (`pyarrow`), which is already included if you installed the `hf` extra:
+
+```bash
+uv add "datacollective[arrow]"  # or pip install "datacollective[arrow]"
+```
+
+Then call `export_dataset` with an output directory:
+
+```python
+from datacollective import export_dataset
+
+paths = export_dataset("your-dataset-id", "exports/your-dataset")
+```
+
+`export_dataset` runs the same download, extraction and schema-based loading
+pipeline as `load_dataset` (so the same caching applies), then writes:
+
+- one file, `<output_dir>/<dataset_id>.parquet`, for single-split datasets, or
+- one file per split, `<output_dir>/<split>.parquet` (e.g. `train.parquet`,
+  `test.parquet`), for multi-split datasets, with the `split` column dropped.
+  This mirrors the `DatasetDict` returned by `return_format="hf"`.
+
+The return value is the written `Path`, or a `dict` mapping split name to `Path`.
+
+The files can be read back with any Parquet reader:
+
+```python
+import pandas as pd
+df = pd.read_parquet("exports/your-dataset/train.parquet")
+
+import polars as pl
+df = pl.read_parquet("exports/your-dataset/train.parquet")
+
+import duckdb
+duckdb.sql("SELECT * FROM read_parquet('exports/your-dataset/*.parquet')")
+
+from datasets import load_dataset
+ds = load_dataset("parquet", data_files={
+    "train": "exports/your-dataset/train.parquet",
+    "test": "exports/your-dataset/test.parquet",
+})
+```
+
+!!! note "File columns are local paths"
+    Columns that point at files (e.g. audio in ASR/TTS datasets) are stored as
+    **absolute local paths** into the extracted dataset directory, exactly as in
+    the pandas output. The audio bytes are not embedded, so the Parquet files
+    are only portable together with that directory. Every schema-declared
+    column carries an Arrow field-metadata entry `mdc:dtype` (e.g. `file_path`,
+    `file_content`, `category`), and each file carries `mdc:dataset_id`,
+    `mdc:task` and `mdc:sdk_version` table metadata, so downstream tools can
+    tell paths from plain text:
+
+    ```python
+    import pyarrow.parquet as pq
+
+    schema = pq.read_schema("exports/your-dataset/train.parquet")
+    print(schema.field("audio").metadata)  # {b'mdc:dtype': b'file_path'}
+    ```
+
+If you call `export_dataset` without the `arrow` extra installed, a
+`MissingDependencyError` is raised with installation instructions.
 
 ## Get dataset details
 
