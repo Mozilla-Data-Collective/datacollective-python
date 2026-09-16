@@ -15,6 +15,7 @@ from datacollective.arrow_utils import (
     SDK_VERSION_METADATA_KEY,
     TASK_METADATA_KEY,
     _convert_to_arrow,
+    _relativize_file_paths,
     _require_pyarrow,
     _sanitize_stem,
     _write_parquet,
@@ -201,6 +202,88 @@ def test_convert_skips_task_metadata_when_unset(simple_df: pd.DataFrame) -> None
     assert TASK_METADATA_KEY not in table.schema.metadata
 
 
+# --- _relativize_file_paths --------------------------------------------------
+
+
+def test_relativize_rewrites_absolute_paths_under_root(
+    tmp_path: Path, simple_schema: DatasetSchema
+) -> None:
+    root = tmp_path / "data"
+    df = pd.DataFrame(
+        {
+            "audio": [
+                str(root / "clips" / "a.wav"),
+                str(root / "b.wav"),
+                None,
+                "unresolved.wav",
+            ],
+            "transcription": ["a", "b", "c", "d"],
+        }
+    )
+
+    result = _relativize_file_paths(df, simple_schema, root)
+
+    assert result["audio"].tolist() == [
+        "clips/a.wav",
+        "b.wav",
+        None,
+        "unresolved.wav",
+    ]
+    # non-path columns and the input frame are untouched
+    assert result["transcription"].tolist() == ["a", "b", "c", "d"]
+    assert df["audio"].iloc[0] == str(root / "clips" / "a.wav")
+
+
+def test_relativize_keeps_paths_outside_root_and_warns(
+    tmp_path: Path, simple_schema: DatasetSchema
+) -> None:
+    root = tmp_path / "data"
+    elsewhere = str(tmp_path / "other" / "x.wav")
+    df = pd.DataFrame(
+        {"audio": [str(root / "a.wav"), elsewhere], "transcription": ["a", "b"]}
+    )
+
+    with pytest.warns(UserWarning, match="outside the dataset directory"):
+        result = _relativize_file_paths(df, simple_schema, root)
+
+    assert result["audio"].tolist() == ["a.wav", elsewhere]
+
+
+def test_relativize_resolves_root_like_the_loader(
+    tmp_path: Path, simple_schema: DatasetSchema
+) -> None:
+    """The loader resolves the extraction dir, so an unresolved root must still match."""
+    root = tmp_path / "data"
+    root.mkdir()
+    link = tmp_path / "link"
+    link.symlink_to(root, target_is_directory=True)
+    df = pd.DataFrame({"audio": [str(root.resolve() / "a.wav")]})
+
+    result = _relativize_file_paths(df, simple_schema, link)
+
+    assert result["audio"].tolist() == ["a.wav"]
+
+
+def test_relativize_noop_without_file_path_columns(simple_df: pd.DataFrame) -> None:
+    schema = DatasetSchema(dataset_id="x", columns={})
+    assert _relativize_file_paths(simple_df, schema, Path("/nowhere")) is simple_df
+
+
+def test_convert_relativizes_when_root_given(
+    tmp_path: Path, simple_schema: DatasetSchema
+) -> None:
+    df = pd.DataFrame(
+        {"audio": [str(tmp_path / "clips" / "a.wav")], "transcription": ["x"]}
+    )
+
+    kept = _convert_to_arrow(df, simple_schema)
+    rel = _convert_to_arrow(df, simple_schema, dataset_root=tmp_path)
+
+    assert isinstance(kept, pa.Table) and isinstance(rel, pa.Table)
+    assert kept.column("audio").to_pylist() == [str(tmp_path / "clips" / "a.wav")]
+    assert rel.column("audio").to_pylist() == ["clips/a.wav"]
+
+
 # --- _write_parquet ----------------------------------------------------------
 
 
@@ -225,12 +308,12 @@ def test_write_parquet_one_file_per_split(
 ) -> None:
     tables = _convert_to_arrow(split_df, multi_split_schema)
 
-    result = _write_parquet(tables, tmp_path, file_stem="ignored")
+    result = _write_parquet(tables, tmp_path, file_stem="some-dataset-id")
 
     assert isinstance(result, dict)
     assert result == {
-        "train": tmp_path / "train.parquet",
-        "test": tmp_path / "test.parquet",
+        "train": tmp_path / "some-dataset-id-train.parquet",
+        "test": tmp_path / "some-dataset-id-test.parquet",
     }
     assert pq.read_table(result["train"]).num_rows == 2
     assert pq.read_table(result["test"]).num_rows == 1
@@ -324,9 +407,51 @@ def test_export_dataset_writes_one_parquet_per_split(
     result = export_dataset("some-dataset-id", str(tmp_path))
 
     assert isinstance(result, dict)
-    assert set(result) == {"train", "test"}
+    assert result == {
+        "train": tmp_path / "some-dataset-id-train.parquet",
+        "test": tmp_path / "some-dataset-id-test.parquet",
+    }
     assert len(pd.read_parquet(result["train"])) == 2
     assert len(pd.read_parquet(result["test"])) == 1
+
+
+def test_export_two_datasets_into_same_directory_do_not_collide(
+    monkeypatch: MonkeyPatch,
+    tmp_path: Path,
+    split_df: pd.DataFrame,
+    multi_split_schema: DatasetSchema,
+) -> None:
+    _mock_load_pipeline(monkeypatch, split_df, multi_split_schema)
+    first = export_dataset("some-dataset-id", tmp_path)
+
+    other_schema = multi_split_schema.model_copy(update={"dataset_id": "other-id"})
+    _mock_load_pipeline(monkeypatch, split_df.head(1), other_schema)
+    second = export_dataset("other-id", tmp_path)
+
+    assert isinstance(first, dict) and isinstance(second, dict)
+    assert set(first.values()).isdisjoint(second.values())
+    assert len(pd.read_parquet(first["train"])) == 2
+    assert len(pd.read_parquet(second["train"])) == 1
+
+
+def test_export_dataset_relativizes_file_paths_to_extract_dir(
+    monkeypatch: MonkeyPatch, tmp_path: Path, simple_schema: DatasetSchema
+) -> None:
+    extract_dir = tmp_path / "extracted"
+    df = pd.DataFrame(
+        {
+            "audio": [str(extract_dir / "clips" / "a.wav")],
+            "transcription": ["hello"],
+        }
+    )
+    _mock_load_pipeline(monkeypatch, df, simple_schema)
+    monkeypatch.setattr(
+        "datacollective.datasets._extract_archive", lambda **kwargs: extract_dir
+    )
+
+    result = export_dataset("some-dataset-id", tmp_path / "out")
+
+    assert pd.read_parquet(result)["audio"].tolist() == ["clips/a.wav"]
 
 
 def test_export_dataset_accepts_slug_and_uses_schema_dataset_id(
@@ -345,7 +470,7 @@ def test_export_dataset_accepts_slug_and_uses_schema_dataset_id(
 # --- loader-level smoke test -------------------------------------------------
 
 
-def test_export_from_loaded_index_dataset_keeps_absolute_paths(tmp_path: Path) -> None:
+def test_export_from_loaded_index_dataset_writes_relative_paths(tmp_path: Path) -> None:
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     (data_dir / "train.tsv").write_text(
@@ -366,16 +491,19 @@ def test_export_from_loaded_index_dataset_keeps_absolute_paths(tmp_path: Path) -
     )
     df = _load_dataset_from_schema(schema, data_dir)
 
+    # the loader hands back absolute paths ...
+    assert all(Path(p).is_absolute() for p in df["audio_path"])
+
     path = _write_parquet(
-        _convert_to_arrow(df, schema), tmp_path / "out", file_stem=schema.dataset_id
+        _convert_to_arrow(df, schema, dataset_root=data_dir),
+        tmp_path / "out",
+        file_stem=schema.dataset_id,
     )
 
+    # ... but the export stores them relative to the extraction directory
     back = pq.read_table(path)
     assert back.schema.field("audio_path").metadata[DTYPE_METADATA_KEY] == b"file_path"
-    audio_paths = back.column("audio_path").to_pylist()
-    assert audio_paths == [
-        str((data_dir / "clip1.mp3").resolve()),
-        str((data_dir / "clip2.mp3").resolve()),
-    ]
-    assert all(Path(p).is_absolute() for p in audio_paths)
+    assert back.column("audio_path").to_pylist() == ["clip1.mp3", "clip2.mp3"]
     assert back.column("transcription").to_pylist() == ["hello", "world"]
+    # and they resolve again against that directory
+    assert all((data_dir / p).is_file() for p in back.column("audio_path").to_pylist())

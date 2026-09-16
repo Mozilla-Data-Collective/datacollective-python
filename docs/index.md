@@ -283,9 +283,13 @@ paths = export_dataset("your-dataset-id", "exports/your-dataset")
 pipeline as `load_dataset` (so the same caching applies), then writes:
 
 - one file, `<output_dir>/<dataset_id>.parquet`, for single-split datasets, or
-- one file per split, `<output_dir>/<split>.parquet` (e.g. `train.parquet`,
-  `test.parquet`), for multi-split datasets, with the `split` column dropped.
-  This mirrors the `DatasetDict` returned by `return_format="hf"`.
+- one file per split, `<output_dir>/<dataset_id>-<split>.parquet` (e.g.
+  `<dataset_id>-train.parquet`, `<dataset_id>-test.parquet`), for multi-split
+  datasets, with the `split` column dropped. This mirrors the `DatasetDict`
+  returned by `return_format="hf"`.
+
+Because every file name starts with the dataset ID, exports of several datasets
+can share one output directory.
 
 The return value is the written `Path`, or a `dict` mapping split name to `Path`.
 
@@ -293,35 +297,49 @@ The files can be read back with any Parquet reader:
 
 ```python
 import pandas as pd
-df = pd.read_parquet("exports/your-dataset/train.parquet")
+df = pd.read_parquet("exports/your-dataset/<dataset_id>-train.parquet")
 
 import polars as pl
-df = pl.read_parquet("exports/your-dataset/train.parquet")
+df = pl.read_parquet("exports/your-dataset/<dataset_id>-train.parquet")
 
 import duckdb
-duckdb.sql("SELECT * FROM read_parquet('exports/your-dataset/*.parquet')")
+duckdb.sql("SELECT * FROM read_parquet('exports/your-dataset/<dataset_id>-*.parquet')")
 
 from datasets import load_dataset
 ds = load_dataset("parquet", data_files={
-    "train": "exports/your-dataset/train.parquet",
-    "test": "exports/your-dataset/test.parquet",
+    "train": "exports/your-dataset/<dataset_id>-train.parquet",
+    "test": "exports/your-dataset/<dataset_id>-test.parquet",
 })
 ```
 
-!!! note "File columns are local paths"
+!!! note "File columns are relative paths"
     Columns that point at files (e.g. audio in ASR/TTS datasets) are stored as
-    **absolute local paths** into the extracted dataset directory, exactly as in
-    the pandas output. The audio bytes are not embedded, so the Parquet files
-    are only portable together with that directory. Every schema-declared
-    column carries an Arrow field-metadata entry `mdc:dtype` (e.g. `file_path`,
-    `file_content`, `category`), and each file carries `mdc:dataset_id`,
-    `mdc:task` and `mdc:sdk_version` table metadata, so downstream tools can
-    tell paths from plain text:
+    **paths relative to the extracted dataset directory**, POSIX-style (e.g.
+    `clips/abc.mp3`), instead of the absolute local paths you get from
+    `load_dataset`. The Parquet files therefore contain nothing specific to
+    your machine and can be shared. The audio bytes are not embedded: whoever
+    uses the files needs the same archive extracted locally (`load_dataset` or
+    `download_dataset` puts it at `<download_directory>/<archive name>`), and
+    joins the paths with that directory:
+
+    ```python
+    from pathlib import Path
+    import pandas as pd
+
+    root = Path("~/.mozdata/datasets/<archive name>").expanduser()
+    df = pd.read_parquet("exports/your-dataset/<dataset_id>-train.parquet")
+    df["audio"] = df["audio"].map(lambda p: str(root / p))
+    ```
+
+    Every schema-declared column carries an Arrow field-metadata entry
+    `mdc:dtype` (e.g. `file_path`, `file_content`, `category`), and each file
+    carries `mdc:dataset_id`, `mdc:task` and `mdc:sdk_version` table metadata,
+    so downstream tools can tell paths from plain text:
 
     ```python
     import pyarrow.parquet as pq
 
-    schema = pq.read_schema("exports/your-dataset/train.parquet")
+    schema = pq.read_schema("exports/your-dataset/<dataset_id>-train.parquet")
     print(schema.field("audio").metadata)  # {b'mdc:dtype': b'file_path'}
     ```
 

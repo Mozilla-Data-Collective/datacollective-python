@@ -122,7 +122,7 @@ from datacollective import export_dataset
 paths = export_dataset("your-dataset-id", "exports/your-dataset")
 ```
 
-Writes one `.parquet` file (or one per split for multi-split datasets) that pandas, polars, DuckDB and HuggingFace `datasets` can read directly. File columns such as audio stay absolute local paths. See [our docs](https://Mozilla-Data-Collective.github.io/datacollective-python/#export-as-parquet) for details.
+Writes one `.parquet` file (or one per split for multi-split datasets) that pandas, polars, DuckDB and HuggingFace `datasets` can read directly. File columns such as audio hold paths relative to the extracted dataset directory, so the files contain nothing machine-specific and can be shared. See [our docs](https://Mozilla-Data-Collective.github.io/datacollective-python/#export-as-parquet) for details.
 
 ## Programmatic submissions and uploads
 
