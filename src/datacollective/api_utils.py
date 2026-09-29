@@ -53,7 +53,7 @@ def _send_api_request(
         json_body: Optional JSON body to send with the request.
         params: Optional query parameters to include in the request.
         source_function: Optional context appended to the User-Agent to track which function
-                         initiated the request (e.g., 'load_dataset', 'save_dataset_to_disk').
+                         initiated the request (e.g., 'load_dataset', 'download_dataset').
 
     Returns:
         The HTTP response object.
