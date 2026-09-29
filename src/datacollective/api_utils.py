@@ -184,33 +184,6 @@ def _get_user_agent(source_function: str | None = None) -> str:
         user_agent = f"{user_agent} source function: {source_function}"
     return user_agent
 
-
-def _prepare_download_headers(
-    tmp_path: Path, resume_checksum: str | None
-) -> tuple[dict[str, str], int]:
-    """
-    Prepare headers for download plan and determine existing file size for download resumption.
-
-    Args:
-        tmp_path: Path to the temporary file for download.
-        resume_checksum: Checksum string to verify for resuming download (if any).
-
-    Returns:
-        A tuple containing:
-        - A dict of headers to include in the download request.
-        - The size of the existing file in bytes (0 if not resuming).
-    """
-    if not tmp_path.exists():  # invalid path
-        return {}, 0
-
-    if resume_checksum:
-        existing_size = tmp_path.stat().st_size
-        return {"Range": f"bytes={existing_size}-"}, existing_size
-
-    tmp_path.unlink()  # remove existing file if no resume checksum supplied
-    return {}, 0
-
-
 def _format_bytes(bytes_val: int, base: int = 1024) -> str:
     """Format bytes into a human-readable string.
 

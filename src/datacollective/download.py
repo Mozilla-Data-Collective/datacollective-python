@@ -9,7 +9,6 @@ from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
     HTTP_TIMEOUT,
     _get_api_url,
-    _prepare_download_headers,
     _send_api_request,
 )
 from datacollective.errors import DownloadError
@@ -249,18 +248,18 @@ def _execute_download_plan(
     Raises:
         DownloadError: If the download fails or is interrupted.
     """
-
-    headers, downloaded_bytes_so_far = _prepare_download_headers(
-        download_plan.tmp_filepath, resume_download_checksum
-    )
+    headers: dict[str, str] = {}
+    previously_downloaded_bytes = 0
+    if resume_download_checksum and download_plan.tmp_filepath.exists():
+        previously_downloaded_bytes = download_plan.tmp_filepath.stat().st_size
+        headers["Range"] = f"bytes={previously_downloaded_bytes}-"
 
     progress_bar = None
     session_downloaded_bytes = 0
-    total_downloaded_bytes = downloaded_bytes_so_far
     logger.info(f"Downloading dataset: {download_plan.target_filepath}")
     if show_progress:
         progress_bar = ProgressBar(download_plan.size_bytes)
-        progress_bar.update(downloaded_bytes_so_far)
+        progress_bar.update(previously_downloaded_bytes)
         progress_bar._display()
     try:
         with _send_api_request(
@@ -278,18 +277,17 @@ def _execute_download_plan(
                     if not chunk:
                         continue
                     f.write(chunk)
-                    downloaded_bytes_so_far = len(chunk)
-                    session_downloaded_bytes += downloaded_bytes_so_far
-                    total_downloaded_bytes += downloaded_bytes_so_far
+                    session_downloaded_bytes += len(chunk)
                     if progress_bar:
-                        progress_bar.update(downloaded_bytes_so_far)
+                        progress_bar.update(len(chunk))
 
             if progress_bar:
                 progress_bar.finish()
     except (Exception, KeyboardInterrupt) as e:
         raise DownloadError(
             session_bytes=session_downloaded_bytes,
-            total_downloaded_bytes=total_downloaded_bytes,
+            total_downloaded_bytes=previously_downloaded_bytes
+            + session_downloaded_bytes,
             total_archive_bytes=download_plan.size_bytes,
             checksum=download_plan.checksum,
         ) from e
