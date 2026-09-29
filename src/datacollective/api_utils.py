@@ -149,16 +149,12 @@ def _response_body_for_logging(resp: requests.Response, stream: bool = False) ->
     if stream:
         return "<streamed response body omitted>"
     try:
-        status = resp.status_code
-    except Exception:
-        return "<unavailable>"
-    try:
         # Redact sensitive info
         body: Any = _redact_sensitive(resp.json())
     except Exception:
         # Non-JSON body: no structured keys to redact, fall back to raw text
         body = resp.text
-    return f"{status}: {body}"
+    return f"{resp.status_code}: {body}"
 
 
 def _get_api_key() -> str:
@@ -177,10 +173,7 @@ def _auth_headers() -> dict[str, str]:
 def _get_user_agent(source_function: str | None = None) -> str:
     """Generate a user agent string with SDK/runtime info and optional context of initiated function."""
     # Import here to avoid circular dependency
-    try:
-        from datacollective import __version__
-    except ImportError:
-        __version__ = "unknown"
+    from datacollective import __version__
 
     python_version = platform.python_version()
     system = platform.system()
