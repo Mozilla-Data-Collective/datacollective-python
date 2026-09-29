@@ -1,6 +1,5 @@
 import os
 import platform
-from pathlib import Path
 from typing import Any
 
 import requests
@@ -184,21 +183,15 @@ def _get_user_agent(source_function: str | None = None) -> str:
         user_agent = f"{user_agent} source function: {source_function}"
     return user_agent
 
-def _format_bytes(bytes_val: int, base: int = 1024) -> str:
-    """Format bytes into a human-readable string.
 
-    Args:
-        bytes_val: Number of bytes.
-        base: Unit base to divide by — ``1024`` for binary units or ``1000``
-            for decimal (SI) units. Defaults to ``1024``.
-    """
-    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+def _format_bytes(bytes_val: int) -> str:
+    """Format bytes into a human-readable (binary units) string."""
     value = float(bytes_val)
-    for unit in units:
-        if value < base or unit == units[-1]:
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if value < 1024:
             return f"{value:.1f} {unit}"
-        value /= base
-    return ""
+        value /= 1024
+    return f"{value:.1f} PB"
 
 
 def _redact_sensitive(value: Any) -> Any:
