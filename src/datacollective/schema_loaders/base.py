@@ -292,7 +292,8 @@ class BaseSchemaLoader(abc.ABC):
         """
         for column in df.columns:
             values = df[column]
-            if values.dtype != object:
+            # pandas < 3 reads text as object, pandas >= 3 as StringDtype
+            if values.dtype != object and not isinstance(values.dtype, pd.StringDtype):
                 continue
             # '""' inside the value is what a quoting writer leaves behind;
             # a sentence that merely starts and ends with '"' has no such pair.
