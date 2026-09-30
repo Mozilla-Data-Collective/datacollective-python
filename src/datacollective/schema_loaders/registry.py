@@ -31,43 +31,6 @@ _STRATEGY_REGISTRY: dict[Strategy, Type[BaseSchemaLoader]] = {
 }
 
 
-def _resolve_strategy(schema: DatasetSchema) -> Strategy:
-    """
-    Resolve the loading strategy for *schema*.
-
-    Raises:
-        ValueError: If ``root_strategy`` is not set or names an unknown strategy.
-    """
-    supported = ", ".join(member.value for member in Strategy)
-    if not schema.root_strategy:
-        raise ValueError(
-            f"Schema must specify 'root_strategy'. Supported strategies: {supported}"
-        )
-    try:
-        return Strategy(schema.root_strategy)
-    except ValueError:
-        raise ValueError(
-            f"Unknown root_strategy '{schema.root_strategy}'. "
-            f"Supported strategies: {supported}"
-        ) from None
-
-
-def _get_strategy_loader(strategy: Strategy) -> Type[BaseSchemaLoader]:
-    """
-    Return the loader class for *strategy*.
-
-    Raises:
-        ValueError: If no loader is registered for the given strategy.
-    """
-    if strategy not in _STRATEGY_REGISTRY:
-        supported = ", ".join(sorted(_STRATEGY_REGISTRY))
-        raise ValueError(
-            f"No schema loader registered for strategy '{strategy}'. "
-            f"Supported strategies: {supported}"
-        )
-    return _STRATEGY_REGISTRY[strategy]
-
-
 def _load_dataset_from_schema(schema: DatasetSchema, extract_dir: Path) -> pd.DataFrame:
     """
     Instantiate the loader for the schema's ``root_strategy`` and return the
@@ -88,8 +51,13 @@ def _load_dataset_from_schema(schema: DatasetSchema, extract_dir: Path) -> pd.Da
     if schema.extract_files:
         _extract_inner_archives(schema.extract_files, extract_dir)
 
-    strategy = _resolve_strategy(schema)
-    loader_cls = _get_strategy_loader(strategy)
+    # Unknown strategies are already rejected when the schema is parsed
+    if not schema.root_strategy:
+        supported = ", ".join(member.value for member in Strategy)
+        raise ValueError(
+            f"Schema must specify 'root_strategy'. Supported strategies: {supported}"
+        )
+    loader_cls = _STRATEGY_REGISTRY[Strategy(schema.root_strategy)]
 
     loader = loader_cls(schema=schema, extract_dir=extract_dir)
     logger.info(f"Loading dataset '{schema.dataset_id}' with {loader_cls.__name__}")

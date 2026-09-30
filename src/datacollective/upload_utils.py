@@ -3,7 +3,6 @@ import json
 import math
 import time
 from pathlib import Path
-from typing import Any
 
 import requests
 from fox_progress_bar import ProgressBar
@@ -73,7 +72,6 @@ def _ensure_part_size_is_valid(file_size: int, part_size: int) -> None:
 class UploadSession(NonEmptyStrModel):
     fileUploadId: str
     uploadId: str
-    partSize: int = Field(..., gt=0)
 
 
 class UploadState(NonEmptyStrModel):
@@ -92,7 +90,6 @@ class UploadState(NonEmptyStrModel):
 class PresignedPartUrl(NonEmptyStrModel):
     partNumber: int = Field(..., ge=1)
     url: str
-    expiresAt: str | None = None
 
 
 class _UploadInitiatePayload(NonEmptyStrModel):
@@ -100,11 +97,6 @@ class _UploadInitiatePayload(NonEmptyStrModel):
     filename: str
     fileSize: int = Field(..., gt=0)
     mimeType: str
-
-
-class _PresignedPartRequest(NonEmptyStrModel):
-    fileUploadId: str
-    partNumber: int = Field(..., ge=1)
 
 
 class _CompleteUploadPayload(NonEmptyStrModel):
@@ -135,8 +127,6 @@ def _initiate_upload(
     submission_id: str,
     filename: str,
     file_size: int,
-    mime_type: str,
-    part_size: int,
     is_sample: bool = False,
 ) -> UploadSession:
     """
@@ -146,26 +136,22 @@ def _initiate_upload(
         submission_id: Dataset submission ID.
         filename: Name of the file to upload.
         file_size: Size of the file in bytes.
-        mime_type: MIME type for the file.
-        part_size: Multipart part size in bytes to use for this upload.
         is_sample: Whether to upload the file as the submission's sample file.
     """
     payload = _UploadInitiatePayload(
         submissionId=submission_id,
         filename=filename,
         fileSize=file_size,
-        mimeType=mime_type,
+        mimeType=DEFAULT_MIME_TYPE,
     )
     url = _upload_base_url(submission_id, is_sample)
     resp = _send_api_request("POST", url, json_body=payload.model_dump())
-    data = dict(resp.json())
-    session_payload = {
-        "fileUploadId": str(data.get("fileUploadId", "")),
-        "uploadId": str(data.get("uploadId", "")),
-        "partSize": part_size,
-    }
+    data = resp.json()
     try:
-        return UploadSession.model_validate(session_payload)
+        return UploadSession(
+            fileUploadId=data.get("fileUploadId", ""),
+            uploadId=data.get("uploadId", ""),
+        )
     except ValidationError as exc:
         raise RuntimeError("Upload initiation did not return expected fields") from exc
 
@@ -185,18 +171,10 @@ def _get_presigned_part_url(
         submission_id: Dataset submission ID.
         is_sample: Whether the part belongs to a sample file upload.
     """
-    request = _PresignedPartRequest(fileUploadId=file_upload_id, partNumber=part_number)
     base_url = _upload_base_url(submission_id, is_sample)
-    url = f"{base_url}/{request.fileUploadId}/parts/{request.partNumber}"
+    url = f"{base_url}/{file_upload_id}/parts/{part_number}"
     resp = _send_api_request("GET", url)
-    data = dict(resp.json())
-    presigned_url = data.get("url") or data.get("presignedUrl")
-    payload = {
-        "partNumber": int(data.get("partNumber", request.partNumber)),
-        "url": str(presigned_url or ""),
-        "expiresAt": data.get("expiresAt") or None,
-    }
-    return PresignedPartUrl.model_validate(payload)
+    return PresignedPartUrl(partNumber=part_number, url=resp.json().get("url", ""))
 
 
 def _complete_upload(
@@ -206,7 +184,7 @@ def _complete_upload(
     checksum: str,
     submission_id: str,
     is_sample: bool = False,
-) -> dict[str, Any]:
+) -> None:
     """
     Complete a multipart upload and persist the checksum.
     """
@@ -216,17 +194,11 @@ def _complete_upload(
         parts=parts,
         checksum=checksum,
     )
-
     base_url = _upload_base_url(submission_id, is_sample)
     url = f"{base_url}/{request.fileUploadId}"
-    payload = {
-        "parts": [part.model_dump() for part in request.parts],
-        "checksum": request.checksum,
-    }
-    if request.uploadId:
-        payload["uploadId"] = request.uploadId
-    resp = _send_api_request("POST", url, json_body=payload)
-    return dict(resp.json())
+    # `fileUploadId` goes in the URL, not the body
+    payload = request.model_dump(exclude={"fileUploadId"}, exclude_none=True)
+    _send_api_request("POST", url, json_body=payload)
 
 
 def _load_upload_state(path: Path) -> UploadState | None:
@@ -274,24 +246,15 @@ def _load_or_create_state(
         logger.info(
             f"Initiating upload for '{final_filename}' ({_format_bytes(file_size)})..."
         )
-        session = _initiate_upload(
-            submission_id,
-            final_filename,
-            file_size,
-            DEFAULT_MIME_TYPE,
-            part_size,
-            is_sample,
-        )
+        session = _initiate_upload(submission_id, final_filename, file_size, is_sample)
         state = UploadState(
             submissionId=submission_id,
             fileUploadId=session.fileUploadId,
             uploadId=session.uploadId,
             fileSize=file_size,
-            partSize=session.partSize,
+            partSize=part_size,
             filename=final_filename,
             mimeType=DEFAULT_MIME_TYPE,
-            parts=[],
-            checksum=None,
             isSample=is_sample,
         )
         _save_upload_state(state_file, state)
@@ -330,7 +293,7 @@ def _init_progress_bar(
     return progress_bar
 
 
-def _upload_missing_parts(
+def _upload_parts_and_compute_checksum(
     path: Path,
     state: UploadState,
     parts_by_number: dict[int, str],
@@ -338,6 +301,16 @@ def _upload_missing_parts(
     progress_bar: ProgressBar | None,
     state_file: Path,
 ) -> tuple[int, str]:
+    """
+    Read the whole file part by part, uploading the parts not yet in
+    *parts_by_number* and hashing every part (uploaded now or earlier).
+
+    *parts_by_number* and the state file are updated after each uploaded part
+    so an interrupted upload can resume.
+
+    Returns:
+        The number of bytes read and the SHA-256 hex digest of the file.
+    """
     hasher = hashlib.sha256()
     bytes_read = 0
     with open(path, "rb") as file_handle:
@@ -394,8 +367,6 @@ def _cleanup_state_file(state_file: Path) -> None:
 
 
 def _upload_part(presigned_url: str, payload: bytes) -> requests.Response:
-    if not presigned_url:
-        raise ValueError("Missing presigned URL for upload part")
     resp = requests.put(presigned_url, data=payload, timeout=UPLOAD_TIMEOUT)
     resp.raise_for_status()
     return resp
@@ -403,7 +374,7 @@ def _upload_part(presigned_url: str, payload: bytes) -> requests.Response:
 
 def _resolve_upload_state(
     file_path: str, state_path: str | None, is_sample: bool = False
-) -> tuple[Path, Any | None]:
+) -> tuple[Path, UploadState | None]:
     state_file = (
         Path(state_path)
         if state_path

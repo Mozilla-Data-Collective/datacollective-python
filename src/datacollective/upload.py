@@ -13,8 +13,7 @@ from datacollective.upload_utils import (
     _expected_parts,
     _normalize_parts,
     _init_progress_bar,
-    _upload_missing_parts,
-    _parts_from_mapping,
+    _upload_parts_and_compute_checksum,
     _save_upload_state,
     _complete_upload,
     _cleanup_state_file,
@@ -165,7 +164,7 @@ def _upload_file(
         already_uploaded=len(parts_by_number),
     )
 
-    bytes_read, checksum = _upload_missing_parts(
+    bytes_read, checksum = _upload_parts_and_compute_checksum(
         path=path,
         state=state,
         parts_by_number=parts_by_number,
@@ -190,7 +189,6 @@ def _upload_file(
         )
 
     state.checksum = checksum
-    state.parts = _parts_from_mapping(parts_by_number)
     _save_upload_state(state_file, state)
 
     logger.info("Completing upload...")

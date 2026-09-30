@@ -127,9 +127,7 @@ def test_expected_parts_rounds_up_for_remainder() -> None:
 def test_dataset_upload_uses_uploads_endpoints(
     captured_requests: list[dict[str, object]],
 ) -> None:
-    _initiate_upload(
-        "submission", "dataset.tar.gz", 1024, "application/gzip", DEFAULT_PART_SIZE
-    )
+    _initiate_upload("submission", "dataset.tar.gz", 1024)
     _get_presigned_part_url("file-upload", 1, "submission")
     _complete_upload(
         "file-upload",
@@ -149,14 +147,7 @@ def test_dataset_upload_uses_uploads_endpoints(
 def test_sample_upload_uses_submission_sample_endpoints(
     captured_requests: list[dict[str, object]],
 ) -> None:
-    _initiate_upload(
-        "submission",
-        "sample.tar.gz",
-        1024,
-        "application/gzip",
-        DEFAULT_PART_SIZE,
-        is_sample=True,
-    )
+    _initiate_upload("submission", "sample.tar.gz", 1024, is_sample=True)
     _get_presigned_part_url("file-upload", 2, "submission", is_sample=True)
     _complete_upload(
         "file-upload",
@@ -180,14 +171,7 @@ def test_sample_upload_uses_submission_sample_endpoints(
 def test_sample_upload_initiate_payload_matches_dataset_upload(
     captured_requests: list[dict[str, object]],
 ) -> None:
-    _initiate_upload(
-        "submission",
-        "sample.tar.gz",
-        1024,
-        "application/gzip",
-        DEFAULT_PART_SIZE,
-        is_sample=True,
-    )
+    _initiate_upload("submission", "sample.tar.gz", 1024, is_sample=True)
 
     assert captured_requests[0]["json_body"] == {
         "submissionId": "submission",

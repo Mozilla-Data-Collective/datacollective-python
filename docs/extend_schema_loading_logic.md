@@ -99,7 +99,7 @@ A contract violation emits a `TaskValidationWarning` (via Python's `warnings` mo
 
 When a user calls `load_dataset("id")`:
 
-1. **`download_dataset()`**: Downloads the archive. (Skipped if already downloaded; previously called `save_dataset_to_disk()`)
+1. **`download_dataset()`**: Downloads the archive. (Skipped if already downloaded)
 2. **`_extract_archive()`**: Extracts it to a local directory. (Skipped if already extracted)
 3. **`_resolve_schema()`**: Locates or downloads `schema.yaml`.
 4. **`_parse_schema()`**: Validates YAML into a `DatasetSchema` object.

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import warnings
+from enum import Enum
 from pathlib import Path
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Literal, overload
@@ -17,15 +17,12 @@ from datacollective.models import (
     DatasetList,
     License,
     Task,
-    _normalize_filter_values,
-    _require_archive_filename,
-    _validate_option,
 )
 from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
-    DOWNLOAD_SOURCE_SAVE,
-    _download_dataset,
+    DOWNLOAD_SOURCE_DOWNLOAD,
     DOWNLOAD_SOURCE_LOAD,
+    _download_dataset,
 )
 from datacollective.hf_utils import _convert_to_hf, _require_datasets
 from datacollective.logging_utils import (
@@ -90,9 +87,6 @@ def download_dataset(
     Automatically resumes interrupted downloads if a matching .checksum file exists from a
     previous attempt.
 
-    Note: Previously called `save_dataset_to_disk`, which remains available as a
-    deprecated alias for backward compatibility.
-
     Args:
         dataset_id: The dataset ID (as shown in MDC platform) or slug.
         download_directory: Directory where to save the downloaded archive file.
@@ -122,7 +116,7 @@ def download_dataset(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
-        download_source=DOWNLOAD_SOURCE_SAVE,
+        download_source=DOWNLOAD_SOURCE_DOWNLOAD,
     )
     return archive_path
 
@@ -373,28 +367,35 @@ def list_dataset_filters() -> DatasetFilters:
     return DatasetFilters.model_validate(resp.json())
 
 
-def save_dataset_to_disk(
-    dataset_id: str,
-    download_directory: str | None = None,
-    show_progress: bool = True,
-    overwrite_existing: bool = False,
-    enable_logging: bool = False,
-) -> Path:
-    """
-    Deprecated alias for `download_dataset`.
+def _require_archive_filename(details: DatasetDetails) -> str:
+    if not details.filename:
+        raise RuntimeError(
+            f"Dataset '{details.id}' details did not include an archive filename."
+        )
+    return details.filename
 
-    Use `download_dataset` instead. This name is kept for backward compatibility.
-    """
-    warnings.warn(
-        "`save_dataset_to_disk` is deprecated and will be removed in a future "
-        "release. Use `download_dataset` instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return download_dataset(
-        dataset_id=dataset_id,
-        download_directory=download_directory,
-        show_progress=show_progress,
-        overwrite_existing=overwrite_existing,
-        enable_logging=enable_logging,
-    )
+
+def _validate_option(name: str, value: str | None, allowed: tuple[str, ...]) -> None:
+    if value is not None and value not in allowed:
+        raise ValueError(
+            f"Invalid {name} '{value}'. Supported values: {', '.join(allowed)}"
+        )
+
+
+def _normalize_filter_values(
+    name: str, value: Task | License | str | Sequence[Task | License | str] | None
+) -> list[str] | None:
+    """Turn a single filter value or a sequence of them into a list of API strings."""
+    if value is None:
+        return None
+    raw_values = [value] if isinstance(value, (str, Enum)) else value
+
+    normalized: list[str] = []
+    for item in raw_values:
+        item_str = (item.value if isinstance(item, Enum) else str(item)).strip()
+        if not item_str:
+            raise ValueError(f"`{name}` values must be non-empty strings")
+        normalized.append(item_str)
+    if not normalized:
+        raise ValueError(f"`{name}` must contain at least one value when provided")
+    return normalized
