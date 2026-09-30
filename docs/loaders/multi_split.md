@@ -14,6 +14,7 @@ from the file stem.
 | `splits_file_pattern` | ✗ | *(optional)* Glob pattern to locate split files (default: `"**/*.tsv"`). |
 | `columns` | ✗ | *(optional)* Column mappings applied to every split frame. When omitted, the raw columns plus `split` are returned. |
 | `base_audio_path` | ✗ | *(optional)* Directory prefix or list of directories used to resolve `file_path` dtype columns. |
+| `quoting` | ✗ | *(optional)* `"minimal"` or `"none"`. Split files are usually TSVs, which default to `"none"`: Common Voice sentences that start with `"` are kept as text. See [Quoting in delimited files](../schema_documentation.md#quoting-in-delimited-files). |
 
 ---
 
