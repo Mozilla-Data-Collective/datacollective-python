@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from enum import Enum
-from typing import Any, ClassVar, Sequence
+from typing import Any, ClassVar
 
 from pydantic import (
     BaseModel,
@@ -544,25 +544,11 @@ def _payload_for_fields(
     if "licenseAbbreviation" in allowed_fields and isinstance(
         submission.licenseAbbreviation, License
     ):
-        payload["licenseAbbreviation"] = submission.licenseAbbreviation.value
         # Remove custom license fields if a predefined license is used
         payload.pop("license", None)
         payload.pop("licenseUrl", None)
 
     return payload
-
-
-def _build_final_submission_error(
-    missing_items: list[str], *, missing_file_upload_id: bool
-) -> str:
-    message = (
-        "Cannot submit dataset. Missing required fields for final submission: "
-        f"{', '.join(missing_items)}. Please update your DatasetSubmission model "
-        f"with the appropriate fields."
-    )
-    if missing_file_upload_id:
-        message += " Upload the dataset file before submitting."
-    return message
 
 
 def _validate_final_submission_fields(
@@ -585,12 +571,14 @@ def _validate_final_submission_fields(
         missing_items.append("`fileUploadId`")
 
     if missing_items:
-        raise ValueError(
-            _build_final_submission_error(
-                missing_items,
-                missing_file_upload_id=missing_file_upload_id,
-            )
+        message = (
+            "Cannot submit dataset. Missing required fields for final submission: "
+            f"{', '.join(missing_items)}. Please update your DatasetSubmission model "
+            "with the appropriate fields."
         )
+        if missing_file_upload_id:
+            message += " Upload the dataset file before submitting."
+        raise ValueError(message)
 
 
 def _should_validate_local_final_submission(
