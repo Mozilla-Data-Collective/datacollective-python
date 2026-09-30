@@ -145,14 +145,15 @@ def create_submission_with_upload(
 
         draft = create_submission_draft(submission)
 
-        submission_payload = draft.get("submission", {})
-        submission_id = (
+        submission_payload = draft.get("submission")
+        draft_id = (
             submission_payload.get("id")
             if isinstance(submission_payload, dict)
             else None
         )
-        if not submission_id:
+        if not draft_id:
             raise RuntimeError("Draft creation did not return a submission id")
+        submission_id = str(draft_id)
 
         logger.info(f"Draft created. Submission ID: {submission_id}")
 
