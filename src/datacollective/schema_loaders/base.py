@@ -135,7 +135,7 @@ class BaseSchemaLoader(abc.ABC):
 
         for logical_name, col_map in self.schema.columns.items():
             source = col_map.source_column
-            resolved_source = self._resolve_source_column(raw_df, source)
+            resolved_source = self._resolve_column(raw_df.columns, source)
 
             if resolved_source is None:
                 if col_map.optional:
@@ -259,35 +259,33 @@ class BaseSchemaLoader(abc.ABC):
         result.columns = normalized_columns
         return result
 
-    def _resolve_source_column(
-        self, raw_df: pd.DataFrame, source: str | int
+    def _resolve_column(
+        self, columns: pd.Index, source: str | int, kind: str = "index"
     ) -> str | int | None:
-        if source in raw_df.columns:
+        """Find *source* among *columns*, tolerating whitespace/case/BOM
+        differences unless the schema is strict."""
+        if source in columns:
             return source
-        if isinstance(source, int):
-            return source if source in raw_df.columns else None
-        if self.schema.strict:
+        if isinstance(source, int) or self.schema.strict:
             # Strict schemas require exact column names — no fuzzy matching
             return None
 
         stripped_source = source.strip()
-        if stripped_source in raw_df.columns:
+        if stripped_source in columns:
             return stripped_source
 
         normalized_source = self._normalize_column_key(stripped_source)
         matches = [
             column
-            for column in raw_df.columns
+            for column in columns
             if isinstance(column, str)
             and self._normalize_column_key(column) == normalized_source
         ]
-        if len(matches) == 1:
-            return matches[0]
         if len(matches) > 1:
             raise KeyError(
-                f"Column '{source}' matched multiple index columns after normalization: {matches}"
+                f"Column '{source}' matched multiple {kind} columns after normalization: {matches}"
             )
-        return None
+        return matches[0] if matches else None
 
     def _normalize_column_key(self, column: str) -> str:
         cleaned = column.replace("\ufeff", "").strip()
@@ -637,7 +635,7 @@ class BaseSchemaLoader(abc.ABC):
             if placeholder == "value":
                 return raw_value
 
-            row_key = self._resolve_row_column(row, placeholder)
+            row_key = self._resolve_column(row.index, placeholder, kind="row")
             if row_key is None:
                 raise KeyError(
                     f"Could not render {template_name} placeholder '{placeholder}'. "
@@ -650,33 +648,3 @@ class BaseSchemaLoader(abc.ABC):
             return str(cell_value).strip()
 
         return re.sub(r"\$\{([^}]+)\}", replace, template)
-
-    def _resolve_row_column(
-        self, row: pd.Series, source: str | int
-    ) -> str | int | None:
-        if source in row.index:
-            return source
-        if isinstance(source, int):
-            return source if source in row.index else None
-        if self.schema.strict:
-            # Strict schemas require exact column names — no fuzzy matching
-            return None
-
-        stripped_source = source.strip()
-        if stripped_source in row.index:
-            return stripped_source
-
-        normalized_source = self._normalize_column_key(stripped_source)
-        matches = [
-            column
-            for column in row.index
-            if isinstance(column, str)
-            and self._normalize_column_key(column) == normalized_source
-        ]
-        if len(matches) == 1:
-            return matches[0]
-        if len(matches) > 1:
-            raise KeyError(
-                f"Column '{source}' matched multiple row columns after normalization: {matches}"
-            )
-        return None
