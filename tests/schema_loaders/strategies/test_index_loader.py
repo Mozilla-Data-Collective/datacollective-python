@@ -712,3 +712,74 @@ class TestDataLoadWarnings:
         assert any("'score': 1 of 2" in m and "'worse'" in m for m in messages)
         assert df["age"].iloc[0] == 30
         assert pd.isna(df["age"].iloc[1])
+
+
+class TestQuoting:
+    @staticmethod
+    def _schema(index_file: str, **kwargs: object) -> DatasetSchema:
+        return DatasetSchema(dataset_id="ds", index_file=index_file, **kwargs)
+
+    def test_tsv_ignores_quotes_by_default(self, tmp_path: Path) -> None:
+        """Common Voice style: '"' is part of the text, never a quote."""
+        _write(
+            tmp_path / "train.tsv",
+            'path\tsentence\na.mp3\t"Go away!"\nb.mp3\t"Hi," she said\nc.mp3\tlast\n',
+        )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DataLoadWarning)
+            df = IndexLoader(self._schema("train.tsv"), tmp_path).load()
+        assert list(df["sentence"]) == ['"Go away!"', '"Hi," she said', "last"]
+
+    def test_tsv_written_with_quoting_warns_by_default(self, tmp_path: Path) -> None:
+        pd.DataFrame({"path": ["a.mp3"], "sentence": ['He said "hi"']}).to_csv(
+            tmp_path / "train.tsv", sep="\t", index=False
+        )
+        with pytest.warns(DataLoadWarning, match="'sentence'.*quoting: minimal"):
+            df = IndexLoader(self._schema("train.tsv"), tmp_path).load()
+        assert df["sentence"].iloc[0] == '"He said ""hi"""'
+
+    def test_tsv_quoting_minimal_parses_quoted_fields(self, tmp_path: Path) -> None:
+        pd.DataFrame(
+            {"path": ["a.mp3", "b.mp3"], "sentence": ['He said "hi"', "line\nbreak"]}
+        ).to_csv(tmp_path / "train.tsv", sep="\t", index=False)
+        schema = self._schema("train.tsv", quoting="minimal")
+        with pytest.warns(DataLoadWarning, match="spanning several lines"):
+            df = IndexLoader(schema, tmp_path).load()
+        assert list(df["sentence"]) == ['He said "hi"', "line\nbreak"]
+
+    def test_tsv_explicit_quoting_none_does_not_warn(self, tmp_path: Path) -> None:
+        _write(tmp_path / "train.tsv", 'path\tsentence\na.mp3\t"a ""b"""\n')
+        schema = self._schema("train.tsv", quoting="none")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DataLoadWarning)
+            df = IndexLoader(schema, tmp_path).load()
+        assert df["sentence"].iloc[0] == '"a ""b"""'
+
+    def test_csv_unbalanced_quote_warns_about_lost_rows(self, tmp_path: Path) -> None:
+        _write(
+            tmp_path / "meta.csv",
+            'path,sentence\na.mp3,"Quoted start\nb.mp3,swallowed\n'
+            'c.mp3,ends with a quote" here\nd.mp3,last\n',
+        )
+        with pytest.warns(DataLoadWarning, match="4 data lines.*2 rows.*quoting: none"):
+            df = IndexLoader(self._schema("meta.csv"), tmp_path).load()
+        assert len(df) == 2
+
+    def test_csv_quoting_none_keeps_all_rows(self, tmp_path: Path) -> None:
+        _write(
+            tmp_path / "meta.csv",
+            'path,sentence\na.mp3,"Quoted start\nb.mp3,swallowed\n'
+            'c.mp3,ends with a quote" here\nd.mp3,last\n',
+        )
+        schema = self._schema("meta.csv", quoting="none")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DataLoadWarning)
+            df = IndexLoader(schema, tmp_path).load()
+        assert list(df["path"]) == ["a.mp3", "b.mp3", "c.mp3", "d.mp3"]
+
+    def test_csv_quoted_fields_on_one_line_do_not_warn(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.csv", 'path,sentence\na.mp3,"one, two"\n\n')
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DataLoadWarning)
+            df = IndexLoader(self._schema("meta.csv"), tmp_path).load()
+        assert df["sentence"].iloc[0] == "one, two"

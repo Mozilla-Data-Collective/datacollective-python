@@ -160,6 +160,10 @@ class TestParseSchema:
         s = _parse_schema({"dataset_id": "ds1"})
         assert s.task is None
 
+    def test_unknown_quoting_raises(self) -> None:
+        with pytest.raises(ValueError, match="quoting"):
+            _parse_schema({"dataset_id": "ds1", "quoting": "all"})
+
     def test_invalid_yaml_type_raises(self) -> None:
         with pytest.raises(ValueError, match="Expected a dict"):
             _parse_schema("just a string value")
@@ -249,6 +253,7 @@ class TestParseSchema:
             "separator": "|",
             "has_header": False,
             "encoding": "utf-8-sig",
+            "quoting": "minimal",
             "root_strategy": "paired_glob",
             "file_pattern": "**/*.txt",
             "audio_extension": ".webm",
@@ -272,6 +277,7 @@ class TestParseSchema:
         assert s.separator == "|"
         assert s.has_header is False
         assert s.encoding == "utf-8-sig"
+        assert s.quoting == "minimal"
         assert s.splits == ["train"]
         assert s.splits_file_pattern == "**/*.csv"
         assert s.columns["a"].optional is True
