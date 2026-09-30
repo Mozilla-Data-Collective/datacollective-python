@@ -216,26 +216,17 @@ class BaseSchemaLoader(abc.ABC):
 
     def _read_delimited_file(self, file_path: Path) -> pd.DataFrame:
         sep = self._resolve_separator(file_path)
-        header = "infer" if self.schema.has_header else None
-
         logger.debug(f"Reading delimited file: {file_path} (sep={sep!r})")
-        df = self._read_csv(file_path, sep=sep, header=header)
+        df = pd.read_csv(
+            file_path,
+            sep=sep,
+            # Separator sniffing (sep=None) requires the python engine
+            engine="python" if sep is None else None,
+            header="infer" if self.schema.has_header else None,
+            encoding=self.schema.encoding,
+            skipinitialspace=True,
+        )
         return self._normalize_dataframe_columns(df)
-
-    def _read_csv(
-        self, file_path: Path, sep: str | None, header: str | None
-    ) -> pd.DataFrame:
-        kwargs: dict[str, object] = {
-            "header": header,
-            "encoding": self.schema.encoding,
-            "skipinitialspace": True,
-        }
-        if sep is None:
-            kwargs["sep"] = None
-            kwargs["engine"] = "python"
-        else:
-            kwargs["sep"] = sep
-        return pd.read_csv(file_path, **kwargs)
 
     def _resolve_separator(self, file_path: Path | None = None) -> str | None:
         if self.schema.separator:
