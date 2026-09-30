@@ -23,9 +23,9 @@ from datacollective.models import (
 )
 from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
-    DOWNLOAD_SOURCE_SAVE,
-    _download_dataset,
+    DOWNLOAD_SOURCE_DOWNLOAD,
     DOWNLOAD_SOURCE_LOAD,
+    _download_dataset,
 )
 from datacollective.hf_utils import _convert_to_hf, _require_datasets
 from datacollective.logging_utils import (
@@ -119,7 +119,7 @@ def download_dataset(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
-        download_source=DOWNLOAD_SOURCE_SAVE,
+        download_source=DOWNLOAD_SOURCE_DOWNLOAD,
     )
     return archive_path
 
