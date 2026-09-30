@@ -1099,6 +1099,11 @@ the raw index file is returned as-is.</p>
 <td>File encoding (e.g. <code>"utf-8-sig"</code> for files with a BOM).</td>
 </tr>
 <tr>
+<td><code>quoting</code></td>
+<td>✗</td>
+<td><code>"minimal"</code> (CSV-style quoted fields) or <code>"none"</code> (<code>"</code> is literal). Defaults to <code>"none"</code> for tab-separated files and <code>"minimal"</code> otherwise; see <a href="../schema_documentation/#quoting-in-delimited-files">Quoting in delimited files</a>.</td>
+</tr>
+<tr>
 <td><code>strict</code></td>
 <td>✗</td>
 <td>Disable archive heuristics: <code>index_file</code> must exist at its literal relative path (no recursive search), exact column-name matching only.</td>
