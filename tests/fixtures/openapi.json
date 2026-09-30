@@ -1259,7 +1259,7 @@
                                     "null"
                                 ],
                                 "examples": [
-                                    "Research use only."
+                                    "Research use only. See the [terms](https://example.com/terms)."
                                 ]
                             },
                             "forbiddenUsage": {
@@ -1268,7 +1268,7 @@
                                     "null"
                                 ],
                                 "examples": [
-                                    "No re-identification of speakers."
+                                    "- No re-identification of speakers.\n- No voice cloning."
                                 ]
                             },
                             "additionalConditions": {
@@ -1277,7 +1277,7 @@
                                     "null"
                                 ],
                                 "examples": [
-                                    "Attribution requested in published work."
+                                    "Attribution requested in published work; cite the [paper](https://example.com/paper)."
                                 ]
                             },
                             "pointOfContactFullName": {
@@ -1861,7 +1861,7 @@
                                     "null"
                                 ],
                                 "examples": [
-                                    "Research use only."
+                                    "Research use only. See the [terms](https://example.com/terms)."
                                 ]
                             },
                             "forbiddenUsage": {
@@ -1870,7 +1870,7 @@
                                     "null"
                                 ],
                                 "examples": [
-                                    "No re-identification of speakers."
+                                    "- No re-identification of speakers.\n- No voice cloning."
                                 ]
                             },
                             "additionalConditions": {
@@ -1879,7 +1879,7 @@
                                     "null"
                                 ],
                                 "examples": [
-                                    "Attribution requested in published work."
+                                    "Attribution requested in published work; cite the [paper](https://example.com/paper)."
                                 ]
                             },
                             "pointOfContactFullName": {
@@ -2384,39 +2384,17 @@
                         ]
                     },
                     "restrictions": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 7500,
-                                "examples": [
-                                    "Research use only."
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "enum": [
-                                    ""
-                                ]
-                            }
+                        "type": "string",
+                        "maxLength": 7500,
+                        "examples": [
+                            "Research use only. See the [terms](https://example.com/terms)."
                         ]
                     },
                     "forbiddenUsage": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 7500,
-                                "examples": [
-                                    "No re-identification of speakers."
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "enum": [
-                                    ""
-                                ]
-                            }
+                        "type": "string",
+                        "maxLength": 7500,
+                        "examples": [
+                            "- No re-identification of speakers.\n- No voice cloning."
                         ]
                     },
                     "other": {
@@ -2436,7 +2414,7 @@
                         ],
                         "maxLength": 7500,
                         "examples": [
-                            "Attribution requested in published work."
+                            "Attribution requested in published work; cite the [paper](https://example.com/paper)."
                         ]
                     },
                     "pointOfContactFullName": {
