@@ -54,6 +54,7 @@ SDK_OPERATIONS = {
     ("get", "/submissions/{submissionId}"),
     ("patch", "/submissions/{submissionId}"),
     ("post", "/submissions/{submissionId}"),
+    ("delete", "/submissions/{submissionId}"),
     ("post", "/uploads"),
     ("get", "/uploads/{fileUploadId}/parts/{partNumber}"),
     ("post", "/uploads/{fileUploadId}"),
