@@ -526,6 +526,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#deleting-a-submission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting a Submission
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tuning-the-part-size" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1391,6 +1402,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#deleting-a-submission" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deleting a Submission
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#tuning-the-part-size" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1899,13 +1921,20 @@ You can also find your submission ID by going to your <a href="https://mozillada
 </span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="n">submission</span> <span class="o">=</span> <span class="n">response</span><span class="p">[</span><span class="s2">"submission"</span><span class="p">]</span>
 </span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Submission status: </span><span class="si">{</span><span class="n">submission</span><span class="p">[</span><span class="s1">'status'</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
 </span></code></pre></div>
+<h2 id="deleting-a-submission">Deleting a Submission</h2>
+<p>A submission that has not been published can be deleted, together with every file uploaded for it. Use this to discard a draft or a submission still under review. The deletion cannot be undone.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">delete_submission</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">delete_submission</span><span class="p">(</span><span class="n">submission_id</span><span class="o">=</span><span class="s2">"your-submission-id"</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Deleting a published submission, or one that belongs to another organization, raises <code>PermissionError</code>.</p>
 <h2 id="tuning-the-part-size">Tuning the Part Size</h2>
 <p>Uploads are <strong>multipart</strong>: the file is split into fixed-size chunks ("parts") that are uploaded one by one. Both <code>upload_dataset_file</code> and <code>create_submission_with_upload</code> accept a <code>part_size</code> argument (in bytes) to control this. It defaults to <strong>10 MB</strong>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">upload_dataset_file</span><span class="p">(</span>
-</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
-</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="n">part_size</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>  <span class="c1"># 20 MB parts</span>
-</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">upload_dataset_file</span><span class="p">(</span>
+</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
+</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>    <span class="n">part_size</span><span class="o">=</span><span class="mi">20</span> <span class="o">*</span> <span class="mi">1024</span> <span class="o">*</span> <span class="mi">1024</span><span class="p">,</span>  <span class="c1"># 20 MB parts</span>
+</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="p">)</span>
 </span></code></pre></div>
 <p><strong>Why change it?</strong></p>
 <ul>
@@ -1930,41 +1959,41 @@ When <strong>resuming</strong> an interrupted upload, <code>part_size</code> is 
 <h3 id="automatic-resume">Automatic Resume</h3>
 <p>Simply rerun the same upload call after an interruption.</p>
 <h4 id="using-create_submission_with_upload">Using create_submission_with_upload</h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_submission_with_upload</span>
-</span><span id="__span-17-2"><a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
-</span><span id="__span-17-3"><a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="c1"># First attempt (interrupted)</span>
-</span><span id="__span-17-4"><a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
-</span><span id="__span-17-5"><a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
-</span><span id="__span-17-6"><a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
-</span><span id="__span-17-7"><a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a><span class="p">)</span>
-</span><span id="__span-17-8"><a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="c1"># Second attempt (resumes automatically)</span>
-</span><span id="__span-17-9"><a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
-</span><span id="__span-17-10"><a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
-</span><span id="__span-17-11"><a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
-</span><span id="__span-17-12"><a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="p">)</span>
-</span></code></pre></div>
-<h4 id="using-upload_dataset_file">Using upload_dataset_file</h4>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload_dataset_file</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-18-1"><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_submission_with_upload</span>
 </span><span id="__span-18-2"><a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
 </span><span id="__span-18-3"><a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="c1"># First attempt (interrupted)</span>
-</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
-</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/your/dataset.tar.gz"</span><span class="p">,</span>
-</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-18-4"><a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
+</span><span id="__span-18-5"><a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
+</span><span id="__span-18-6"><a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
 </span><span id="__span-18-7"><a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="p">)</span>
-</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>
-</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="c1"># Second attempt (resumes automatically)</span>
-</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
-</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/your/dataset.tar.gz"</span><span class="p">,</span>
-</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
-</span><span id="__span-18-13"><a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a><span class="p">)</span>
+</span><span id="__span-18-8"><a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="c1"># Second attempt (resumes automatically)</span>
+</span><span id="__span-18-9"><a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
+</span><span id="__span-18-10"><a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
+</span><span id="__span-18-11"><a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
+</span><span id="__span-18-12"><a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="p">)</span>
+</span></code></pre></div>
+<h4 id="using-upload_dataset_file">Using upload_dataset_file</h4>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">upload_dataset_file</span>
+</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="c1"># First attempt (interrupted)</span>
+</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
+</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/your/dataset.tar.gz"</span><span class="p">,</span>
+</span><span id="__span-19-6"><a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-19-7"><a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a><span class="p">)</span>
+</span><span id="__span-19-8"><a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>
+</span><span id="__span-19-9"><a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="c1"># Second attempt (resumes automatically)</span>
+</span><span id="__span-19-10"><a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="n">upload_state</span> <span class="o">=</span> <span class="n">upload_dataset_file</span><span class="p">(</span>
+</span><span id="__span-19-11"><a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/your/dataset.tar.gz"</span><span class="p">,</span>
+</span><span id="__span-19-12"><a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>    <span class="n">submission_id</span><span class="o">=</span><span class="n">submission_id</span><span class="p">,</span>
+</span><span id="__span-19-13"><a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="custom-state-file-location">Custom State File Location</h3>
 <p>You can specify a custom location for the state file:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-19-1"><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
-</span><span id="__span-19-2"><a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
-</span><span id="__span-19-3"><a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span><span class="p">,</span>
-</span><span id="__span-19-4"><a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>    <span class="n">state_path</span><span class="o">=</span><span class="s2">"/custom/path/upload-state.json"</span><span class="p">,</span>
-</span><span id="__span-19-5"><a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-20-1"><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
+</span><span id="__span-20-2"><a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
+</span><span id="__span-20-3"><a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span><span class="p">,</span>
+</span><span id="__span-20-4"><a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>    <span class="n">state_path</span><span class="o">=</span><span class="s2">"/custom/path/upload-state.json"</span><span class="p">,</span>
+</span><span id="__span-20-5"><a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="disabling-resume">Disabling Resume</h3>
 <p>To force a fresh upload (ignoring any existing state), simply delete the state file 
@@ -1981,7 +2010,11 @@ When <strong>resuming</strong> an interrupted upload, <code>part_size</code> is 
 <tbody>
 <tr>
 <td><code>FileNotFoundError</code></td>
-<td>The specified file path does not exist</td>
+<td>The specified file path does not exist, or the submission was not found</td>
+</tr>
+<tr>
+<td><code>ResourceRemovedError</code></td>
+<td>The submission was deleted. Subclasses <code>FileNotFoundError</code></td>
 </tr>
 <tr>
 <td><code>ValidationError</code></td>
@@ -1997,7 +2030,7 @@ When <strong>resuming</strong> an interrupted upload, <code>part_size</code> is 
 </tr>
 <tr>
 <td><code>PermissionError</code></td>
-<td>When downloading: You have not agreed to the T&amp;C of the dataset. When uploading: your organization is not approved to upload datasets, or the API key was created before the approval was granted</td>
+<td>Your organization is not approved to upload datasets (or the API key was created before the approval was granted), the submission belongs to another organization, or it has already been published. The error message carries the API's explanation</td>
 </tr>
 <tr>
 <td><code>RuntimeError</code></td>
@@ -2018,6 +2051,7 @@ as soon as you construct the model (before any network calls are made).</p>
 <li><a href="../api/"><code>upload_dataset_file</code></a> - Upload a file to a submission</li>
 <li><a href="../api/"><code>upload_sample_file</code></a> - Upload an optional sample file to a submission</li>
 <li><a href="../api/"><code>submit_submission</code></a> - Submit a draft for review</li>
+<li><a href="../api/"><code>delete_submission</code></a> - Delete an unpublished submission</li>
 </ul>
 
 
