@@ -2,14 +2,21 @@ import math
 from datetime import datetime
 from pathlib import Path
 
-from datacollective.submissions import create_submission_with_upload
+import pytest
+
+from datacollective.errors import ResourceRemovedError
+from datacollective.submissions import (
+    create_submission_draft,
+    create_submission_with_upload,
+    delete_submission,
+)
 from datacollective.upload import upload_dataset_file, upload_sample_file
 from tests.e2e.conftest import sample_dataset_submission, skip_if_rate_limited
 
 
 def test_create_submission_with_upload(
     tmp_path: Path,
-    live_api_env: None,
+    submissions_to_delete: list[str],
     example_dataset_archive_path: Path,
 ) -> None:
     name = f"python-sdk-e2e-{datetime.now().strftime('%H:%M - %d/%m/%Y')}"
@@ -27,6 +34,8 @@ def test_create_submission_with_upload(
         skip_if_rate_limited(exc)
     else:
         submission_payload = response.get("submission", {})
+        if isinstance(submission_payload, dict) and submission_payload.get("id"):
+            submissions_to_delete.append(submission_payload["id"])
 
         assert isinstance(response, dict)
         assert isinstance(submission_payload, dict)
@@ -39,7 +48,7 @@ def test_create_submission_with_upload(
 
 def test_create_submission_with_upload_including_sample_file(
     tmp_path: Path,
-    live_api_env: None,
+    submissions_to_delete: list[str],
     example_dataset_archive_path: Path,
 ) -> None:
     name = f"python-sdk-e2e-sample-{datetime.now().strftime('%H:%M - %d/%m/%Y')}"
@@ -61,6 +70,8 @@ def test_create_submission_with_upload_including_sample_file(
         skip_if_rate_limited(exc)
     else:
         submission_payload = response.get("submission", {})
+        if isinstance(submission_payload, dict) and submission_payload.get("id"):
+            submissions_to_delete.append(submission_payload["id"])
 
         assert isinstance(submission_payload, dict)
         assert submission_payload.get("fileUploadId")
@@ -157,3 +168,17 @@ def test_upload_dataset_file_with_non_default_part_size(
     assert upload_state.partSize == part_size
     assert len(upload_state.parts) == expected_parts
     assert not state_path.exists(), "Upload state should be cleaned up after success"
+
+
+def test_delete_submission_removes_draft(live_api_env: None) -> None:
+    name = f"python-sdk-e2e-delete-{datetime.now().strftime('%H:%M - %d/%m/%Y')}"
+
+    try:
+        draft = create_submission_draft(sample_dataset_submission(name=name))
+        submission_id = draft["submission"]["id"]
+        delete_submission(submission_id)
+    except Exception as exc:  # noqa: BLE001
+        skip_if_rate_limited(exc)
+
+    with pytest.raises(ResourceRemovedError):
+        delete_submission(submission_id)
