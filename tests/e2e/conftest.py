@@ -1,6 +1,7 @@
 import os
+import warnings
 from pathlib import Path
-from typing import NoReturn
+from typing import NoReturn, Iterator
 
 import pytest
 
@@ -10,6 +11,7 @@ from requests import Timeout
 
 from datacollective.errors import RateLimitError
 from datacollective.models import DatasetSubmission, License, Task, Visibility
+from datacollective.submissions import delete_submission
 
 
 LIVE_TEST_SKIP_REASON = (
@@ -49,6 +51,21 @@ def live_api_env(monkeypatch, live_api_settings: tuple[str, str]) -> None:
 def live_download_dir(tmp_path: Path, monkeypatch, live_api_env: None) -> Path:
     monkeypatch.setenv("MDC_DOWNLOAD_PATH", str(tmp_path))
     return tmp_path
+
+
+@pytest.fixture
+def submissions_to_delete(live_api_env: None) -> Iterator[list[str]]:
+    """Submission IDs a test created, deleted from dev once the test finishes."""
+    submission_ids: list[str] = []
+    yield submission_ids
+    for submission_id in submission_ids:
+        try:
+            delete_submission(submission_id)
+        except RateLimitError:
+            warnings.warn(
+                f"Rate limited: test submission {submission_id} was not deleted",
+                stacklevel=1,
+            )
 
 
 @pytest.fixture(scope="session")

@@ -390,6 +390,18 @@ submission = response["submission"]
 print(f"Submission status: {submission['status']}")
 ```
 
+## Deleting a Submission
+
+A submission that has not been published can be deleted, together with every file uploaded for it. Use this to discard a draft or a submission still under review. The deletion cannot be undone.
+
+```python
+from datacollective import delete_submission
+
+delete_submission(submission_id="your-submission-id")
+```
+
+Deleting a published submission, or one that belongs to another organization, raises `PermissionError`.
+
 ## Tuning the Part Size
 
 Uploads are **multipart**: the file is split into fixed-size chunks ("parts") that are uploaded one by one. Both `upload_dataset_file` and `create_submission_with_upload` accept a `part_size` argument (in bytes) to control this. It defaults to **10 MB**.
@@ -486,14 +498,15 @@ To force a fresh upload (ignoring any existing state), simply delete the state f
 
 The SDK raises specific exceptions for common error cases:
 
-| Exception | Cause                                                                                                                                                                                             |
-|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `FileNotFoundError` | The specified file path does not exist                                                                                                                                                            |
-| `ValidationError` | Invalid `DatasetSubmission` or required string inputs                                                                                                                                             |
-| `ValueError` | Missing or invalid required parameter                                                                                                                                                             |
-| `AuthenticationError` | The API key is invalid, expired or revoked                                                                                                                                                        |
-| `PermissionError` | When downloading: You have not agreed to the T&C of the dataset. When uploading: your organization is not approved to upload datasets, or the API key was created before the approval was granted |
-| `RuntimeError` | Rate limit exceeded or upload failed                                                                                                                                                              |
+| Exception | Cause |
+|-----------|-------|
+| `FileNotFoundError` | The specified file path does not exist, or the submission was not found |
+| `ResourceRemovedError` | The submission was deleted. Subclasses `FileNotFoundError` |
+| `ValidationError` | Invalid `DatasetSubmission` or required string inputs |
+| `ValueError` | Missing or invalid required parameter |
+| `AuthenticationError` | The API key is invalid, expired or revoked |
+| `PermissionError` | Your organization is not approved to upload datasets (or the API key was created before the approval was granted), the submission belongs to another organization, or it has already been published. The error message carries the API's explanation |
+| `RuntimeError` | Rate limit exceeded or upload failed |
 
 ## Using the DatasetSubmission Model
 
@@ -512,3 +525,4 @@ For detailed API documentation, see the [API Reference](api.md) section.
 - [`upload_dataset_file`](api.md) - Upload a file to a submission
 - [`upload_sample_file`](api.md) - Upload an optional sample file to a submission
 - [`submit_submission`](api.md) - Submit a draft for review
+- [`delete_submission`](api.md) - Delete an unpublished submission

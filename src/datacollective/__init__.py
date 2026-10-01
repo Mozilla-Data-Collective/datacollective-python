@@ -25,6 +25,7 @@ from datacollective.models import (
 from datacollective.submissions import (
     create_submission_draft,
     create_submission_with_upload,
+    delete_submission,
     submit_submission,
     update_submission,
 )
@@ -41,6 +42,7 @@ __all__ = [
     "update_submission",
     "submit_submission",
     "create_submission_with_upload",
+    "delete_submission",
     "upload_dataset_file",
     "upload_sample_file",
     "DatasetDetails",
