@@ -76,6 +76,14 @@ class AuthenticationError(RuntimeError):
     """Raised when the MDC API responds with HTTP 401."""
 
 
+class ResourceRemovedError(FileNotFoundError):
+    """Raised when the MDC API responds with HTTP 410.
+
+    The dataset is no longer available, or the submission was deleted. Subclasses
+    :class:`FileNotFoundError` so callers handling 404 also handle it.
+    """
+
+
 class RateLimitError(RuntimeError):
     """Raised when the MDC API responds with HTTP 429."""
 
