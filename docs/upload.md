@@ -390,6 +390,18 @@ submission = response["submission"]
 print(f"Submission status: {submission['status']}")
 ```
 
+## Deleting a Submission
+
+A submission that has not been published can be deleted, together with every file uploaded for it. Use this to discard a draft or a submission still under review. The deletion cannot be undone.
+
+```python
+from datacollective import delete_submission
+
+delete_submission(submission_id="your-submission-id")
+```
+
+Deleting a published submission, or one that belongs to another organization, raises `PermissionError`.
+
 ## Tuning the Part Size
 
 Uploads are **multipart**: the file is split into fixed-size chunks ("parts") that are uploaded one by one. Both `upload_dataset_file` and `create_submission_with_upload` accept a `part_size` argument (in bytes) to control this. It defaults to **10 MB**.
