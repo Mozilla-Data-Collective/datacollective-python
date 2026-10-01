@@ -133,6 +133,7 @@ def _get_download_plan(
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
+        ResourceRemovedError: If the dataset is no longer available (410).
         PermissionError: If access is denied (403) or download directory is not writable.
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.

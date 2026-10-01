@@ -3010,8 +3010,28 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "Dataset is private to another organization",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Dataset not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Dataset no longer available",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3124,6 +3144,16 @@
                             }
                         }
                     },
+                    "410": {
+                        "description": "Dataset no longer available",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "429": {
                         "description": "Rate limit exceeded: download quota reached",
                         "content": {
@@ -3188,8 +3218,28 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "Terms of use not agreed, or the dataset is private to another organization",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Dataset not found, or it publishes no sample",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Dataset no longer available",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3247,8 +3297,28 @@
                             }
                         }
                     },
+                    "403": {
+                        "description": "Dataset is private",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
                     "404": {
                         "description": "Dataset not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Dataset no longer available",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3407,6 +3477,16 @@
                                 }
                             }
                         }
+                    },
+                    "410": {
+                        "description": "Submission deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -3492,6 +3572,16 @@
                     },
                     "404": {
                         "description": "Submission not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Submission deleted",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3591,6 +3681,101 @@
                                 }
                             }
                         }
+                    },
+                    "410": {
+                        "description": "Submission deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "deleteSubmission",
+                "tags": [
+                    "Submissions"
+                ],
+                "summary": "Delete submission",
+                "description": "Deletes a submission that has not been published, and every file uploaded for it. The deletion cannot be undone.",
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "submissionId",
+                        "in": "path",
+                        "required": true,
+                        "description": "Submission ID",
+                        "schema": {
+                            "type": "string",
+                            "format": "cuid",
+                            "pattern": "^[cC][0-9a-z]{6,}$",
+                            "description": "Dataset submission ID.",
+                            "examples": [
+                                "cmt95wwkv000eqb8y12tzfz41"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The submission was deleted"
+                    },
+                    "401": {
+                        "description": "Missing or invalid API key",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Submission belongs to another organization, or has been published",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Submission not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Submission deleted",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded: submission deletions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -3661,6 +3846,16 @@
                     },
                     "404": {
                         "description": "Submission not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Submission deleted",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -3968,6 +4163,16 @@
                     },
                     "404": {
                         "description": "Submission not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Submission deleted",
                         "content": {
                             "application/json": {
                                 "schema": {
