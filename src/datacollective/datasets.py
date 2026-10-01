@@ -64,6 +64,8 @@ def get_dataset_details(dataset_id: str) -> DatasetDetails:
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
+        PermissionError: If the dataset is private to another organization (403).
+        ResourceRemovedError: If the dataset is no longer available (410).
         RuntimeError: If rate limit is exceeded (429).
         requests.HTTPError: For other non-2xx responses.
         pydantic.ValidationError: If the API response is missing the `id` field.
@@ -107,6 +109,7 @@ def download_dataset(
     Raises:
         ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist (404).
+        ResourceRemovedError: If the dataset is no longer available (410).
         PermissionError: If access is denied (403) or download directory is not writable.
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
@@ -205,6 +208,7 @@ def load_dataset(
         MissingDependencyError: If `return_format="hf"` and the HuggingFace `datasets`
             library is not installed.
         FileNotFoundError: If the dataset does not exist (404).
+        ResourceRemovedError: If the dataset is no longer available (410).
         PermissionError: If access is denied (403) or download directory is not writable.
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.

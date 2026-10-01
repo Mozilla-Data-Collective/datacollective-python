@@ -11,6 +11,7 @@ from datacollective.datasets import (
 from datacollective.errors import (
     AuthenticationError,
     RateLimitError,
+    ResourceRemovedError,
 )
 from datacollective.models import (
     DatasetDetails,
@@ -51,6 +52,7 @@ __all__ = [
     "Visibility",
     "AuthenticationError",
     "RateLimitError",
+    "ResourceRemovedError",
     "__version__",
 ]
 
