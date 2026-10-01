@@ -498,14 +498,15 @@ To force a fresh upload (ignoring any existing state), simply delete the state f
 
 The SDK raises specific exceptions for common error cases:
 
-| Exception | Cause                                                                                                                                                                                             |
-|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `FileNotFoundError` | The specified file path does not exist                                                                                                                                                            |
-| `ValidationError` | Invalid `DatasetSubmission` or required string inputs                                                                                                                                             |
-| `ValueError` | Missing or invalid required parameter                                                                                                                                                             |
-| `AuthenticationError` | The API key is invalid, expired or revoked                                                                                                                                                        |
-| `PermissionError` | When downloading: You have not agreed to the T&C of the dataset. When uploading: your organization is not approved to upload datasets, or the API key was created before the approval was granted |
-| `RuntimeError` | Rate limit exceeded or upload failed                                                                                                                                                              |
+| Exception | Cause |
+|-----------|-------|
+| `FileNotFoundError` | The specified file path does not exist, or the submission was not found |
+| `ResourceRemovedError` | The submission was deleted. Subclasses `FileNotFoundError` |
+| `ValidationError` | Invalid `DatasetSubmission` or required string inputs |
+| `ValueError` | Missing or invalid required parameter |
+| `AuthenticationError` | The API key is invalid, expired or revoked |
+| `PermissionError` | Your organization is not approved to upload datasets (or the API key was created before the approval was granted), the submission belongs to another organization, or it has already been published. The error message carries the API's explanation |
+| `RuntimeError` | Rate limit exceeded or upload failed |
 
 ## Using the DatasetSubmission Model
 
@@ -524,3 +525,4 @@ For detailed API documentation, see the [API Reference](api.md) section.
 - [`upload_dataset_file`](api.md) - Upload a file to a submission
 - [`upload_sample_file`](api.md) - Upload an optional sample file to a submission
 - [`submit_submission`](api.md) - Submit a draft for review
+- [`delete_submission`](api.md) - Delete an unpublished submission
