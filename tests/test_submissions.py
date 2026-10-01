@@ -236,3 +236,22 @@ def test_create_submission_with_upload_rejects_missing_sample_file_before_upload
             submission=_build_complete_submission(file_upload_id=None),
             sample_file_path=str(tmp_path / "missing-sample.tar.gz"),
         )
+
+
+def test_delete_submission_sends_delete_request(monkeypatch) -> None:
+    captured_request: dict[str, object] = {}
+
+    def fake_send_api_request(method: str, url: str) -> object:
+        captured_request.update({"method": method, "url": url})
+        return object()
+
+    monkeypatch.setattr(
+        submissions_module, "_get_api_url", lambda: "https://api.example.test"
+    )
+    monkeypatch.setattr(submissions_module, "_send_api_request", fake_send_api_request)
+
+    submissions_module.delete_submission("submission-id")
+    assert captured_request == {
+        "method": "DELETE",
+        "url": "https://api.example.test/submissions/submission-id",
+    }
