@@ -192,3 +192,28 @@ def create_submission_with_upload(
     logger.info("Submission complete!")
 
     return response
+
+
+def delete_submission(submission_id: str) -> None:
+    """
+    Delete a dataset submission that has not been published, and every file
+    uploaded for it. WARNING: The deletion cannot be undone!
+
+    Args:
+        submission_id: Dataset submission ID.
+
+    Raises:
+        ValueError: If submission_id is empty.
+        FileNotFoundError: If the submission does not exist (404).
+        PermissionError: If the submission belongs to another organization or
+            has been published (403).
+        ResourceRemovedError: If the submission was already deleted (410).
+        RuntimeError: If rate limit is exceeded (429).
+        requests.HTTPError: For other non-2xx responses.
+    """
+    if not submission_id or not submission_id.strip():
+        raise ValueError("`submission_id` must be a non-empty string")
+
+    url = f"{_get_api_url()}/submissions/{submission_id}"
+    # 204 No Content: there is no body to return.
+    _send_api_request("DELETE", url)
