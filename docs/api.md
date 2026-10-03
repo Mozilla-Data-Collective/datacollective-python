@@ -5,6 +5,8 @@
 
 ::: datacollective.datasets
 
+::: datacollective.arrow_utils
+
 ::: datacollective.download
 
 ::: datacollective.api_utils
