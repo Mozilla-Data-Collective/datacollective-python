@@ -86,6 +86,7 @@ strategy is selected with the required `root_strategy` field:
 | `separator` | Inferred from `format` or `index_file` | ✗ | Explicit column separator override (e.g. `"\|"`). |
 | `has_header` | `true` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
 | `encoding` | `"utf-8"` | ✗ | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
+| `quoting` | `"none"` for tab-separated files, `"minimal"` otherwise | ✗ | How `"` is treated: `"minimal"` parses CSV-style quoted fields, `"none"` reads `"` as an ordinary character. Applies to every strategy that reads delimited files. See [Quoting in delimited files](#quoting-in-delimited-files). |
 | `strict` | `false` | ✗ | Disable archive heuristics for deterministic loading: `index_file` must exist at its literal path relative to the dataset root (no recursive search) and source column names must match exactly (no fuzzy matching). Applies to every strategy that reads delimited files. |
 
 The `index_file` lookup is deterministic even without `strict`: the literal
@@ -160,6 +161,118 @@ the directory name is added before concatenation.
 
 This field is task-agnostic — it works with any loader.
 
+
+## Quoting in delimited files
+
+Delimited files (CSV, TSV, pipe-separated) disagree on what a `"` means:
+
+- **Quoted files.** CSV-style writers wrap a value in `"…"` when it contains
+  the separator, a line break or a `"`, and double any `"` inside it. The
+  quotes are syntax, not data. `pandas.DataFrame.to_csv` does this (including
+  with `sep="\t"`), as do Python's `csv.writer`, Excel and Google Sheets.
+- **Unquoted files.** Every `"` is part of the text. Common Voice TSVs work
+  this way: a sentence such as `"Hi," she said.` is stored exactly as written.
+
+Reading a file with the wrong rule corrupts it silently, so the loader uses the
+`quoting` field:
+
+| `quoting` | Behaviour |
+|---|---|
+| *(omitted)* | `"none"` for tab-separated files, `"minimal"` for everything else. |
+| `"minimal"` | CSV-style: quoted values are unwrapped and may contain the separator or line breaks. |
+| `"none"` | `"` is an ordinary character. Values cannot contain the separator or line breaks. |
+
+The separator is resolved first (`separator`, then `format`, then the file
+extension); a tab separator selects `"none"` by default.
+
+### Example: Common Voice (no quoting)
+
+`train.tsv` contains:
+
+```text
+path	sentence
+a.mp3	"Hi," she said.
+b.mp3	"Quoted start with no closing quote.
+c.mp3	This row is swallowed.
+d.mp3	A quote" in the middle.
+e.mp3	Last.
+```
+
+The default for TSVs reads all five rows exactly as written. With
+`quoting: minimal`, two things go wrong without any error:
+
+- Row `a` loses its quotes: `"Hi,"` is read as a quoted value, giving
+  `Hi, she said.`
+- Row `b` opens a quoted value that runs to the next `"` in the file, across
+  tabs and line breaks. Rows `b`, `c` and `d` become a single row, so 5 rows
+  load as 3.
+
+### Example: TSV written by pandas (quoted)
+
+The file was produced by
+`df.to_csv("train.tsv", sep="\t", index=False)` from a frame containing the
+sentence `He said "hi"`:
+
+```text
+path	sentence
+a.mp3	"He said ""hi"""
+```
+
+With the default (`"none"`), the sentence is loaded as `"He said ""hi"""`,
+quotes and all. Declare the quoting instead:
+
+```yaml
+index_file: "train.tsv"
+quoting: "minimal"
+```
+
+The sentence is now loaded as `He said "hi"`. If a quoted value contains a tab
+or a line break, the default is worse still: the row is split apart, which
+either raises a parse error or shifts values into the wrong columns.
+
+### Example: CSV that does not quote (no quoting)
+
+A CSV can have the same problem when its values start with `"` without being
+quoted:
+
+```text
+path,sentence
+a.mp3,"Quoted start
+b.mp3,next row
+c.mp3,a quote" here
+d.mp3,last
+```
+
+The CSV default (`"minimal"`) reads this as 2 rows. Declare `quoting: "none"`
+to keep all 4. This only works if no value contains a comma, since an unquoted
+value cannot hold the separator.
+
+### Warnings
+
+Both mistakes are silent, so the loader checks the result and emits a
+`DataLoadWarning`:
+
+- **Lines merged into quoted values** (when `quoting` is `"minimal"`, including
+  the default for CSVs): the file has more non-empty data lines than parsed
+  rows. That is expected when quoted values span several lines. Otherwise a
+  stray `"` has swallowed rows, and `quoting: "none"` fixes it.
+- **Values that look quoted** (when a tab-separated file is read with the
+  default `"none"`): a value starts and ends with `"` and contains a doubled
+  `""`, which is what a quoting writer produces. Set `quoting: "minimal"` if
+  the file was written that way, or `quoting: "none"` to confirm the quotes are
+  data and silence the warning. A quoted value without an inner `"` (quoted
+  only because it contains a tab or line break) is not detected.
+
+To act on these in code, filter for them like any other warning:
+
+```python
+import warnings
+from datacollective.errors import DataLoadWarning
+
+warnings.simplefilter("error", DataLoadWarning)  # fail instead of warn
+```
+
+---
 
 ## Column mapping
 

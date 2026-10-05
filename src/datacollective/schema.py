@@ -124,6 +124,15 @@ class DatasetSchema(BaseModel):
     encoding: str = Field(
         default="utf-8", description='file encoding (e.g. "utf-8-sig" for BOM)'
     )
+    quoting: Literal["minimal", "none"] | None = Field(
+        default=None,
+        description=(
+            'how \'"\' is treated in delimited files: "minimal" parses quoted '
+            'fields (CSV-style), "none" reads \'"\' as a literal character. '
+            'When omitted, tab-separated files use "none" and all others '
+            '"minimal"'
+        ),
+    )
     strict: bool = Field(
         default=False,
         description=(

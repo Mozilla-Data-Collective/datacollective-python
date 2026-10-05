@@ -10,6 +10,7 @@ from datacollective.datasets import (
 from datacollective.errors import (
     AuthenticationError,
     RateLimitError,
+    ResourceRemovedError,
 )
 from datacollective.models import (
     DatasetDetails,
@@ -23,6 +24,7 @@ from datacollective.models import (
 from datacollective.submissions import (
     create_submission_draft,
     create_submission_with_upload,
+    delete_submission,
     submit_submission,
     update_submission,
 )
@@ -38,6 +40,7 @@ __all__ = [
     "update_submission",
     "submit_submission",
     "create_submission_with_upload",
+    "delete_submission",
     "upload_dataset_file",
     "upload_sample_file",
     "DatasetDetails",
@@ -49,8 +52,9 @@ __all__ = [
     "Visibility",
     "AuthenticationError",
     "RateLimitError",
+    "ResourceRemovedError",
     "__version__",
 ]
 
 # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UPDATE. See release.md
-__version__ = "0.6.2"
+__version__ = "0.6.4"

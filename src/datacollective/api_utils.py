@@ -23,6 +23,12 @@ _SENSITIVE_KEY_SUBSTRINGS = (
     "token",
 )
 _REDACTED = "***REDACTED***"
+# Error statuses `_send_api_request` raises a dedicated exception for.
+DEDICATED_ERROR_STATUSES = frozenset({401, 403, 404, 410, 429})
+# Error statuses deliberately raised as `requests.HTTPError` carrying the API's
+# message: request validation (400, 422), paid datasets (402) and uploads that
+# cannot be completed (409).
+GENERIC_ERROR_STATUSES = frozenset({400, 402, 409, 422})
 
 
 load_dotenv(find_dotenv())
@@ -59,6 +65,7 @@ def _send_api_request(
 
     Raises:
         FileNotFoundError: If the resource is not found (404).
+        ResourceRemovedError: If the dataset or submission was deleted (410).
         AuthenticationError: If the API key is not accepted (401).
         PermissionError: If access is denied (403).
         RateLimitError: If rate limit is exceeded (429).
@@ -95,6 +102,15 @@ def _send_api_request(
             f"Resource not found: {method.upper()} {url}"
             + (f" — {detail}" if detail else "")
         )
+    if resp.status_code == 410:
+        from datacollective.errors import ResourceRemovedError
+
+        detail = _extract_error_detail(resp)
+        raise ResourceRemovedError(
+            f"Resource no longer available: {method.upper()} {url}. The dataset was"
+            " removed from the MDC platform, or the submission was deleted."
+            + (f" — {detail}" if detail else "")
+        )
     if resp.status_code == 401:
         from datacollective.errors import AuthenticationError
 
@@ -105,13 +121,17 @@ def _send_api_request(
             + (f"\n{detail}" if detail else "")
         )
     if resp.status_code == 403:
+        # The API's message names the actual cause; the hint only covers the
+        # common cases for when it is missing.
         detail = _extract_error_detail(resp)
         raise PermissionError(
-            "Access denied. When downloading, make sure you have read thoroughly and agreed to the dataset's"
-            " Terms & Conditions in its respective page on the MDC platform before downloading."
-            "When uploading, this means your organization is not approved to upload"
-            " datasets yet, or the API key was created before the approval was granted."
-            + (f"\n{detail}" if detail else "")
+            f"Access denied: {method.upper()} {url} — {detail}"
+            if detail
+            else f"Access denied: {method.upper()} {url}. Common causes: the dataset's"
+            " Terms & Conditions have not been agreed to on its MDC platform page, the"
+            " dataset or submission belongs to another organization, the submission"
+            " has already been published, or your organization is not approved to"
+            " upload datasets yet (or the API key predates the approval)."
         )
     if resp.status_code == 429:
         from datacollective.errors import RateLimitError

@@ -21,6 +21,10 @@ from typing import Any
 import pytest
 import requests
 
+from datacollective.api_utils import (
+    DEDICATED_ERROR_STATUSES,
+    GENERIC_ERROR_STATUSES,
+)
 from datacollective.models import (
     DRAFT_FIELDS,
     SUBMIT_FIELDS,
@@ -50,6 +54,7 @@ SDK_OPERATIONS = {
     ("get", "/submissions/{submissionId}"),
     ("patch", "/submissions/{submissionId}"),
     ("post", "/submissions/{submissionId}"),
+    ("delete", "/submissions/{submissionId}"),
     ("post", "/uploads"),
     ("get", "/uploads/{fileUploadId}/parts/{partNumber}"),
     ("post", "/uploads/{fileUploadId}"),
@@ -174,6 +179,22 @@ def test_sdk_operations_exist_in_spec(spec: dict[str, Any]) -> None:
     }
     missing = SDK_OPERATIONS - available
     assert not missing, f"SDK calls operations missing from the spec: {sorted(missing)}"
+
+
+def test_sdk_operations_error_statuses_are_handled(spec: dict[str, Any]) -> None:
+    # Every error status an SDK operation can return must be one
+    # `_send_api_request` has decided how to raise, so a status added to the
+    # spec fails here until the SDK handles it.
+    handled = DEDICATED_ERROR_STATUSES | GENERIC_ERROR_STATUSES
+    unhandled = {
+        (method, path, status)
+        for method, path in SDK_OPERATIONS
+        for status in spec["paths"][path][method]["responses"]
+        if status.isdigit() and int(status) >= 400 and int(status) not in handled
+    }
+    assert not unhandled, (
+        f"SDK operations return error statuses the SDK does not handle: {sorted(unhandled)}"
+    )
 
 
 """

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+import csv
 import re
 import warnings
 from pathlib import Path
@@ -216,17 +217,103 @@ class BaseSchemaLoader(abc.ABC):
 
     def _read_delimited_file(self, file_path: Path) -> pd.DataFrame:
         sep = self._resolve_separator(file_path)
+        header = "infer" if self.schema.has_header else None
+
         logger.debug(f"Reading delimited file: {file_path} (sep={sep!r})")
-        df = pd.read_csv(
-            file_path,
-            sep=sep,
-            # Separator sniffing (sep=None) requires the python engine
-            engine="python" if sep is None else None,
-            header="infer" if self.schema.has_header else None,
-            encoding=self.schema.encoding,
-            skipinitialspace=True,
-        )
+        df = self._read_csv(file_path, sep=sep, header=header)
         return self._normalize_dataframe_columns(df)
+
+    def _read_csv(
+        self, file_path: Path, sep: str | None, header: str | None
+    ) -> pd.DataFrame:
+        kwargs: dict[str, object] = {
+            "header": header,
+            "encoding": self.schema.encoding,
+            "skipinitialspace": True,
+        }
+        if sep is None:
+            kwargs["sep"] = None
+            kwargs["engine"] = "python"
+        else:
+            kwargs["sep"] = sep
+        quoting = self._resolve_quoting(sep)
+        kwargs["quoting"] = quoting
+        df = pd.read_csv(file_path, **kwargs)
+
+        if quoting == csv.QUOTE_MINIMAL:
+            self._warn_if_rows_merged(file_path, df, has_header=header is not None)
+        elif self.schema.quoting is None:
+            self._warn_if_fields_look_quoted(file_path, df)
+        return df
+
+    def _resolve_quoting(self, sep: str | None) -> int:
+        if self.schema.quoting == "none":
+            return csv.QUOTE_NONE
+        if self.schema.quoting == "minimal":
+            return csv.QUOTE_MINIMAL
+        # TSVs (e.g. Common Voice) don't quote fields; a field starting with
+        # '"' would otherwise swallow every row up to the next '"'.
+        # See https://github.com/Mozilla-Data-Collective/datacollective-python/issues/141 for more details
+        return csv.QUOTE_NONE if sep == "\t" else csv.QUOTE_MINIMAL
+
+    def _warn_if_rows_merged(
+        self, file_path: Path, df: pd.DataFrame, has_header: bool
+    ) -> None:
+        """Warn when quoted fields absorbed lines that look like separate rows.
+
+        Legitimate multi-line quoted values trigger this too, which is why it
+        is a warning and not an error.
+        """
+        with open(file_path, encoding=self.schema.encoding, errors="replace") as f:
+            data_lines = sum(1 for line in f if line.strip("\r\n"))
+        if has_header:
+            data_lines -= 1
+        merged = data_lines - len(df)
+        if merged <= 0:
+            return
+        warnings.warn(
+            f"'{file_path.name}': {data_lines} data lines were parsed into "
+            f"{len(df)} rows, so {merged} lines were read as part of quoted "
+            "fields. This is expected if the file has quoted values spanning "
+            "several lines. If the file does not quote its fields (a value "
+            "merely starts with '\"'), rows were lost: set `quoting: none` in "
+            "the schema.",
+            DataLoadWarning,
+            stacklevel=4,
+        )
+
+    def _warn_if_fields_look_quoted(self, file_path: Path, df: pd.DataFrame) -> None:
+        """Warn when a TSV read without quoting has CSV-style quoted values.
+
+        Writers such as ``pandas.DataFrame.to_csv(sep="\\t")`` wrap values that
+        contain '"' in quotes and double the inner ones: ``say "hi" now``
+        becomes ``"say ""hi"" now"``.
+        Read with quoting disabled, those values keep the quote characters.
+        """
+        for column in df.columns:
+            values = df[column]
+            # pandas < 3 reads text as object, pandas >= 3 as StringDtype
+            if values.dtype != object and not isinstance(values.dtype, pd.StringDtype):
+                continue
+            # '""' inside the value is what a quoting writer leaves behind;
+            # a sentence that merely starts and ends with '"' has no such pair.
+            candidates = values[values.str.contains('""', regex=False, na=False)]
+            quoted = candidates[
+                candidates.str.startswith('"') & candidates.str.endswith('"')
+            ]
+            if quoted.empty:
+                continue
+            warnings.warn(
+                f"'{file_path.name}': column '{column}' has {len(quoted)} values "
+                f"that look CSV-quoted (e.g. {quoted.iloc[0]!r}). Tab-separated "
+                "files are read without quoting, so the quote characters were "
+                "kept. If the file was written with quoting (e.g. by pandas), "
+                "set `quoting: minimal` in the schema; set `quoting: none` to "
+                "silence this warning.",
+                DataLoadWarning,
+                stacklevel=4,
+            )
+            return
 
     def _resolve_separator(self, file_path: Path | None = None) -> str | None:
         if self.schema.separator:

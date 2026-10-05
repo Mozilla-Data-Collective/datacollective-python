@@ -88,3 +88,23 @@ class TestMultiSplitLoader:
         )
         with pytest.raises(RuntimeError, match="No split files"):
             MultiSplitLoader(schema, tmp_path).load()
+
+
+class TestMultiSplitQuoting:
+    def test_tsv_field_starting_with_quote_keeps_all_rows(self, tmp_path: Path) -> None:
+        """A '"' at the start of a TSV field must not swallow following rows."""
+        _write_tsv(
+            tmp_path / "train.tsv",
+            "path\tsentence\n"
+            'c1.mp3\t"Quoted start, no closing quote.\n'
+            "c2.mp3\tswallowed?\n"
+            'c3.mp3\tends with a quote" here\n'
+            "c4.mp3\tlast\n",
+        )
+        schema = DatasetSchema(
+            dataset_id="ds", root_strategy="multi_split", splits=["train"]
+        )
+        df = MultiSplitLoader(schema, tmp_path).load()
+        assert list(df["path"]) == ["c1.mp3", "c2.mp3", "c3.mp3", "c4.mp3"]
+        assert df["sentence"].iloc[0] == '"Quoted start, no closing quote.'
+        assert df["sentence"].iloc[2] == 'ends with a quote" here'

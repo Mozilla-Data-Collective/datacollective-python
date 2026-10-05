@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from datacollective.errors import ResourceRemovedError
 from datacollective.logging_utils import (
     _enable_logging,
     get_logger,
@@ -132,11 +133,37 @@ def _upload_file(
 
     _ensure_part_size_is_valid(file_size, part_size)
 
-    final_filename = path.name
-
     state_file = (
         Path(state_path) if state_path else _default_state_path(path, is_sample)
     )
+
+    try:
+        return _run_upload(
+            path=path,
+            state_file=state_file,
+            submission_id=submission_id,
+            file_size=file_size,
+            part_size=part_size,
+            is_sample=is_sample,
+            show_progress=show_progress,
+        )
+    except ResourceRemovedError:
+        # The submission was deleted, so this upload can never be resumed.
+        _cleanup_state_file(state_file)
+        raise
+
+
+def _run_upload(
+    path: Path,
+    state_file: Path,
+    submission_id: str,
+    file_size: int,
+    part_size: int,
+    is_sample: bool,
+    show_progress: bool,
+) -> UploadState:
+    """Upload the file, resuming from the state in `state_file` when it matches."""
+    final_filename = path.name
 
     state = _load_or_create_state(
         state_file=state_file,

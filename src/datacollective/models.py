@@ -201,13 +201,13 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
     )
     other: str | None = Field(None, description="The datasheet of the dataset.")
     restrictions: str | None = Field(
-        None, description="Any restrictions on dataset use."
+        None, description="Any restrictions on dataset use. Supports Markdown."
     )
     forbiddenUsage: str | None = Field(
-        None, description="Explicitly forbidden use cases."
+        None, description="Explicitly forbidden use cases. Supports Markdown."
     )
     additionalConditions: str | None = Field(
-        None, description="Additional conditions for use."
+        None, description="Additional conditions for use. Supports Markdown."
     )
     pointOfContactFullName: str | None = Field(
         None, description="Primary contact name."
