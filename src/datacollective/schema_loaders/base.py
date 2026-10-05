@@ -374,6 +374,12 @@ class BaseSchemaLoader(abc.ABC):
         With the default ``direct`` strategy, a value that resolves to no
         existing file is returned as the first constructed candidate path
         and recorded in *misses* (when given) so the caller can warn.
+
+        Raises:
+            FileNotFoundError: If ``path_match_strategy`` is ``exact`` or
+                ``contains`` and the search finds no file.
+            ValueError: If the ``exact`` or ``contains`` search matches more
+                than one file.
         """
         if pd.isna(value):
             return value
@@ -427,10 +433,16 @@ class BaseSchemaLoader(abc.ABC):
     ) -> Any:
         """Resolve a file path (like ``file_path`` dtype) and return its text content.
 
-        When the value does not resolve to an existing file, the cell becomes
-        missing (``None``) and the value is recorded in *misses* (when given)
-        so the caller can warn — a content column must never silently contain
-        a path instead of the file's text.
+        With the default ``direct`` strategy, a value that does not resolve to
+        an existing file makes the cell missing (``None``) and is recorded in
+        *misses* (when given) so the caller can warn — a content column must
+        never silently contain a path instead of the file's text.
+
+        Raises:
+            FileNotFoundError: If ``path_match_strategy`` is ``exact`` or
+                ``contains`` and the search finds no file.
+            ValueError: If the ``exact`` or ``contains`` search matches more
+                than one file.
         """
         if pd.isna(value):  # if missing value, skip loading
             return value
