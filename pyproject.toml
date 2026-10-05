@@ -8,7 +8,6 @@ version = "0.6.4"  # DO NOT EDIT THE VERSION MANUALLY, USE bump-my-version TO UP
 dependencies = [
     "fox-progress-bar>=0.1.1",
     "pandas>=2.0.0",
-    "pandas-stubs~=2.3.3",
     "pydantic>=2.7.0",
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0",
@@ -39,6 +38,7 @@ dev = [
     "pre-commit>=3.0.0",
     "bump-my-version>=1.2.6",
     "datasets>=5.0.0",
+    "pandas-stubs~=2.3.3",
 ]
 
 docs = [
