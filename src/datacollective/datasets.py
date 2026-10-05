@@ -23,6 +23,7 @@ from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
     DOWNLOAD_SOURCE_DOWNLOAD,
     DOWNLOAD_SOURCE_LOAD,
+    DOWNLOAD_SOURCE_SAVE,
     _download_dataset,
 )
 from datacollective.hf_utils import _convert_to_hf, _require_datasets
@@ -112,20 +113,39 @@ def download_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
+    return _download_archive(
+        dataset_id,
+        download_directory,
+        show_progress,
+        overwrite_existing,
+        enable_logging,
+        download_source=DOWNLOAD_SOURCE_DOWNLOAD,
+    )
+
+
+def _download_archive(
+    dataset_id: str,
+    download_directory: str | None,
+    show_progress: bool,
+    overwrite_existing: bool,
+    enable_logging: bool,
+    download_source: str,
+) -> Path:
+    """Shared body of `download_dataset` and its deprecated alias; the
+    *download_source* sent with the request tells them apart."""
     _enable_logging(enable_logging)
     logger.info(f"Downloading dataset {dataset_id}")
 
     dataset_details = get_dataset_details(dataset_id)
 
-    archive_path = _download_dataset(
+    return _download_dataset(
         dataset_id=dataset_details.id,
         archive_filename=_require_archive_filename(dataset_details),
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
-        download_source=DOWNLOAD_SOURCE_DOWNLOAD,
+        download_source=download_source,
     )
-    return archive_path
 
 
 # Added these two overload typing declarations in order to accurately type check
@@ -393,12 +413,13 @@ def save_dataset_to_disk(
         DeprecationWarning,
         stacklevel=2,
     )
-    return download_dataset(
-        dataset_id=dataset_id,
-        download_directory=download_directory,
-        show_progress=show_progress,
-        overwrite_existing=overwrite_existing,
-        enable_logging=enable_logging,
+    return _download_archive(
+        dataset_id,
+        download_directory,
+        show_progress,
+        overwrite_existing,
+        enable_logging,
+        download_source=DOWNLOAD_SOURCE_SAVE,
     )
 
 

@@ -18,6 +18,7 @@ from datacollective.models import NonEmptyStrModel
 logger = get_logger(__name__)
 
 DOWNLOAD_SOURCE_DOWNLOAD = "download_dataset"
+DOWNLOAD_SOURCE_SAVE = "save_dataset_to_disk"
 DOWNLOAD_SOURCE_LOAD = "load_dataset"
 
 

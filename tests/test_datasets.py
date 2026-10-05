@@ -4,6 +4,7 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 from datacollective import datasets
+from datacollective.models import DatasetDetails
 from datacollective.download import _resolve_download_dir
 
 
@@ -29,14 +30,35 @@ def test_resolve_download_dir_uses_env_default(
     assert env_dir.exists()
 
 
-def test_save_dataset_to_disk_warns_and_delegates(monkeypatch: MonkeyPatch) -> None:
+def _capture_downloads(monkeypatch: MonkeyPatch) -> list[dict[str, object]]:
     calls: list[dict[str, object]] = []
 
     def fake_download_dataset(**kwargs: object) -> Path:
         calls.append(kwargs)
         return Path("archive.tar.gz")
 
-    monkeypatch.setattr(datasets, "download_dataset", fake_download_dataset)
+    monkeypatch.setattr(
+        datasets,
+        "get_dataset_details",
+        lambda dataset_id: DatasetDetails(id=dataset_id, filename="archive.tar.gz"),
+    )
+    monkeypatch.setattr(datasets, "_download_dataset", fake_download_dataset)
+    return calls
+
+
+def test_download_dataset_reports_its_own_source(monkeypatch: MonkeyPatch) -> None:
+    calls = _capture_downloads(monkeypatch)
+
+    datasets.download_dataset("ds")
+
+    assert calls[0]["download_source"] == "download_dataset"
+
+
+def test_save_dataset_to_disk_warns_and_reports_its_own_source(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    calls = _capture_downloads(monkeypatch)
+
     with pytest.warns(DeprecationWarning, match="download_dataset"):
         result = datasets.save_dataset_to_disk("ds", download_directory="dir")
 
@@ -44,9 +66,10 @@ def test_save_dataset_to_disk_warns_and_delegates(monkeypatch: MonkeyPatch) -> N
     assert calls == [
         {
             "dataset_id": "ds",
+            "archive_filename": "archive.tar.gz",
             "download_directory": "dir",
             "show_progress": True,
             "overwrite_existing": False,
-            "enable_logging": False,
+            "download_source": "save_dataset_to_disk",
         }
     ]
