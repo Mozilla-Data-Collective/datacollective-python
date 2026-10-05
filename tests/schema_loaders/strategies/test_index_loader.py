@@ -783,3 +783,32 @@ class TestQuoting:
             warnings.simplefilter("error", DataLoadWarning)
             df = IndexLoader(self._schema("meta.csv"), tmp_path).load()
         assert df["sentence"].iloc[0] == "one, two"
+
+    def test_whitespace_only_lines_do_not_warn(self, tmp_path: Path) -> None:
+        """pandas skips lines of only spaces/tabs; they must not count as rows."""
+        _write(tmp_path / "meta.csv", "path,sentence\na.mp3,hi\n   \n\t\nb.mp3,yo\n")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DataLoadWarning)
+            df = IndexLoader(self._schema("meta.csv"), tmp_path).load()
+        assert list(df["path"]) == ["a.mp3", "b.mp3"]
+
+    def test_tsv_quoting_minimal_counts_tab_only_lines_as_rows(
+        self, tmp_path: Path
+    ) -> None:
+        """With a tab separator, a tab-only line is a row of empty values."""
+        _write(tmp_path / "train.tsv", "path\tsentence\na.mp3\thi\n\t\nb.mp3\tyo\n")
+        schema = self._schema("train.tsv", quoting="minimal")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DataLoadWarning)
+            df = IndexLoader(schema, tmp_path).load()
+        assert len(df) == 3
+
+    def test_tsv_doubled_closing_quote_is_not_reported_as_quoted(
+        self, tmp_path: Path
+    ) -> None:
+        """'""' must sit inside the wrapping quotes to look CSV-quoted."""
+        _write(tmp_path / "train.tsv", 'path\tsentence\na.mp3\t""\nb.mp3\t"a""\n')
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DataLoadWarning)
+            df = IndexLoader(self._schema("train.tsv"), tmp_path).load()
+        assert list(df["sentence"]) == ['""', '"a""']
