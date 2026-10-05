@@ -417,7 +417,6 @@ source = { editable = "." }
 dependencies = [
     { name = "fox-progress-bar" },
     { name = "pandas" },
-    { name = "pandas-stubs" },
     { name = "pydantic" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
@@ -433,6 +432,7 @@ hf = [
 dev = [
     { name = "bump-my-version" },
     { name = "datasets" },
+    { name = "pandas-stubs" },
     { name = "pre-commit" },
     { name = "pytest" },
     { name = "pytest-cov" },
