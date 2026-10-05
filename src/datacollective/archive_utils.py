@@ -6,14 +6,15 @@ from datacollective.logging_utils import get_logger
 
 logger = get_logger(__name__)
 
-TAR_GZ_SUFFIX = ".tar.gz"
+#: Archive suffixes accepted by the platform for dataset uploads.
+TAR_GZ_SUFFIXES = (".tar.gz", ".tgz")
 
 
 def _extract_archive(
     archive_path: Path, dest_dir: Path, overwrite_extracted: bool
 ) -> Path:
     """
-    Extract the given `.tar.gz` archive into `dest_dir`. If the extracted
+    Extract the given `.tar.gz` / `.tgz` archive into `dest_dir`. If the extracted
     directory already exists and overwrite_extracted is False, skip extraction.
 
     Args:
@@ -24,15 +25,17 @@ def _extract_archive(
         Path to the extracted root directory.
 
     Raises:
-        ValueError: If the archive is not a `.tar.gz` file.
+        ValueError: If the archive is not a `.tar.gz` / `.tgz` file.
     """
-    if not archive_path.name.endswith(TAR_GZ_SUFFIX):
+    suffix = next((s for s in TAR_GZ_SUFFIXES if archive_path.name.endswith(s)), None)
+    if suffix is None:
         raise ValueError(
-            f"Unsupported archive type for `{archive_path.name}`. Expected {TAR_GZ_SUFFIX}."
+            f"Unsupported archive type for `{archive_path.name}`. "
+            f"Expected {' or '.join(TAR_GZ_SUFFIXES)}."
         )
 
     # Extract into a dedicated directory under `dest_dir` named after the archive
-    target = dest_dir / archive_path.name.removesuffix(TAR_GZ_SUFFIX)
+    target = dest_dir / archive_path.name.removesuffix(suffix)
     if target.exists():
         if not overwrite_extracted:
             logger.info(

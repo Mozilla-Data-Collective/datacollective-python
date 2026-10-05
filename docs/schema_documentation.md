@@ -18,7 +18,7 @@ Under the hood, `load_dataset()` performs the following steps automatically:
 
 1. **Resolve the schema**: check local cache or the schema registry for `schema.yaml`. If the dataset is not registered this step raises a warning, so we never download an unsupported archive.
 2. **Download** the archive (with resume support). The schema we fetched in step 1 tells the loader how the files are structured.
-3. **Extract** the `.tar.gz` to a local directory.
+3. **Extract** the `.tar.gz` / `.tgz` archive to a local directory.
 4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model) and dispatch to the loader for the schema's `root_strategy` (index, glob, …), which returns the final **DataFrame**. When the schema declares a `task` with a known contract (ASR, TTS, LLM), the loaded DataFrame is checked for the task's required logical columns; a `TaskValidationWarning` is emitted if any are missing (the DataFrame is still returned).
 
 The schema file describes:
