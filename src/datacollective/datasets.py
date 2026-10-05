@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from enum import Enum
 from pathlib import Path
 from collections.abc import Sequence
@@ -88,6 +89,9 @@ def download_dataset(
 
     Automatically resumes interrupted downloads if a matching .checksum file exists from a
     previous attempt.
+
+    Note: Previously called `save_dataset_to_disk`, which remains available as a
+    deprecated alias for backward compatibility.
 
     Args:
         dataset_id: The dataset ID (as shown in MDC platform) or slug.
@@ -369,6 +373,33 @@ def list_dataset_filters() -> DatasetFilters:
     url = f"{_get_api_url()}/datasets/filters"
     resp = _send_api_request(method="GET", url=url, include_auth_headers=False)
     return DatasetFilters.model_validate(resp.json())
+
+
+def save_dataset_to_disk(
+    dataset_id: str,
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
+    enable_logging: bool = False,
+) -> Path:
+    """
+    Deprecated alias for `download_dataset`.
+
+    Use `download_dataset` instead. This name is kept for backward compatibility.
+    """
+    warnings.warn(
+        "`save_dataset_to_disk` is deprecated and will be removed in a future "
+        "release. Use `download_dataset` instead.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return download_dataset(
+        dataset_id=dataset_id,
+        download_directory=download_directory,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+        enable_logging=enable_logging,
+    )
 
 
 def _require_archive_filename(details: DatasetDetails) -> str:

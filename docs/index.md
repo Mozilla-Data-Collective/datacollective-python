@@ -102,6 +102,9 @@ dataset = download_dataset("your-dataset-id")
 # about the downloaded files or a higher-level dataset object.
 ```
 
+!!! note
+    `download_dataset` was previously called `save_dataset_to_disk`. The old name still works for backward compatibility, but it is deprecated and new code should use `download_dataset`.
+
 The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets`).
 
 ## Programmatic submissions and uploads

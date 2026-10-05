@@ -6,6 +6,7 @@ from datacollective.datasets import (
     list_dataset_filters,
     list_datasets,
     load_dataset,
+    save_dataset_to_disk,
 )
 from datacollective.errors import (
     AuthenticationError,
@@ -32,6 +33,7 @@ from datacollective.upload import upload_dataset_file, upload_sample_file
 
 __all__ = [
     "download_dataset",
+    "save_dataset_to_disk",
     "load_dataset",
     "get_dataset_details",
     "list_datasets",
