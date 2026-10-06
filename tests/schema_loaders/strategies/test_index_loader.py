@@ -783,3 +783,99 @@ class TestQuoting:
             warnings.simplefilter("error", DataLoadWarning)
             df = IndexLoader(self._schema("meta.csv"), tmp_path).load()
         assert df["sentence"].iloc[0] == "one, two"
+
+
+class TestIndexLoaderReadsValuesAsWritten:
+    """Values reach the column mappings exactly as written in the file."""
+
+    def test_na_like_words_are_kept_as_text(self, tmp_path: Path) -> None:
+        _write(
+            tmp_path / "meta.tsv",
+            "path\tsentence\na.mp3\tNone\nb.mp3\tNA\nc.mp3\tnull\nd.mp3\tn/a\n"
+            "e.mp3\tnan\nf.mp3\t\n",
+        )
+        schema = DatasetSchema(
+            dataset_id="ds",
+            index_file="meta.tsv",
+            columns={"text": ColumnMapping(source_column="sentence")},
+        )
+        df = IndexLoader(schema, tmp_path).load()
+        assert list(df["text"][:5]) == ["None", "NA", "null", "n/a", "nan"]
+        assert pd.isna(df["text"].iloc[5])
+
+    def test_custom_na_values(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.tsv", "age\tsentence\nNA\thi\n30\tNA\n\tbye\n")
+        schema = DatasetSchema(
+            dataset_id="ds", index_file="meta.tsv", na_values=["", "NA"]
+        )
+        df = IndexLoader(schema, tmp_path).load()
+        assert df["age"].isna().tolist() == [True, False, True]
+        assert df["sentence"].isna().tolist() == [False, True, False]
+
+    def test_ids_and_numeric_transcripts_keep_their_text(self, tmp_path: Path) -> None:
+        _write(
+            tmp_path / "meta.tsv",
+            "speaker\tclip_id\tsentence\tdur\n0012\t12\t007\t100\n0013\t\t1.50\t200\n",
+        )
+        schema = DatasetSchema(
+            dataset_id="ds",
+            index_file="meta.tsv",
+            columns={
+                "speaker": ColumnMapping(source_column="speaker"),
+                "clip_id": ColumnMapping(source_column="clip_id"),
+                "text": ColumnMapping(source_column="sentence"),
+                "duration": ColumnMapping(source_column="dur", dtype="int"),
+            },
+        )
+        df = IndexLoader(schema, tmp_path).load()
+        assert list(df["speaker"]) == ["0012", "0013"]
+        assert df["clip_id"].iloc[0] == "12"
+        assert pd.isna(df["clip_id"].iloc[1])
+        assert list(df["text"]) == ["007", "1.50"]
+        assert list(df["duration"]) == [100, 200]
+
+    def test_unmapped_load_returns_text(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.csv", "a,b\n0012,2\n")
+        schema = DatasetSchema(dataset_id="ds", index_file="meta.csv")
+        df = IndexLoader(schema, tmp_path).load()
+        assert df.iloc[0].tolist() == ["0012", "2"]
+
+    def test_trailing_separator_on_data_lines_does_not_shift_columns(
+        self, tmp_path: Path
+    ) -> None:
+        _write(
+            tmp_path / "meta.tsv",
+            "path\tsentence\na.mp3\thello\t\nb.mp3\tworld\t\n",
+        )
+        schema = DatasetSchema(
+            dataset_id="ds",
+            index_file="meta.tsv",
+            columns={
+                "audio": ColumnMapping(source_column="path"),
+                "text": ColumnMapping(source_column="sentence"),
+            },
+        )
+        df = IndexLoader(schema, tmp_path).load()
+        assert list(df["audio"]) == ["a.mp3", "b.mp3"]
+        assert list(df["text"]) == ["hello", "world"]
+
+
+class TestIndexLoaderSeparatorResolution:
+    def test_unknown_extension_without_format_raises(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.txt", "path,sentence\na.mp3,hello there\n")
+        schema = DatasetSchema(dataset_id="ds", index_file="meta.txt")
+        with pytest.raises(ValueError, match="Cannot determine the separator"):
+            IndexLoader(schema, tmp_path).load()
+
+    def test_unknown_extension_with_format_loads(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.txt", 'path\tsentence\na.mp3\t"hi\n')
+        schema = DatasetSchema(dataset_id="ds", index_file="meta.txt", format="tsv")
+        df = IndexLoader(schema, tmp_path).load()
+        # tsv format also selects the tab quoting default
+        assert df.iloc[0].tolist() == ["a.mp3", '"hi']
+
+    def test_unknown_format_raises(self, tmp_path: Path) -> None:
+        _write(tmp_path / "meta.csv", "a,b\n1,2\n")
+        schema = DatasetSchema(dataset_id="ds", index_file="meta.csv", format="xlsx")
+        with pytest.raises(ValueError, match="Unknown delimited format 'xlsx'"):
+            IndexLoader(schema, tmp_path).load()

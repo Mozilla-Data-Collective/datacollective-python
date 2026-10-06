@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import pytest
 
+from datacollective.errors import DataLoadWarning
 from datacollective.schema import ColumnMapping, DatasetSchema
 from datacollective.schema_loaders.strategies.multi_split import MultiSplitLoader
 
@@ -108,3 +110,46 @@ class TestMultiSplitQuoting:
         assert list(df["path"]) == ["c1.mp3", "c2.mp3", "c3.mp3", "c4.mp3"]
         assert df["sentence"].iloc[0] == '"Quoted start, no closing quote.'
         assert df["sentence"].iloc[2] == 'ends with a quote" here'
+
+
+class TestMultiSplitFileResolution:
+    def _schema(self, **kwargs: object) -> DatasetSchema:
+        return DatasetSchema(
+            dataset_id="ds",
+            root_strategy="multi_split",
+            splits=["train", "test"],
+            **kwargs,
+        )
+
+    def test_missing_declared_split_warns(self, tmp_path: Path) -> None:
+        _write_tsv(tmp_path / "train.tsv", "path\nc1.mp3\n")
+        with pytest.warns(DataLoadWarning, match=r"\['test'\]"):
+            df = MultiSplitLoader(self._schema(), tmp_path).load()
+        assert set(df["split"]) == {"train"}
+
+    def test_missing_declared_split_raises_when_strict(self, tmp_path: Path) -> None:
+        _write_tsv(tmp_path / "train.tsv", "path\nc1.mp3\n")
+        with pytest.raises(FileNotFoundError, match=r"\['test'\]"):
+            MultiSplitLoader(self._schema(strict=True), tmp_path).load()
+
+    def test_all_declared_splits_present_does_not_warn(self, tmp_path: Path) -> None:
+        _write_tsv(tmp_path / "train.tsv", "path\nc1.mp3\n")
+        _write_tsv(tmp_path / "test.tsv", "path\nc2.mp3\n")
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", DataLoadWarning)
+            MultiSplitLoader(self._schema(strict=True), tmp_path).load()
+
+    def test_equal_depth_split_files_raise(self, tmp_path: Path) -> None:
+        _write_tsv(tmp_path / "a" / "train.tsv", "path\nc1.mp3\n")
+        _write_tsv(tmp_path / "b" / "train.tsv", "path\nc2.mp3\n")
+        _write_tsv(tmp_path / "test.tsv", "path\nc3.mp3\n")
+        with pytest.raises(ValueError, match="Ambiguous split 'train'"):
+            MultiSplitLoader(self._schema(), tmp_path).load()
+
+    def test_shallowest_split_file_wins(self, tmp_path: Path) -> None:
+        _write_tsv(tmp_path / "train.tsv", "path\nshallow.mp3\n")
+        _write_tsv(tmp_path / "deep" / "train.tsv", "path\ndeep.mp3\n")
+        _write_tsv(tmp_path / "test.tsv", "path\nc3.mp3\n")
+        df = MultiSplitLoader(self._schema(), tmp_path).load()
+        assert "shallow.mp3" in set(df["path"])
+        assert "deep.mp3" not in set(df["path"])
