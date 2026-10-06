@@ -79,15 +79,16 @@ strategy is selected with the required `root_strategy` field:
 | Field | Default | Required | Description |
 |---|---|---|---|
 | `root_strategy` | — | ✓ | Must be `"index"`. |
-| `format` | Inferred from `index_file` when possible | ✗ | Optional format hint: `"csv"`, `"tsv"`, or `"pipe"`. Useful when the file extension is misleading. |
+| `format` | Inferred from the file extension | ✗ | Format hint: `"csv"`, `"tsv"`, or `"pipe"`. Required when the extension is not `.csv`, `.tsv`, `.tab`, `.psv` or `.pipe` (e.g. `meta.txt`) and `separator` is not set. See [How delimited files are read](#how-delimited-files-are-read). |
 | `index_file` | — | ✓ | Path to the metadata file, relative to the dataset root. |
 | `columns` | — | ✓ | Mapping of logical column names → source columns (see below). |
 | `base_audio_path` | `""` | ✗ | Directory prefix or list of directories used to resolve `file_path` dtype columns. Entries may also use `${column}` placeholders from the current metadata row. |
 | `separator` | Inferred from `format` or `index_file` | ✗ | Explicit column separator override (e.g. `"\|"`). |
 | `has_header` | `true` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
 | `encoding` | `"utf-8"` | ✗ | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
+| `na_values` | `[""]` | ✗ | Cell values read as missing. Only the listed values count, so by default only empty cells are missing and words such as `NA`, `None` or `null` stay text. Applies to every strategy that reads delimited files. |
 | `quoting` | `"none"` for tab-separated files, `"minimal"` otherwise | ✗ | How `"` is treated: `"minimal"` parses CSV-style quoted fields, `"none"` reads `"` as an ordinary character. Applies to every strategy that reads delimited files. See [Quoting in delimited files](#quoting-in-delimited-files). |
-| `strict` | `false` | ✗ | Disable archive heuristics for deterministic loading: `index_file` must exist at its literal path relative to the dataset root (no recursive search) and source column names must match exactly (no fuzzy matching). Applies to every strategy that reads delimited files. |
+| `strict` | `false` | ✗ | Disable archive heuristics for deterministic loading: `index_file` must exist at its literal path relative to the dataset root (no recursive search) and source column names must match exactly (no fuzzy matching). For `multi_split`, every declared split must have a split file. Applies to every strategy that reads delimited files. |
 
 The `index_file` lookup is deterministic even without `strict`: the literal
 relative path wins when it exists; otherwise the tree is searched recursively
@@ -99,8 +100,8 @@ error instead of picking one arbitrarily.
 | Field | Default | Required | Description |
 |---|---|---|---|
 | `root_strategy` | — | ✓ | Must be `"multi_split"`. |
-| `splits` | — | ✓ | List of split names to load (e.g. `["train", "dev", "test"]`). |
-| `splits_file_pattern` | `"**/*.tsv"` | ✗ | Glob pattern to locate split files. |
+| `splits` | — | ✓ | List of split names to load (e.g. `["train", "dev", "test"]`). A declared split with no file emits a `DataLoadWarning` (an error with `strict: true`). |
+| `splits_file_pattern` | `"**/*.tsv"` | ✗ | Glob pattern to locate split files. The shallowest match per split wins; two matches at the same depth (e.g. `a/train.tsv` and `b/train.tsv`) raise an error. |
 | `columns` | *(optional)* | ✗ | Column mappings applied to every split frame. |
 | `base_audio_path` | `""` | ✗ | Directory prefix or list of directories used to resolve `file_path` dtype columns. Entries may also use `${column}` placeholders from the current metadata row. |
 
@@ -161,6 +162,28 @@ the directory name is added before concatenation.
 
 This field is task-agnostic — it works with any loader.
 
+
+## How delimited files are read
+
+Index, multi-split and multi-sections files are read the same way. The loader
+does not guess anything about the file; what it does is set by the schema:
+
+- **Separator.** Taken from `separator`, else `format`, else the file
+  extension (`.csv` → `,`; `.tsv`/`.tab` → tab; `.psv`/`.pipe` → `|`). The
+  file contents are never inspected: when none of the three applies (e.g.
+  `meta.txt` with no `format`), loading fails and asks for `format` or
+  `separator`. An unknown `format` value also fails.
+- **Values are text.** Every value is read exactly as written. `0012` stays
+  `"0012"` and a transcript `1.50` stays `"1.50"`. Numbers and categories come
+  only from a column mapping's `dtype` (`int`, `float`, `category`). Without
+  `columns`, every column of the returned DataFrame is text.
+- **Missing values.** Only values listed in `na_values` are missing. The
+  default `[""]` means empty cells only; pandas' own list (`NA`, `None`,
+  `null`, `n/a`, `nan`, …) is not used, because those are real transcripts and
+  codes. List them to restore that behaviour for a column of codes, e.g.
+  `na_values: ["", "NA"]` (this applies to every column in the file).
+- **Trailing separators.** A separator at the end of data lines but not the
+  header (common in exported files) does not shift the columns.
 
 ## Quoting in delimited files
 

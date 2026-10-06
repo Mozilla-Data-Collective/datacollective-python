@@ -101,7 +101,9 @@ class DatasetSchema(BaseModel):
         default=None,
         description=(
             'optional format hint (e.g. "csv", "tsv", "pipe"); '
-            "inferred from the index file when omitted"
+            "inferred from the file extension when omitted. Loading fails "
+            "when neither this, 'separator' nor the extension gives the "
+            "separator"
         ),
     )
     index_file: str | None = Field(default=None, description='e.g. "train.csv"')
@@ -133,13 +135,22 @@ class DatasetSchema(BaseModel):
             '"minimal"'
         ),
     )
+    na_values: list[str] = Field(
+        default_factory=lambda: [""],
+        description=(
+            "cell values read as missing in delimited files. Only listed values "
+            'count: the default [""] treats only empty cells as missing, so '
+            'words such as "NA", "None" or "null" are kept as text'
+        ),
+    )
     strict: bool = Field(
         default=False,
         description=(
             "Disable archive heuristics for deterministic loading: "
             "'index_file' must exist at its literal path relative to the "
-            "dataset root (no recursive search) and source column names "
-            "must match exactly (no fuzzy matching)."
+            "dataset root (no recursive search), source column names "
+            "must match exactly (no fuzzy matching) and every declared split "
+            "must have a split file."
         ),
     )
 

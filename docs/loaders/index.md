@@ -15,10 +15,11 @@ the raw index file is returned as-is.
 | `index_file` | ✓ | Path to the index file, relative to the dataset root. |
 | `columns` | ✗ | Mapping of logical column names to source columns and dtypes. When omitted, the raw index file is returned unchanged. |
 | `base_audio_path` | ✗ | Directory prefix or list of directories used to resolve `file_path`/`file_content` dtype columns. |
-| `format` | ✗ | Optional file format hint (`"csv"`, `"tsv"`, `"pipe"`). When omitted, the loader infers it from `index_file` where possible. |
+| `format` | ✗ | File format hint (`"csv"`, `"tsv"`, `"pipe"`). When omitted, it is inferred from the extension of `index_file`; loading fails when the extension is not recognised and `separator` is not set. |
 | `separator` | ✗ | Explicit column separator (e.g. `"\|"`). |
 | `has_header` | ✗ | Whether the index file has a header row. When `false`, `source_column` must be a positional integer. |
 | `encoding` | ✗ | File encoding (e.g. `"utf-8-sig"` for files with a BOM). |
+| `na_values` | ✗ | Cell values read as missing (default `[""]`: empty cells only, so `NA`, `None` or `null` stay text). See [How delimited files are read](../schema_documentation.md#how-delimited-files-are-read). |
 | `quoting` | ✗ | `"minimal"` (CSV-style quoted fields) or `"none"` (`"` is literal). Defaults to `"none"` for tab-separated files and `"minimal"` otherwise; see [Quoting in delimited files](../schema_documentation.md#quoting-in-delimited-files). |
 | `strict` | ✗ | Disable archive heuristics: `index_file` must exist at its literal relative path (no recursive search), exact column-name matching only. |
 
@@ -143,8 +144,11 @@ columns:
 `path_match_strategy: "direct"` remains the default and preserves the existing
 `extract_dir / base_audio_path / value` behavior. The loader also trims BOMs
 and surrounding header whitespace. The separator is never guessed from file
-contents — when the declared/inferred separator is wrong, loading fails with
-the raw (single-column) headers listed; declare `separator` explicitly.
+contents: it comes from `separator`, `format` or the file extension, and
+loading fails when none of them gives one. When the declared/inferred separator
+is wrong, loading fails with the raw (single-column) headers listed; declare
+`separator` explicitly. Values are read as text and only `na_values` count as
+missing; see [How delimited files are read](../schema_documentation.md#how-delimited-files-are-read).
 
 If the true audio filename is composed from multiple metadata columns, use
 `path_template` instead of a fuzzy search:
