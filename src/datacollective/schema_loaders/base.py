@@ -223,22 +223,26 @@ class BaseSchemaLoader(abc.ABC):
         df = self._read_csv(file_path, sep=sep, header=header)
         return self._normalize_dataframe_columns(df)
 
-    def _read_csv(
-        self, file_path: Path, sep: str | None, header: str | None
-    ) -> pd.DataFrame:
-        kwargs: dict[str, object] = {
-            "header": header,
-            "encoding": self.schema.encoding,
-            "skipinitialspace": True,
-        }
-        if sep is None:
-            kwargs["sep"] = None
-            kwargs["engine"] = "python"
-        else:
-            kwargs["sep"] = sep
+    def _read_csv(self, file_path: Path, sep: str, header: str | None) -> pd.DataFrame:
         quoting = self._resolve_quoting(sep)
-        kwargs["quoting"] = quoting
-        df = pd.read_csv(file_path, **kwargs)
+        df = pd.read_csv(
+            file_path,
+            sep=sep,
+            header=header,
+            encoding=self.schema.encoding,
+            skipinitialspace=True,
+            quoting=quoting,
+            # Values are kept as written; column mappings do the type
+            # conversion, so IDs like "0012" are not turned into 12.
+            dtype=str,
+            # Only the schema's na_values are missing, not pandas' defaults
+            # ("NA", "None", "null", ...), which are real transcripts.
+            keep_default_na=False,
+            na_values=self.schema.na_values,
+            # Without this, a trailing separator on data lines (but not the
+            # header) silently moves the first column into the index.
+            index_col=False,
+        )
 
         if quoting == csv.QUOTE_MINIMAL:
             self._warn_if_rows_merged(file_path, df, has_header=header is not None)
@@ -246,7 +250,7 @@ class BaseSchemaLoader(abc.ABC):
             self._warn_if_fields_look_quoted(file_path, df)
         return df
 
-    def _resolve_quoting(self, sep: str | None) -> int:
+    def _resolve_quoting(self, sep: str) -> int:
         if self.schema.quoting == "none":
             return csv.QUOTE_NONE
         if self.schema.quoting == "minimal":
@@ -315,11 +319,25 @@ class BaseSchemaLoader(abc.ABC):
             )
             return
 
-    def _resolve_separator(self, file_path: Path | None = None) -> str | None:
+    def _resolve_separator(self, file_path: Path) -> str:
+        """Return the separator from ``separator``, ``format`` or the file
+        extension, in that order. The file contents are never inspected.
+
+        Raises:
+            ValueError: If ``format`` is not a delimited format, or none of
+                the three gives a separator.
+        """
         if self.schema.separator:
             return self.schema.separator
         if self.schema.format:
-            return FORMAT_SEP.get(self.schema.format.casefold())
+            sep = FORMAT_SEP.get(self.schema.format.casefold())
+            if sep is None:
+                raise ValueError(
+                    f"Unknown delimited format '{self.schema.format}'. "
+                    f"Supported formats: {', '.join(FORMAT_SEP)}; or set "
+                    "'separator' explicitly."
+                )
+            return sep
         index_file_path = (
             Path(self.schema.index_file) if self.schema.index_file else None
         )
@@ -329,7 +347,11 @@ class BaseSchemaLoader(abc.ABC):
             suffix = candidate.suffix.casefold()
             if suffix in SUFFIX_SEP:
                 return SUFFIX_SEP[suffix]
-        return None
+        raise ValueError(
+            f"Cannot determine the separator for '{file_path.name}': its "
+            f"extension is not one of {', '.join(SUFFIX_SEP)}. Set 'format' "
+            f"({', '.join(FORMAT_SEP)}) or 'separator' in the schema."
+        )
 
     def _normalize_dataframe_columns(self, raw_df: pd.DataFrame) -> pd.DataFrame:
         if raw_df.empty and not len(raw_df.columns):

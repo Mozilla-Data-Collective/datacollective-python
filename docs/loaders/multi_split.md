@@ -10,8 +10,9 @@ from the file stem.
 
 | Field | Required | Description |
 |---|---|---|
-| `splits` | ✓ | List of split names to load (e.g. `["train", "dev", "test"]`). |
-| `splits_file_pattern` | ✗ | *(optional)* Glob pattern to locate split files (default: `"**/*.tsv"`). |
+| `splits` | ✓ | List of split names to load (e.g. `["train", "dev", "test"]`). A declared split with no matching file emits a `DataLoadWarning` and is skipped; with `strict: true` it is an error. |
+| `splits_file_pattern` | ✗ | *(optional)* Glob pattern to locate split files (default: `"**/*.tsv"`). The shallowest match per split wins; two matches at the same depth raise an error, as for `index_file`. |
+| `strict` | ✗ | *(optional)* Make a declared split without a file an error instead of a warning. |
 | `columns` | ✗ | *(optional)* Column mappings applied to every split frame. When omitted, the raw columns plus `split` are returned. |
 | `base_audio_path` | ✗ | *(optional)* Directory prefix or list of directories used to resolve `file_path` dtype columns. |
 | `quoting` | ✗ | *(optional)* `"minimal"` or `"none"`. Split files are usually TSVs, which default to `"none"`: Common Voice sentences that start with `"` are kept as text. See [Quoting in delimited files](../schema_documentation.md#quoting-in-delimited-files). |
