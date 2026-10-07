@@ -192,9 +192,6 @@ print(response)
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For custom licenses, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
 To publish a compensated dataset, set `isPaid=True` and a `basePriceCents` price in **USD cents** (US Dollars), e.g. `basePriceCents=100_000` for $1,000.00.
-
-Parts of the dataset are uploaded concurrently and uploads are resumable. Tune the part size and concurrency with `part_size` and `max_workers` according to your connection speed and archive size, see [our docs](https://Mozilla-Data-Collective.github.io/datacollective-python/upload/#tuning-upload-concurrency).
-
 > [!TIP]
 > To also attach an optional sample of your dataset, pass `sample_file_path="/path/to/dataset-sample.tar.gz"` to `create_submission_with_upload`, or upload it separately with `upload_sample_file(file_path=..., submission_id=...)`.
 

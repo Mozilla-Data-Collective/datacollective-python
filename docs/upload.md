@@ -220,7 +220,7 @@ print(f"Sample upload complete! File Upload ID: {upload_state.fileUploadId}")
 ```
 
 `upload_sample_file` accepts the same arguments as `upload_dataset_file`
-(`state_path`, `show_progress`, `enable_logging`, `part_size`, `max_workers`) and is equally resumable.
+(`state_path`, `show_progress`, `enable_logging`, `part_size`) and is equally resumable.
 Its state file uses a `.mdc-sample-upload.json` suffix, so a sample upload and a dataset
 upload never overwrite each other's resume state.
 
@@ -404,7 +404,7 @@ Deleting a published submission, or one that belongs to another organization, ra
 
 ## Tuning the Part Size
 
-Uploads are **multipart**: the file is split into fixed-size chunks ("parts") that are uploaded concurrently (see [Tuning Upload Concurrency](#tuning-upload-concurrency)). Both `upload_dataset_file` and `create_submission_with_upload` accept a `part_size` argument (in bytes) to control the chunk size. It defaults to **10 MB**.
+Uploads are **multipart**: the file is split into fixed-size chunks ("parts") that are uploaded one by one. Both `upload_dataset_file` and `create_submission_with_upload` accept a `part_size` argument (in bytes) to control this. It defaults to **10 MB**.
 
 ```python
 upload_dataset_file(
@@ -426,65 +426,6 @@ A single upload can have at most **10,000 parts**. This means `part_size` must b
 !!! note
     When **resuming** an interrupted upload, `part_size` is ignored — the SDK reuses the part size recorded in the state file so the already-uploaded parts stay valid.
 
-## Tuning Upload Concurrency
-
-Parts are uploaded **in parallel**. `upload_dataset_file`, `upload_sample_file` and `create_submission_with_upload` accept a `max_workers` argument that sets how many parts are being uploaded at once. The default value is **4**.
-
-```python
-upload_dataset_file(
-    file_path="/path/to/dataset.tar.gz",
-    submission_id=submission_id,
-    max_workers=8,  # upload 8 parts at a time
-)
-```
-
-The file is still read and checksummed sequentially on the calling thread. Only the uploads themselves run on worker threads. Parts may finish out of order, but every finished part is recorded in the state file individually, so [resuming](#resumable-uploads) works seamlessly.
-
-### Choosing `max_workers` and `part_size`
-
-`max_workers` controls how many parts are being uploaded at once. `part_size` controls how big each of them is. Together they decide the memory footprint (about `(max_workers + 1) × part_size`), how often the SDK calls the MDC API, and how much work is lost when a part fails.
-Finding the right balance of values for these two variables depends on the size of your archive and your internet connection setup.
-
-#### What to increase or decrease and when
-
-| Situation                                        | Suggested change                                                                                                                              |
-|--------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------|
-| Fast, stable connection and a large archive      | Raise `max_workers` to 8 (or even higher) and keep or raise `part_size`, until throughput stops improving.                                    |
-| `RateLimitError` during the upload               | Lower `max_workers`, or raise `part_size` so there are fewer parts and fewer URL requests.                                                    |
-| Limited memory on machine (e.g. small cloud VM)  | Lower `max_workers` and/or `part_size` to keep `(max_workers + 1) × part_size` within memory.                                                 |
-| Slow or flaky connection, frequent interruptions | Lower `max_workers` if a slow link is being shared by too many streams, and keep `part_size` low to prevent losing too much work on failures. |
-| Read timeouts on part uploads                    | Lower `part_size` so each request finishes sooner.                                                                                            |
-| Very large file (hundreds of GB or more)         | Raise `part_size` to stay under the 10,000-part limit; then pick `max_workers` from the memory budget.                                        |
-| Debugging or reproducing an issue                | Set `max_workers=1` for a sequential, deterministic upload.                                                                                   |
-
-!!! note
-    After an interruption (e.g. Ctrl-C) the call returns immediately, but the process may take a moment to exit while the parts already in flight finish or time out.
-
-#### Debugging
-
-**Too many workers**
-
-- Each worker adds another `part_size` of memory, so a high worker count with large parts can use several GB of RAM.
-- More parts start at the same time, which means more near-simultaneous API requests and a higher chance of getting rate limited by our platform (`RateLimitError`).
-- Your connection has a fixed bandwidth, and once a few workers are using all of it, adding more does not make the upload faster. The extra workers just split the same bandwidth between them, so each part takes longer while the total time stays the same.
-
-**Too few workers**
-
-- A single connection stream will rarely saturate a fast internet connection link, so the upload takes longer than it needs to. This is most noticeable for large archives on high-bandwidth connections.
-- With `max_workers=1` there is no concurrency at all and the upload behaves as a plain sequential upload.
-
-**Too large a part size**
-
-- Fewer parts means fewer API requests and less per-part overhead, but when a part fails or the upload is interrupted the whole part is re-uploaded, so more progress is lost.
-- Memory grows with the part size as well, since every in-flight part is held in memory.
-- Each part is a single long-running request, so very large parts are more exposed to read timeouts on slow or unstable connections.
-
-**Too small a part size**
-
-- Finer-grained resume: only a small part is re-uploaded after a failure.
-- Many more parts means many more API requests, which can trigger the rate limit, and more per-part overhead. The number of parts is also capped at 10,000 (see [Tuning the Part Size](#tuning-the-part-size)), and parts smaller than 5 MB are rejected by storage.
-
-
 ## Resumable Uploads
 
 The SDK automatically handles interrupted uploads using a state file.
@@ -492,7 +433,7 @@ The SDK automatically handles interrupted uploads using a state file.
 ### How It Works
 
 1. When an upload starts, the SDK creates a state file (`.mdc-upload.json`) alongside your archive
-2. The state file tracks which parts have been successfully uploaded (it is written atomically, so an interruption never leaves it half-written)
+2. The state file tracks which parts have been successfully uploaded
 3. If the upload is interrupted, rerunning the same upload call will resume from where it left off
 4. Once the upload completes successfully, the state file is removed automatically
 

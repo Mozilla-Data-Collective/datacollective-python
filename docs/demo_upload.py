@@ -47,7 +47,6 @@ response = create_submission_with_upload(
     file_path="example_dataset.tar.gz",
     submission=submission,
     enable_logging=True,
-    # max_workers=2,  # number of parts uploaded at once (default 4)
     # Optional: a small, representative excerpt of the dataset
     # sample_file_path="example_dataset_sample.tar.gz",
 )

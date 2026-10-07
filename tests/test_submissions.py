@@ -189,7 +189,6 @@ def test_create_submission_with_upload_uploads_optional_sample_file(
             "state_path": str(sample_state_path),
             "enable_logging": False,
             "part_size": submissions_module.DEFAULT_PART_SIZE,
-            "max_workers": submissions_module.DEFAULT_MAX_WORKERS,
         }
     ]
 

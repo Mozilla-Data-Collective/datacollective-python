@@ -160,7 +160,6 @@ def test_upload_dataset_file_with_non_default_part_size(
             state_path=str(state_path),
             show_progress=False,
             part_size=part_size,
-            max_workers=2,
         )
     except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
