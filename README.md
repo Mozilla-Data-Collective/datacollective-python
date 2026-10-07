@@ -26,7 +26,24 @@ The official Python SDK for accessing and contributing to the [Mozilla Data Coll
 > Our platform is evolving rapidly. Expect breaking changes while the Python SDK is on 0.X.X versions. 
 > Please ensure you are always on the latest version available.
 
+## Features
+
+- **Download datasets** to local storage with automatic resume after an interruption.
+- **Load datasets into pandas DataFrames or HuggingFace `Dataset` objects**, with optional lazy audio decoding.
+- **Browse and search the public catalog** from Python, no API key needed.
+- **Upload datasets programmatically**: create a submission, set its metadata, upload the archive, and send it for review in a single call.
+- **Fast, resumable uploads**: multipart uploads run several parts concurrently and pick up where they left off if interrupted.
+- **Detailed logging** to the console and a local log file for troubleshooting.
+
 ## Installation
+
+With [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add datacollective
+```
+
+Or with pip:
 
 ```bash
 pip install datacollective
@@ -116,7 +133,7 @@ Returns a `Dataset`, or a `DatasetDict` keyed by split name for datasets with mu
 
 ## Programmatic submissions and uploads
 
-> [!ΝΟΤΕ]
+> [!NOTE]
 > In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
 > navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab. 
 > Only the credentials (API keys) created **_after_** your request has been approved will be able to upload datasets. 

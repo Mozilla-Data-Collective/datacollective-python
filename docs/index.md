@@ -12,7 +12,13 @@ This library helps you:
 
 ## Installation
 
-Install from PyPI:
+Install from PyPI with [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add datacollective
+```
+
+Or with pip:
 
 ```bash
 pip install datacollective
@@ -112,11 +118,11 @@ The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets
 The SDK supports creating dataset submissions and uploading files with resumable uploads. 
 The upload state is stored in a JSON file alongside the archive so interrupted uploads can resume automatically.
 
-> [!ΝΟΤΕ]
-> In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
-> navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab.
-> Only the credentials (API keys) created **_after_** your request has been approved will be able to upload datasets. 
-> Any credentials created before your request was approved will not be able to upload datasets.
+!!! note
+    In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by
+    navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab.
+    Only the credentials (API keys) created **_after_** your request has been approved will be able to upload datasets.
+    Any credentials created before your request was approved will not be able to upload datasets.
 
 ```python
 from datacollective import (
@@ -178,14 +184,14 @@ For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `l
 
 To publish a compensated dataset instead of a free one, set `isPaid=True` and a `basePriceCents` price in **USD cents** (US Dollars). See [Pricing](upload.md#pricing) for details.
 
-> [!TIP]
-> To also attach an optional sample of your dataset, pass `sample_file_path="/path/to/dataset-sample.tar.gz"` to `create_submission_with_upload`, or upload it separately with `upload_sample_file(file_path=..., submission_id=...)`.
+!!! tip
+    To also attach an optional sample of your dataset, pass `sample_file_path="/path/to/dataset-sample.tar.gz"` to `create_submission_with_upload`, or upload it separately with `upload_sample_file(file_path=..., submission_id=...)`.
 
-> [!TIP]
-> To upload a new `.tar.gz` version to an already approved and published dataset, call `upload_dataset_file(file_path=..., submission_id=...)` directly. Get the submission ID from **Profile → Uploads** by opening the approved dataset and copying the value after `/profile/submissions/` in the URL. This submission ID is different from the dataset ID.
+!!! tip
+    To upload a new `.tar.gz` version to an already approved and published dataset, call `upload_dataset_file(file_path=..., submission_id=...)` directly. Get the submission ID from **Profile → Uploads** by opening the approved dataset and copying the value after `/profile/submissions/` in the URL. This submission ID is different from the dataset ID.
 
-> [!TIP]
-> If a file upload is interrupted, simply rerun the same function above and the upload will resume from where it left off.
+!!! tip
+    If a file upload is interrupted, simply rerun the same function above and the upload will resume from where it left off.
 
 ## Loading and Querying Datasets
 

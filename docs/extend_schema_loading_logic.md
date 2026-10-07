@@ -90,8 +90,9 @@ TASK_CONTRACTS: dict[str, frozenset[str]] = {
 
 A contract violation emits a `TaskValidationWarning` (via Python's `warnings` module, so it is visible even when package logging is disabled) and the DataFrame is still returned. Schemas whose task has no contract (e.g. `OTH`), or with no task at all, load without validation.
 
-> **Note for registry schemas:** keep the `task` field in existing `schema.yaml`
-> files — older SDK versions still require it.
+!!! note "Registry schemas"
+    Keep the `task` field in existing `schema.yaml`
+    files — older SDK versions still require it.
 
 ## 3. Architecture Overview
 

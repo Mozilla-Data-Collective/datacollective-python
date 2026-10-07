@@ -155,13 +155,13 @@ submission = DatasetSubmission(
 )
 ```
 
-> [!IMPORTANT]
-> `basePriceCents` is expressed in **USD cents** (US Dollars), not in dollars.
-> For example, `basePriceCents=100_000` sets the price to **$1,000.00 USD**.
+!!! info "Important"
+    `basePriceCents` is expressed in **USD cents** (US Dollars), not in dollars.
+    For example, `basePriceCents=100_000` sets the price to **$1,000.00 USD**.
 
-> [!NOTE]
-> The platform validates that the price falls within an acceptable range and rejects the
-> submission otherwise.
+!!! note
+    The platform validates that the price falls within an acceptable range and rejects the
+    submission otherwise.
 
 - `isPaid=True` requires `basePriceCents` to be set.
 - `basePriceCents` cannot be set unless `isPaid=True`, since the price would otherwise be
@@ -224,10 +224,10 @@ print(f"Sample upload complete! File Upload ID: {upload_state.fileUploadId}")
 Its state file uses a `.mdc-sample-upload.json` suffix, so a sample upload and a dataset
 upload never overwrite each other's resume state.
 
-> [!NOTE]
-> When using `create_submission_with_upload`, the dataset archive is uploaded first and the
-> sample file right after, before the submission is sent for review. A missing
-> `sample_file_path` raises `FileNotFoundError` up front, before anything is uploaded.
+!!! note
+    When using `create_submission_with_upload`, the dataset archive is uploaded first and the
+    sample file right after, before the submission is sent for review. A missing
+    `sample_file_path` raises `FileNotFoundError` up front, before anything is uploaded.
 
 
 ## Upload a New File Version to an Approved Dataset
@@ -240,8 +240,8 @@ Use `upload_dataset_file` when the dataset already exists on the platform and is
    `https://mozilladatacollective.com/profile/submissions/<ID>`
 4. Pass that value to `upload_dataset_file` as `submission_id`.
 
-> [!IMPORTANT]
-> The value after `/profile/submissions/` is the **submission ID**, not the dataset ID.
+!!! info "Important"
+    The value after `/profile/submissions/` is the **submission ID**, not the dataset ID.
 
 ```python
 from datacollective import upload_dataset_file
@@ -360,8 +360,8 @@ upload_state = upload_dataset_file(
 print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 ```
 
-> [!TIP]
-> You can also find your submission ID by going to your [Uploads](https://mozilladatacollective.com/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://mozilladatacollective.com/submissions/cmmjpewijXXXXXXXXX`).
+!!! tip
+    You can also find your submission ID by going to your [Uploads](https://mozilladatacollective.com/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://mozilladatacollective.com/submissions/cmmjpewijXXXXXXXXX`).
 
 ### Step 4 (Optional): Upload a Sample File
 
@@ -423,8 +423,8 @@ upload_dataset_file(
 
 A single upload can have at most **10,000 parts**. This means `part_size` must be large enough that `ceil(file_size / part_size) ≤ 10,000`. The SDK checks this up front and raises a `ValueError` telling you the minimum `part_size` to use, rather than failing partway through the upload. For example, a 1 TB file needs parts of at least ~100 MB.
 
-> [!NOTE]
-> When **resuming** an interrupted upload, `part_size` is ignored — the SDK reuses the part size recorded in the state file so the already-uploaded parts stay valid.
+!!! note
+    When **resuming** an interrupted upload, `part_size` is ignored — the SDK reuses the part size recorded in the state file so the already-uploaded parts stay valid.
 
 ## Tuning Upload Concurrency
 
