@@ -47,9 +47,9 @@ MINIMUM_PART_SIZE = 5 * 1024 * 1024
 MAX_UPLOAD_PARTS = 10_000
 
 RATE_LIMIT_HINT = (
-    "A high number of max_workers and/or a low number of part_size "
-    "can increase your chances of getting rate limited. Consider adjusting "
-    "these values in your upload script accordingly and try again."
+    "A high `max_workers` value and/or a small `part_size` increase the chance "
+    "of getting rate limited. Consider adjusting these values in your upload "
+    "script and try again; the upload will resume from the parts already uploaded."
 )
 
 
@@ -442,8 +442,11 @@ def _upload_parts_and_compute_checksum(
     executor = ThreadPoolExecutor(
         max_workers=max_workers, thread_name_prefix="mdc-upload"
     )
+    # Closed in `finally` rather than by a `with` block so that it stays open
+    # while the error path below waits for the in-flight parts.
+    session = _storage_session(max_workers)
     try:
-        with _storage_session(max_workers) as session, open(path, "rb") as file_handle:
+        with open(path, "rb") as file_handle:
             for part_index in range(expected_parts):
                 part_number = part_index + 1
                 chunk = file_handle.read(state.partSize)
@@ -483,6 +486,8 @@ def _upload_parts_and_compute_checksum(
         executor.shutdown(wait=isinstance(exc, Exception), cancel_futures=True)
         _record_finished_parts(pending, parts_by_number, state, state_file)
         raise
+    finally:
+        session.close()
 
     return bytes_read, hasher.hexdigest()
 
