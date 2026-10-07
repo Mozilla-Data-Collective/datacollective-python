@@ -91,6 +91,10 @@ class RateLimitError(RuntimeError):
         self,
         *,
         response: requests.Response | None = None,
+        hint: str | None = None,
     ) -> None:
         self.response = response
-        super().__init__("Rate limit exceeded. Please try again later.")
+        message = "Rate limit exceeded. Please try again later."
+        if hint:
+            message = f"{message} {hint}"
+        super().__init__(message)

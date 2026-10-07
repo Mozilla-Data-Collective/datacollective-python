@@ -1,13 +1,17 @@
 import hashlib
 import json
 import math
+import os
 import time
+from concurrent.futures import FIRST_COMPLETED, Future, ThreadPoolExecutor, wait
 from pathlib import Path
 
 import requests
 from fox_progress_bar import ProgressBar
 from pydantic import Field, ValidationError
+from requests.adapters import HTTPAdapter
 
+from datacollective.errors import RateLimitError
 from datacollective.api_utils import (
     _get_api_url,
     _send_api_request,
@@ -26,6 +30,10 @@ MAX_UPLOAD_RETRIES = 3
 RETRY_BACKOFF_SECONDS = 2
 
 DEFAULT_PART_SIZE = 10 * 1024 * 1024  # 10 MB default part size to upload chunk by chunk
+# Number of parts uploaded concurrently. Memory use is roughly
+# (DEFAULT_MAX_WORKERS + 1) * part_size, and every part costs one presigned-URL
+# request to the API, so keep the default modest to stay clear of rate limits.
+DEFAULT_MAX_WORKERS = 4
 DEFAULT_MIME_TYPE = "application/gzip"
 
 # Suffixes of the resumable state files, kept separate so that uploading a
@@ -37,6 +45,12 @@ SAMPLE_STATE_FILE_SUFFIX = ".mdc-sample-upload.json"
 MINIMUM_PART_SIZE = 5 * 1024 * 1024
 # Storage caps a multipart upload at 10.000 presigned parts
 MAX_UPLOAD_PARTS = 10_000
+
+RATE_LIMIT_HINT = (
+    "A high `max_workers` value and/or a small `part_size` increase the chance "
+    "of getting rate limited. Consider adjusting these values in your upload "
+    "script and try again; the upload will resume from the parts already uploaded."
+)
 
 
 def _ensure_part_size_is_valid(file_size: int, part_size: int) -> None:
@@ -67,6 +81,12 @@ def _ensure_part_size_is_valid(file_size: int, part_size: int) -> None:
             f" exceeding the limit of {MAX_UPLOAD_PARTS}. Increase the "
             f"`part_size` argument to at least {_format_bytes(min_part_size)}."
         )
+
+
+def _ensure_max_workers_is_valid(max_workers: int) -> None:
+    """Ensure at least one part can be uploaded at a time."""
+    if max_workers < 1:
+        raise ValueError(f"`max_workers` must be at least 1, got {max_workers}.")
 
 
 class UploadSession(NonEmptyStrModel):
@@ -213,8 +233,16 @@ def _load_upload_state(path: Path) -> UploadState | None:
 
 
 def _save_upload_state(path: Path, state: UploadState) -> None:
-    """Persist upload state to disk."""
-    path.write_text(json.dumps(state.model_dump(), indent=2))
+    """
+    Persist upload state to disk.
+
+    The state is written to a temporary file and then renamed over the real
+    one, so an interruption (e.g. Ctrl-C) mid-write never leaves a truncated
+    state file behind that would force the upload to restart from scratch.
+    """
+    tmp_path = path.with_name(path.name + ".tmp")
+    tmp_path.write_text(json.dumps(state.model_dump(), indent=2))
+    os.replace(tmp_path, path)
 
 
 def _default_state_path(file_path: Path, is_sample: bool = False) -> Path:
@@ -278,19 +306,93 @@ def _state_matches(
     )
 
 
+def _uploaded_bytes(
+    parts_by_number: dict[int, str], file_size: int, part_size: int
+) -> int:
+    """
+    Number of bytes covered by the already uploaded parts.
+
+    Every part is ``part_size`` bytes except the last one, which only holds the
+    remainder of the file, so the parts cannot simply be multiplied by the
+    part size.
+    """
+    return sum(
+        min(part_size, file_size - (number - 1) * part_size)
+        for number in parts_by_number
+    )
+
+
 def _init_progress_bar(
     show_progress: bool,
     file_size: int,
-    part_size: int,
-    already_uploaded: int,
+    already_uploaded_bytes: int,
 ) -> ProgressBar | None:
     if not show_progress:
         return None
     progress_bar = ProgressBar(file_size)
-    if already_uploaded > 0:
-        progress_bar.update(already_uploaded * part_size)
+    if already_uploaded_bytes > 0:
+        progress_bar.update(already_uploaded_bytes)
         progress_bar._display()
     return progress_bar
+
+
+def _storage_session(max_workers: int) -> requests.Session:
+    """
+    HTTP session for the part uploads to storage.
+
+    Reusing connections saves a TCP and TLS handshake per part. The pool must
+    hold at least one connection per worker, otherwise urllib3 discards the
+    extra connections after every request.
+    """
+    session = requests.Session()
+    adapter = HTTPAdapter(pool_connections=1, pool_maxsize=max_workers)
+    session.mount("https://", adapter)
+    session.mount("http://", adapter)
+    return session
+
+
+def _upload_single_part(
+    file_upload_id: str,
+    submission_id: str,
+    is_sample: bool,
+    part_number: int,
+    chunk: bytes,
+    session: requests.Session | None = None,
+) -> str:
+    """
+    Upload one part and return its ETag. Runs on a worker thread.
+
+    The presigned URL is requested right before the PUT because the URLs are
+    short-lived.
+    """
+    try:
+        presigned = _get_presigned_part_url(
+            file_upload_id, part_number, submission_id, is_sample
+        )
+        response = _upload_part_with_retry(presigned.url, chunk, session=session)
+    except RateLimitError as exc:
+        raise RateLimitError(response=exc.response, hint=RATE_LIMIT_HINT) from exc
+    return _extract_etag(response)
+
+
+def _record_finished_parts(
+    pending: dict[Future[str], tuple[int, int]],
+    parts_by_number: dict[int, str],
+    state: UploadState,
+    state_file: Path,
+) -> None:
+    """
+    After a failure, keep the parts that still finished so the upload can be
+    resumed. Never raises: the original error must propagate unchanged.
+    """
+    for future, (part_number, _) in pending.items():
+        if future.done() and not future.cancelled() and future.exception() is None:
+            parts_by_number[part_number] = future.result()
+    try:
+        state.parts = _parts_from_mapping(parts_by_number)
+        _save_upload_state(state_file, state)
+    except Exception:
+        logger.debug("Could not persist upload state after failure", exc_info=True)
 
 
 def _upload_parts_and_compute_checksum(
@@ -300,45 +402,92 @@ def _upload_parts_and_compute_checksum(
     expected_parts: int,
     progress_bar: ProgressBar | None,
     state_file: Path,
+    max_workers: int = DEFAULT_MAX_WORKERS,
 ) -> tuple[int, str]:
     """
     Read the whole file part by part, uploading the parts not yet in
     *parts_by_number* and hashing every part (uploaded now or earlier).
 
+    The file is read and hashed in order on the calling thread, while up to
+    *max_workers* parts are uploaded concurrently by a thread pool. Only the
+    calling thread touches *parts_by_number*, the state file and the progress
+    bar, so no locking is needed. At most *max_workers* parts (plus the one
+    being read) are held in memory at any time.
+
     *parts_by_number* and the state file are updated after each uploaded part
-    so an interrupted upload can resume.
+    so an interrupted upload can resume. On the first failure no further parts
+    are submitted, the parts that already finished are persisted, and the
+    original exception is re-raised.
 
     Returns:
         The number of bytes read and the SHA-256 hex digest of the file.
     """
     hasher = hashlib.sha256()
     bytes_read = 0
-    with open(path, "rb") as file_handle:
-        for part_index in range(expected_parts):
-            part_number = part_index + 1
-            chunk = file_handle.read(state.partSize)
-            if not chunk:
-                break
-            bytes_read += len(chunk)
-            hasher.update(chunk)
+    # Submitted but not yet recorded parts: future -> (part number, chunk size)
+    pending: dict[Future[str], tuple[int, int]] = {}
 
-            if part_number in parts_by_number:
-                continue
-
-            presigned = _get_presigned_part_url(
-                state.fileUploadId,
-                part_number,
-                state.submissionId,
-                state.isSample,
-            )
-            response = _upload_part_with_retry(presigned.url, chunk)
-            etag = _extract_etag(response)
-            parts_by_number[part_number] = etag
+    def record(done: set[Future[str]]) -> None:
+        for future in done:
+            part_number, size = pending.pop(future)
+            # Re-raises the worker's exception with its original type
+            parts_by_number[part_number] = future.result()
             state.parts = _parts_from_mapping(parts_by_number)
             _save_upload_state(state_file, state)
-
             if progress_bar:
-                progress_bar.update(len(chunk))
+                progress_bar.update(size)
+
+    # Not used as a context manager on purpose: `__exit__` always waits for the
+    # running parts, which would make Ctrl-C hang until they finish.
+    executor = ThreadPoolExecutor(
+        max_workers=max_workers, thread_name_prefix="mdc-upload"
+    )
+    # Closed in `finally` rather than by a `with` block so that it stays open
+    # while the error path below waits for the in-flight parts.
+    session = _storage_session(max_workers)
+    try:
+        with open(path, "rb") as file_handle:
+            for part_index in range(expected_parts):
+                part_number = part_index + 1
+                chunk = file_handle.read(state.partSize)
+                if not chunk:
+                    break
+                bytes_read += len(chunk)
+                hasher.update(chunk)
+
+                if part_number in parts_by_number:
+                    continue
+
+                if len(pending) >= max_workers:
+                    done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                    record(done)
+
+                future = executor.submit(
+                    _upload_single_part,
+                    state.fileUploadId,
+                    state.submissionId,
+                    state.isSample,
+                    part_number,
+                    chunk,
+                    session,
+                )
+                pending[future] = (part_number, len(chunk))
+                # The executor now holds the only reference to the chunk
+                del chunk
+
+            while pending:
+                done, _ = wait(pending, return_when=FIRST_COMPLETED)
+                record(done)
+        executor.shutdown(wait=True)
+    except BaseException as exc:
+        # Fail fast: drop the queued parts and keep the finished ones for
+        # resuming. On ordinary errors wait for the in-flight parts so their
+        # ETags are kept too; on Ctrl-C return right away instead.
+        executor.shutdown(wait=isinstance(exc, Exception), cancel_futures=True)
+        _record_finished_parts(pending, parts_by_number, state, state_file)
+        raise
+    finally:
+        session.close()
 
     return bytes_read, hasher.hexdigest()
 
@@ -366,8 +515,15 @@ def _cleanup_state_file(state_file: Path) -> None:
         logger.debug(f"Failed to remove upload state file: {state_file}")
 
 
-def _upload_part(presigned_url: str, payload: bytes) -> requests.Response:
-    resp = requests.put(presigned_url, data=payload, timeout=UPLOAD_TIMEOUT)
+def _upload_part(
+    presigned_url: str,
+    payload: bytes,
+    session: requests.Session | None = None,
+) -> requests.Response:
+    put = session.put if session else requests.put
+    resp = put(presigned_url, data=payload, timeout=UPLOAD_TIMEOUT)
+    if resp.status_code == 429:
+        raise RateLimitError(response=resp)
     resp.raise_for_status()
     return resp
 
@@ -387,20 +543,21 @@ def _upload_part_with_retry(
     presigned_url: str,
     payload: bytes,
     max_retries: int = MAX_UPLOAD_RETRIES,
+    session: requests.Session | None = None,
 ) -> requests.Response:
     """Upload a single part with automatic retries on transient failures."""
     last_exc: Exception | None = None
     for attempt in range(1, max_retries + 1):
         try:
-            return _upload_part(presigned_url, payload)
+            return _upload_part(presigned_url, payload, session=session)
         except (requests.ConnectionError, requests.Timeout) as exc:
             last_exc = exc
             if attempt < max_retries:
-                wait = RETRY_BACKOFF_SECONDS * attempt
+                wait_seconds = RETRY_BACKOFF_SECONDS * attempt
                 logger.debug(
-                    f"Upload part attempt {attempt} failed, retrying in {wait}s..."
+                    f"Upload part attempt {attempt} failed, retrying in {wait_seconds}s..."
                 )
-                time.sleep(wait)
+                time.sleep(wait_seconds)
     raise RuntimeError(
         f"Failed to upload part after {max_retries} attempts"
     ) from last_exc
