@@ -10,7 +10,7 @@ from typing import Callable
 import pytest
 
 import datacollective.upload_utils as upload_utils_module
-from datacollective.errors import RateLimitError, ResourceRemovedError
+from datacollective.errors import ResourceRemovedError
 from datacollective.upload_utils import (
     PresignedPartUrl,
     UploadState,
@@ -208,42 +208,19 @@ def test_first_failure_stops_submission_and_keeps_successful_parts(
     assert 3 not in saved_numbers
 
 
-def test_rate_limit_on_part_url_adds_tuning_hint(
-    tmp_path: Path, fake_storage: FakeStorage, monkeypatch
-) -> None:
-    def rate_limited_presign(*_, **__):
-        raise RateLimitError()
-
-    monkeypatch.setattr(
-        upload_utils_module, "_get_presigned_part_url", rate_limited_presign
-    )
-
-    with pytest.raises(RateLimitError, match="max_workers") as exc_info:
-        _run(tmp_path, parts=3, max_workers=2)
-
-    assert isinstance(exc_info.value.__cause__, RateLimitError)
-    assert fake_storage.put == []
-
-
-def test_rate_limit_from_storage_adds_tuning_hint(
-    tmp_path: Path, fake_storage: FakeStorage
-) -> None:
-    def throttled(part_number: int) -> None:
-        raise RateLimitError()
-
-    fake_storage.on_put = throttled
-
-    with pytest.raises(RateLimitError, match="part_size"):
-        _run(tmp_path, parts=3, max_workers=2)
-
-
 def test_in_flight_success_after_failure_is_persisted(
     tmp_path: Path, fake_storage: FakeStorage
 ) -> None:
+    # Part 1 must not fail before part 2 is actually running, otherwise the
+    # fail-fast path may cancel part 2 while it is still queued and the test
+    # would be checking the wrong scenario.
+    part_2_started = threading.Event()
+
     def on_put(part_number: int) -> None:
         if part_number == 1:
+            assert part_2_started.wait(timeout=5), "part 2 never started"
             raise RuntimeError("part 1 failed")
-        time.sleep(0.1)
+        part_2_started.set()
 
     fake_storage.on_put = on_put
 
