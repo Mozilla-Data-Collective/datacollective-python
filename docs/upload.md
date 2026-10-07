@@ -457,8 +457,8 @@ Finding the right balance of values for these two variables depends on the size 
 | Very large file (hundreds of GB or more)         | Raise `part_size` to stay under the 10,000-part limit; then pick `max_workers` from the memory budget.                                        |
 | Debugging or reproducing an issue                | Set `max_workers=1` for a sequential, deterministic upload.                                                                                   |
 
-> [!NOTE]
-> After an interruption (e.g. Ctrl-C) the call returns immediately, but the process may take a moment to exit while the parts already in flight finish or time out.
+!!! note
+    After an interruption (e.g. Ctrl-C) the call returns immediately, but the process may take a moment to exit while the parts already in flight finish or time out.
 
 #### Debugging
 
