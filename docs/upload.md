@@ -466,7 +466,7 @@ Finding the right balance of values for these two variables depends on the size 
 
 - Each worker adds another `part_size` of memory, so a high worker count with large parts can use several GB of RAM.
 - More parts start at the same time, which means more near-simultaneous API requests and a higher chance of getting rate limited by our platform (`RateLimitError`).
-- Past the point where your connection is saturated, extra workers only compete for the same bandwidth and gain nothing.
+- Your connection has a fixed bandwidth, and once a few workers are using all of it, adding more does not make the upload faster. The extra workers just split the same bandwidth between them, so each part takes longer while the total time stays the same.
 
 **Too few workers**
 
