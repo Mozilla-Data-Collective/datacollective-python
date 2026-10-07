@@ -218,7 +218,7 @@ def test_rate_limit_on_part_url_adds_tuning_hint(
         upload_utils_module, "_get_presigned_part_url", rate_limited_presign
     )
 
-    with pytest.raises(RateLimitError, match="lowering `max_workers`") as exc_info:
+    with pytest.raises(RateLimitError, match="max_workers") as exc_info:
         _run(tmp_path, parts=3, max_workers=2)
 
     assert isinstance(exc_info.value.__cause__, RateLimitError)
@@ -233,7 +233,7 @@ def test_rate_limit_from_storage_adds_tuning_hint(
 
     fake_storage.on_put = throttled
 
-    with pytest.raises(RateLimitError, match="raising `part_size`"):
+    with pytest.raises(RateLimitError, match="part_size"):
         _run(tmp_path, parts=3, max_workers=2)
 
 

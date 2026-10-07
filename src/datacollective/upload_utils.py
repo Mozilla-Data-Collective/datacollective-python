@@ -47,8 +47,8 @@ MINIMUM_PART_SIZE = 5 * 1024 * 1024
 MAX_UPLOAD_PARTS = 10_000
 
 RATE_LIMIT_HINT = (
-    "A high number of max_workers and/or a low number of part_size"
-    "can increase your chances of your getting rate limited. Consider adjusting"
+    "A high number of max_workers and/or a low number of part_size "
+    "can increase your chances of getting rate limited. Consider adjusting "
     "these values in your upload script accordingly and try again."
 )
 
