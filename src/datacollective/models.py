@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from enum import Enum
-from typing import Any, ClassVar, Sequence
+from typing import Any, ClassVar
 
 from pydantic import (
     BaseModel,
@@ -544,25 +544,11 @@ def _payload_for_fields(
     if "licenseAbbreviation" in allowed_fields and isinstance(
         submission.licenseAbbreviation, License
     ):
-        payload["licenseAbbreviation"] = submission.licenseAbbreviation.value
         # Remove custom license fields if a predefined license is used
         payload.pop("license", None)
         payload.pop("licenseUrl", None)
 
     return payload
-
-
-def _build_final_submission_error(
-    missing_items: list[str], *, missing_file_upload_id: bool
-) -> str:
-    message = (
-        "Cannot submit dataset. Missing required fields for final submission: "
-        f"{', '.join(missing_items)}. Please update your DatasetSubmission model "
-        f"with the appropriate fields."
-    )
-    if missing_file_upload_id:
-        message += " Upload the dataset file before submitting."
-    return message
 
 
 def _validate_final_submission_fields(
@@ -585,53 +571,17 @@ def _validate_final_submission_fields(
         missing_items.append("`fileUploadId`")
 
     if missing_items:
-        raise ValueError(
-            _build_final_submission_error(
-                missing_items,
-                missing_file_upload_id=missing_file_upload_id,
-            )
+        message = (
+            "Cannot submit dataset. Missing required fields for final submission: "
+            f"{', '.join(missing_items)}. Please update your DatasetSubmission model "
+            "with the appropriate fields."
         )
+        if missing_file_upload_id:
+            message += " Upload the dataset file before submitting."
+        raise ValueError(message)
 
 
 def _should_validate_local_final_submission(
     submission: DatasetSubmission,
 ) -> bool:
     return bool(submission.model_fields_set & FINAL_SUBMISSION_LOCAL_FIELDS)
-
-
-def _require_archive_filename(details: DatasetDetails) -> str:
-    if not details.filename:
-        raise RuntimeError(
-            f"Dataset '{details.id}' details did not include an archive filename."
-        )
-    return details.filename
-
-
-def _validate_option(name: str, value: str | None, allowed: tuple[str, ...]) -> None:
-    if value is not None and value not in allowed:
-        raise ValueError(
-            f"Invalid {name} '{value}'. Supported values: {', '.join(allowed)}"
-        )
-
-
-def _normalize_filter_values(
-    name: str, value: Task | License | str | Sequence[Task | License | str] | None
-) -> list[str] | None:
-    """Turn a single filter value or a sequence of them into a list of API strings."""
-    if value is None:
-        return None
-    raw_values: Sequence[Task | License | str]
-    if isinstance(value, (str, Enum)):
-        raw_values = [value]
-    else:
-        raw_values = value
-
-    normalized: list[str] = []
-    for item in raw_values:
-        item_str = item.value if isinstance(item, Enum) else str(item)
-        if not item_str.strip():
-            raise ValueError(f"`{name}` values must be non-empty strings")
-        normalized.append(item_str.strip())
-    if not normalized:
-        raise ValueError(f"`{name}` must contain at least one value when provided")
-    return normalized

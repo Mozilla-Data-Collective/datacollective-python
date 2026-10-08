@@ -26,7 +26,24 @@ The official Python SDK for accessing and contributing to the [Mozilla Data Coll
 > Our platform is evolving rapidly. Expect breaking changes while the Python SDK is on 0.X.X versions. 
 > Please ensure you are always on the latest version available.
 
+## Features
+
+- **Download datasets** to local storage with automatic resume after an interruption.
+- **Load datasets into pandas DataFrames or HuggingFace `Dataset` objects**, with optional lazy audio decoding.
+- **Browse and search the public catalog** from Python, no API key needed.
+- **Upload datasets programmatically**: create a submission, set its metadata, upload the archive, and send it for review in a single call.
+- **Fast, resumable uploads**: multipart uploads run several parts concurrently and pick up where they left off if interrupted.
+- **Detailed logging** to the console and a local log file for troubleshooting.
+
 ## Installation
+
+With [uv](https://docs.astral.sh/uv/):
+
+```bash
+uv add datacollective
+```
+
+Or with pip:
 
 ```bash
 pip install datacollective
@@ -116,7 +133,7 @@ Returns a `Dataset`, or a `DatasetDict` keyed by split name for datasets with mu
 
 ## Programmatic submissions and uploads
 
-> [!ΝΟΤΕ]
+> [!NOTE]
 > In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
 > navigating to your [profile](https://mozilladatacollective.com/profile/uploads) under the `Upload` tab. 
 > Only the credentials (API keys) created **_after_** your request has been approved will be able to upload datasets. 
@@ -175,6 +192,9 @@ print(response)
 For predefined licenses, pass `licenseAbbreviation=License.<VALUE>` and leave `licenseUrl` and `license` unset. For custom licenses, pass a custom string to `license` and optionally include `licenseUrl` and `licenseAbbreviation`.
 
 To publish a compensated dataset, set `isPaid=True` and a `basePriceCents` price in **USD cents** (US Dollars), e.g. `basePriceCents=100_000` for $1,000.00.
+
+Parts of the dataset are uploaded concurrently and uploads are resumable. Tune the part size and concurrency with `part_size` and `max_workers` according to your connection speed and archive size, see [our docs](https://Mozilla-Data-Collective.github.io/datacollective-python/upload/#tuning-upload-concurrency).
+
 > [!TIP]
 > To also attach an optional sample of your dataset, pass `sample_file_path="/path/to/dataset-sample.tar.gz"` to `create_submission_with_upload`, or upload it separately with `upload_sample_file(file_path=..., submission_id=...)`.
 

@@ -1,6 +1,5 @@
 import os
 import platform
-from pathlib import Path
 from typing import Any
 
 import requests
@@ -59,7 +58,7 @@ def _send_api_request(
         json_body: Optional JSON body to send with the request.
         params: Optional query parameters to include in the request.
         source_function: Optional context appended to the User-Agent to track which function
-                         initiated the request (e.g., 'load_dataset', 'save_dataset_to_disk').
+                         initiated the request (e.g., 'load_dataset', 'download_dataset').
 
     Returns:
         The HTTP response object.
@@ -169,16 +168,12 @@ def _response_body_for_logging(resp: requests.Response, stream: bool = False) ->
     if stream:
         return "<streamed response body omitted>"
     try:
-        status = resp.status_code
-    except Exception:
-        return "<unavailable>"
-    try:
         # Redact sensitive info
         body: Any = _redact_sensitive(resp.json())
     except Exception:
         # Non-JSON body: no structured keys to redact, fall back to raw text
         body = resp.text
-    return f"{status}: {body}"
+    return f"{resp.status_code}: {body}"
 
 
 def _get_api_key() -> str:
@@ -197,10 +192,7 @@ def _auth_headers() -> dict[str, str]:
 def _get_user_agent(source_function: str | None = None) -> str:
     """Generate a user agent string with SDK/runtime info and optional context of initiated function."""
     # Import here to avoid circular dependency
-    try:
-        from datacollective import __version__
-    except ImportError:
-        __version__ = "unknown"
+    from datacollective import __version__
 
     python_version = platform.python_version()
     system = platform.system()
@@ -212,47 +204,14 @@ def _get_user_agent(source_function: str | None = None) -> str:
     return user_agent
 
 
-def _prepare_download_headers(
-    tmp_path: Path, resume_checksum: str | None
-) -> tuple[dict[str, str], int]:
-    """
-    Prepare headers for download plan and determine existing file size for download resumption.
-
-    Args:
-        tmp_path: Path to the temporary file for download.
-        resume_checksum: Checksum string to verify for resuming download (if any).
-
-    Returns:
-        A tuple containing:
-        - A dict of headers to include in the download request.
-        - The size of the existing file in bytes (0 if not resuming).
-    """
-    if not tmp_path.exists():  # invalid path
-        return {}, 0
-
-    if resume_checksum:
-        existing_size = tmp_path.stat().st_size
-        return {"Range": f"bytes={existing_size}-"}, existing_size
-
-    tmp_path.unlink()  # remove existing file if no resume checksum supplied
-    return {}, 0
-
-
-def _format_bytes(bytes_val: int, base: int = 1024) -> str:
-    """Format bytes into a human-readable string.
-
-    Args:
-        bytes_val: Number of bytes.
-        base: Unit base to divide by — ``1024`` for binary units or ``1000``
-            for decimal (SI) units. Defaults to ``1024``.
-    """
-    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+def _format_bytes(bytes_val: int) -> str:
+    """Format bytes into a human-readable (binary units) string."""
     value = float(bytes_val)
-    for unit in units:
-        if value < base or unit == units[-1]:
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if value < 1024:
             return f"{value:.1f} {unit}"
-        value /= base
-    return ""
+        value /= 1024
+    return f"{value:.1f} PB"
 
 
 def _redact_sensitive(value: Any) -> Any:

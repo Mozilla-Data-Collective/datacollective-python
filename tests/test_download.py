@@ -221,11 +221,11 @@ def test_execute_download_plan_forwards_download_source(
         plan,
         resume_download_checksum=None,
         show_progress=False,
-        download_source="save_dataset_to_disk",
+        download_source="download_dataset",
     )
 
     assert plan.tmp_filepath.read_bytes() == b"abcdef"
     assert captured["method"] == "GET"
     assert captured["url"] == plan.download_url
-    assert captured["source_function"] == "save_dataset_to_disk"
+    assert captured["source_function"] == "download_dataset"
     assert captured["include_auth_headers"] is False

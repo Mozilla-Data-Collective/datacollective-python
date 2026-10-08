@@ -14,13 +14,15 @@ from datacollective.upload_utils import (
     _expected_parts,
     _normalize_parts,
     _init_progress_bar,
-    _upload_missing_parts,
-    _parts_from_mapping,
+    _upload_parts_and_compute_checksum,
     _save_upload_state,
     _complete_upload,
     _cleanup_state_file,
     _ensure_part_size_is_valid,
+    _ensure_max_workers_is_valid,
+    _uploaded_bytes,
     DEFAULT_PART_SIZE,
+    DEFAULT_MAX_WORKERS,
 )
 
 logger = get_logger(__name__)
@@ -33,6 +35,7 @@ def upload_dataset_file(
     show_progress: bool = True,
     enable_logging: bool = False,
     part_size: int = DEFAULT_PART_SIZE,
+    max_workers: int = DEFAULT_MAX_WORKERS,
 ) -> UploadState:
     """
     Upload a dataset file using multipart uploads with resumable state.
@@ -51,6 +54,9 @@ def upload_dataset_file(
         show_progress: Whether to show a progress bar during upload.
         part_size: Multipart part size in bytes. Ignored when resuming an
             existing upload, which keeps the part size recorded in its state file.
+        max_workers: Number of parts uploaded concurrently. The file is still
+            read and hashed in order; about `max_workers + 1` parts are held in
+            memory. Use 1 to upload parts one at a time.
     """
     return _upload_file(
         file_path=file_path,
@@ -59,6 +65,7 @@ def upload_dataset_file(
         show_progress=show_progress,
         enable_logging=enable_logging,
         part_size=part_size,
+        max_workers=max_workers,
         is_sample=False,
     )
 
@@ -70,6 +77,7 @@ def upload_sample_file(
     show_progress: bool = True,
     enable_logging: bool = False,
     part_size: int = DEFAULT_PART_SIZE,
+    max_workers: int = DEFAULT_MAX_WORKERS,
 ) -> UploadState:
     """
     Upload an **optional** sample file for a dataset submission.
@@ -89,6 +97,9 @@ def upload_sample_file(
         show_progress: Whether to show a progress bar during upload.
         part_size: Multipart part size in bytes. Ignored when resuming an
             existing upload, which keeps the part size recorded in its state file.
+        max_workers: Number of parts uploaded concurrently. The file is still
+            read and hashed in order; about `max_workers + 1` parts are held in
+            memory. Use 1 to upload parts one at a time.
     """
     return _upload_file(
         file_path=file_path,
@@ -97,6 +108,7 @@ def upload_sample_file(
         show_progress=show_progress,
         enable_logging=enable_logging,
         part_size=part_size,
+        max_workers=max_workers,
         is_sample=True,
     )
 
@@ -108,6 +120,7 @@ def _upload_file(
     show_progress: bool,
     enable_logging: bool,
     part_size: int,
+    max_workers: int,
     is_sample: bool,
 ) -> UploadState:
     """
@@ -120,6 +133,7 @@ def _upload_file(
         show_progress: Whether to show a progress bar during upload.
         enable_logging: Whether to enable detailed logging during the upload.
         part_size: Multipart part size in bytes.
+        max_workers: Number of parts uploaded concurrently.
         is_sample: Whether to upload the file as the submission's sample file.
     """
     path = Path(file_path)
@@ -133,6 +147,7 @@ def _upload_file(
         raise ValueError("`file_path` must point to a non-empty file")
 
     _ensure_part_size_is_valid(file_size, part_size)
+    _ensure_max_workers_is_valid(max_workers)
 
     state_file = (
         Path(state_path) if state_path else _default_state_path(path, is_sample)
@@ -145,6 +160,7 @@ def _upload_file(
             submission_id=submission_id,
             file_size=file_size,
             part_size=part_size,
+            max_workers=max_workers,
             is_sample=is_sample,
             show_progress=show_progress,
         )
@@ -160,6 +176,7 @@ def _run_upload(
     submission_id: str,
     file_size: int,
     part_size: int,
+    max_workers: int,
     is_sample: bool,
     show_progress: bool,
 ) -> UploadState:
@@ -188,17 +205,19 @@ def _run_upload(
     progress_bar = _init_progress_bar(
         show_progress=show_progress,
         file_size=state.fileSize,
-        part_size=state.partSize,
-        already_uploaded=len(parts_by_number),
+        already_uploaded_bytes=_uploaded_bytes(
+            parts_by_number, state.fileSize, state.partSize
+        ),
     )
 
-    bytes_read, checksum = _upload_missing_parts(
+    bytes_read, checksum = _upload_parts_and_compute_checksum(
         path=path,
         state=state,
         parts_by_number=parts_by_number,
         expected_parts=expected_parts,
         progress_bar=progress_bar,
         state_file=state_file,
+        max_workers=max_workers,
     )
 
     if progress_bar:
@@ -217,7 +236,6 @@ def _run_upload(
         )
 
     state.checksum = checksum
-    state.parts = _parts_from_mapping(parts_by_number)
     _save_upload_state(state_file, state)
 
     logger.info("Completing upload...")

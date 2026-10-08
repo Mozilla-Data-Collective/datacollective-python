@@ -51,14 +51,12 @@ class MultiSplitLoader(BaseSchemaLoader):
 
         for split_name, file_path in sorted(split_files.items()):
             logger.debug(f"Reading split '{split_name}' from {file_path}")
-            raw_df = self._read_delimited_file(file_path)
-            raw_df["split"] = split_name
-
+            df = self._read_delimited_file(file_path)
+            # Set before mapping too, so column mappings can source from `split`
+            df["split"] = split_name
             if self.schema.columns:
-                mapped = self._apply_column_mappings(raw_df)
-                mapped["split"] = split_name
-                frames.append(mapped)
-            else:
-                frames.append(raw_df)
+                df = self._apply_column_mappings(df)
+            df["split"] = split_name
+            frames.append(df)
 
         return pd.concat(frames, ignore_index=True)

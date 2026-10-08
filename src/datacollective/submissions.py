@@ -19,7 +19,11 @@ from datacollective.models import (
     SUBMIT_FIELDS,
 )
 from datacollective.upload import upload_dataset_file, upload_sample_file
-from datacollective.upload_utils import _resolve_upload_state, DEFAULT_PART_SIZE
+from datacollective.upload_utils import (
+    _resolve_upload_state,
+    DEFAULT_PART_SIZE,
+    DEFAULT_MAX_WORKERS,
+)
 
 logger = get_logger(__name__)
 
@@ -107,6 +111,7 @@ def create_submission_with_upload(
     part_size: int = DEFAULT_PART_SIZE,
     sample_file_path: str | None = None,
     sample_state_path: str | None = None,
+    max_workers: int = DEFAULT_MAX_WORKERS,
 ) -> dict[str, Any]:
     """
     Single point function to create a submission, update metadata, upload a file, and submit for review.
@@ -122,6 +127,8 @@ def create_submission_with_upload(
         sample_file_path: Optional path to a sample archive to upload alongside the
             dataset archive. A sample file is not required to submit a dataset.
         sample_state_path: Optional path to persist the sample upload state.
+        max_workers: Number of parts uploaded concurrently, for both the dataset
+            archive and the sample file. Use 1 to upload parts sequentially.
     """
     _enable_logging(enable_logging)
 
@@ -145,14 +152,15 @@ def create_submission_with_upload(
 
         draft = create_submission_draft(submission)
 
-        submission_payload = draft.get("submission", {})
-        submission_id = (
+        submission_payload = draft.get("submission")
+        draft_id = (
             submission_payload.get("id")
             if isinstance(submission_payload, dict)
             else None
         )
-        if not submission_id:
+        if not draft_id:
             raise RuntimeError("Draft creation did not return a submission id")
+        submission_id = str(draft_id)
 
         logger.info(f"Draft created. Submission ID: {submission_id}")
 
@@ -166,6 +174,7 @@ def create_submission_with_upload(
         state_path=state_path,
         enable_logging=enable_logging,
         part_size=part_size,
+        max_workers=max_workers,
     )
 
     if sample_file_path:
@@ -176,6 +185,7 @@ def create_submission_with_upload(
             state_path=sample_state_path,
             enable_logging=enable_logging,
             part_size=part_size,
+            max_workers=max_workers,
         )
 
     # The uploaded file is linked to the submission automatically when the

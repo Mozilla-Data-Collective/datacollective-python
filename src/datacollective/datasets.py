@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+from enum import Enum
 from pathlib import Path
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Literal, overload
@@ -17,15 +18,13 @@ from datacollective.models import (
     DatasetList,
     License,
     Task,
-    _normalize_filter_values,
-    _require_archive_filename,
-    _validate_option,
 )
 from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
+    DOWNLOAD_SOURCE_DOWNLOAD,
+    DOWNLOAD_SOURCE_LOAD,
     DOWNLOAD_SOURCE_SAVE,
     _download_dataset,
-    DOWNLOAD_SOURCE_LOAD,
 )
 from datacollective.hf_utils import _convert_to_hf, _require_datasets
 from datacollective.logging_utils import (
@@ -114,20 +113,39 @@ def download_dataset(
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
+    return _download_archive(
+        dataset_id,
+        download_directory,
+        show_progress,
+        overwrite_existing,
+        enable_logging,
+        download_source=DOWNLOAD_SOURCE_DOWNLOAD,
+    )
+
+
+def _download_archive(
+    dataset_id: str,
+    download_directory: str | None,
+    show_progress: bool,
+    overwrite_existing: bool,
+    enable_logging: bool,
+    download_source: str,
+) -> Path:
+    """Shared body of `download_dataset` and its deprecated alias; the
+    *download_source* sent with the request tells them apart."""
     _enable_logging(enable_logging)
     logger.info(f"Downloading dataset {dataset_id}")
 
     dataset_details = get_dataset_details(dataset_id)
 
-    archive_path = _download_dataset(
+    return _download_dataset(
         dataset_id=dataset_details.id,
         archive_filename=_require_archive_filename(dataset_details),
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
-        download_source=DOWNLOAD_SOURCE_SAVE,
+        download_source=download_source,
     )
-    return archive_path
 
 
 # Added these two overload typing declarations in order to accurately type check
@@ -395,10 +413,45 @@ def save_dataset_to_disk(
         DeprecationWarning,
         stacklevel=2,
     )
-    return download_dataset(
-        dataset_id=dataset_id,
-        download_directory=download_directory,
-        show_progress=show_progress,
-        overwrite_existing=overwrite_existing,
-        enable_logging=enable_logging,
+    return _download_archive(
+        dataset_id,
+        download_directory,
+        show_progress,
+        overwrite_existing,
+        enable_logging,
+        download_source=DOWNLOAD_SOURCE_SAVE,
     )
+
+
+def _require_archive_filename(details: DatasetDetails) -> str:
+    if not details.filename:
+        raise RuntimeError(
+            f"Dataset '{details.id}' details did not include an archive filename."
+        )
+    return details.filename
+
+
+def _validate_option(name: str, value: str | None, allowed: tuple[str, ...]) -> None:
+    if value is not None and value not in allowed:
+        raise ValueError(
+            f"Invalid {name} '{value}'. Supported values: {', '.join(allowed)}"
+        )
+
+
+def _normalize_filter_values(
+    name: str, value: Task | License | str | Sequence[Task | License | str] | None
+) -> list[str] | None:
+    """Turn a single filter value or a sequence of them into a list of API strings."""
+    if value is None:
+        return None
+    raw_values = [value] if isinstance(value, (str, Enum)) else value
+
+    normalized: list[str] = []
+    for item in raw_values:
+        item_str = (item.value if isinstance(item, Enum) else str(item)).strip()
+        if not item_str:
+            raise ValueError(f"`{name}` values must be non-empty strings")
+        normalized.append(item_str)
+    if not normalized:
+        raise ValueError(f"`{name}` must contain at least one value when provided")
+    return normalized

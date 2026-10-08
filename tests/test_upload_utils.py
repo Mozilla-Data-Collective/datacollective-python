@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pytest
+from requests.adapters import HTTPAdapter
 
 import datacollective.upload_utils as upload_utils_module
 from datacollective.models import UploadPart
@@ -15,8 +16,11 @@ from datacollective.upload_utils import (
     _save_upload_state,
     _load_upload_state,
     _ensure_part_size_is_valid,
+    _ensure_max_workers_is_valid,
     _expected_parts,
     _state_matches,
+    _storage_session,
+    _uploaded_bytes,
 )
 
 
@@ -127,9 +131,7 @@ def test_expected_parts_rounds_up_for_remainder() -> None:
 def test_dataset_upload_uses_uploads_endpoints(
     captured_requests: list[dict[str, object]],
 ) -> None:
-    _initiate_upload(
-        "submission", "dataset.tar.gz", 1024, "application/gzip", DEFAULT_PART_SIZE
-    )
+    _initiate_upload("submission", "dataset.tar.gz", 1024)
     _get_presigned_part_url("file-upload", 1, "submission")
     _complete_upload(
         "file-upload",
@@ -149,14 +151,7 @@ def test_dataset_upload_uses_uploads_endpoints(
 def test_sample_upload_uses_submission_sample_endpoints(
     captured_requests: list[dict[str, object]],
 ) -> None:
-    _initiate_upload(
-        "submission",
-        "sample.tar.gz",
-        1024,
-        "application/gzip",
-        DEFAULT_PART_SIZE,
-        is_sample=True,
-    )
+    _initiate_upload("submission", "sample.tar.gz", 1024, is_sample=True)
     _get_presigned_part_url("file-upload", 2, "submission", is_sample=True)
     _complete_upload(
         "file-upload",
@@ -180,14 +175,7 @@ def test_sample_upload_uses_submission_sample_endpoints(
 def test_sample_upload_initiate_payload_matches_dataset_upload(
     captured_requests: list[dict[str, object]],
 ) -> None:
-    _initiate_upload(
-        "submission",
-        "sample.tar.gz",
-        1024,
-        "application/gzip",
-        DEFAULT_PART_SIZE,
-        is_sample=True,
-    )
+    _initiate_upload("submission", "sample.tar.gz", 1024, is_sample=True)
 
     assert captured_requests[0]["json_body"] == {
         "submissionId": "submission",
@@ -220,3 +208,38 @@ def test_state_matches_rejects_state_for_the_other_upload_kind() -> None:
 def test_upload_state_defaults_to_a_dataset_upload() -> None:
     # State files written before sample uploads existed must still load.
     assert _build_state().isSample is False
+
+
+def test_ensure_max_workers_is_valid() -> None:
+    _ensure_max_workers_is_valid(1)
+    with pytest.raises(ValueError, match="max_workers"):
+        _ensure_max_workers_is_valid(0)
+
+
+def test_save_upload_state_is_atomic_and_overwrites(tmp_path: Path) -> None:
+    state_path = tmp_path / "upload-state.json"
+    state_path.write_text("stale")
+
+    _save_upload_state(
+        state_path, _build_state(parts=[UploadPart(partNumber=1, etag="e")])
+    )
+
+    assert not state_path.with_name(state_path.name + ".tmp").exists()
+    assert list(tmp_path.iterdir()) == [state_path]
+    loaded = _load_upload_state(state_path)
+    assert loaded is not None
+    assert loaded.parts[0].partNumber == 1
+
+
+def test_uploaded_bytes_counts_short_last_part_once() -> None:
+    # 10 bytes in parts of 4: parts 1 and 2 hold 4 bytes, part 3 only 2.
+    assert _uploaded_bytes({1: "a", 2: "b", 3: "c"}, file_size=10, part_size=4) == 10
+    assert _uploaded_bytes({3: "c"}, file_size=10, part_size=4) == 2
+    assert _uploaded_bytes({}, file_size=10, part_size=4) == 0
+
+
+def test_storage_session_pool_fits_all_workers() -> None:
+    with _storage_session(max_workers=6) as session:
+        adapter = session.get_adapter("https://storage.test/1")
+        assert isinstance(adapter, HTTPAdapter)
+        assert adapter.poolmanager.connection_pool_kw["maxsize"] == 6

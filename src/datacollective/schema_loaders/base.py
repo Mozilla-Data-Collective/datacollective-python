@@ -136,7 +136,7 @@ class BaseSchemaLoader(abc.ABC):
 
         for logical_name, col_map in self.schema.columns.items():
             source = col_map.source_column
-            resolved_source = self._resolve_source_column(raw_df, source)
+            resolved_source = self._resolve_column(raw_df.columns, source)
 
             if resolved_source is None:
                 if col_map.optional:
@@ -217,57 +217,42 @@ class BaseSchemaLoader(abc.ABC):
 
     def _read_delimited_file(self, file_path: Path) -> pd.DataFrame:
         sep = self._resolve_separator(file_path)
-        header = "infer" if self.schema.has_header else None
-
-        logger.debug(f"Reading delimited file: {file_path} (sep={sep!r})")
-        df = self._read_csv(file_path, sep=sep, header=header)
-        return self._normalize_dataframe_columns(df)
-
-    def _read_csv(
-        self, file_path: Path, sep: str | None, header: str | None
-    ) -> pd.DataFrame:
-        kwargs: dict[str, object] = {
-            "header": header,
-            "encoding": self.schema.encoding,
-            "skipinitialspace": True,
-        }
-        if sep is None:
-            kwargs["sep"] = None
-            kwargs["engine"] = "python"
-        else:
-            kwargs["sep"] = sep
-        quoting = self._resolve_quoting(sep)
-        kwargs["quoting"] = quoting
-        df = pd.read_csv(file_path, **kwargs)
-
-        if quoting == csv.QUOTE_MINIMAL:
-            self._warn_if_rows_merged(file_path, df, has_header=header is not None)
-        elif self.schema.quoting is None:
-            self._warn_if_fields_look_quoted(file_path, df)
-        return df
-
-    def _resolve_quoting(self, sep: str | None) -> int:
-        if self.schema.quoting == "none":
-            return csv.QUOTE_NONE
-        if self.schema.quoting == "minimal":
-            return csv.QUOTE_MINIMAL
         # TSVs (e.g. Common Voice) don't quote fields; a field starting with
         # '"' would otherwise swallow every row up to the next '"'.
         # See https://github.com/Mozilla-Data-Collective/datacollective-python/issues/141 for more details
-        return csv.QUOTE_NONE if sep == "\t" else csv.QUOTE_MINIMAL
+        quoting = self.schema.quoting or ("none" if sep == "\t" else "minimal")
+
+        logger.debug(f"Reading delimited file: {file_path} (sep={sep!r})")
+        df = pd.read_csv(
+            file_path,
+            sep=sep,
+            # Separator sniffing (sep=None) requires the python engine
+            engine="python" if sep is None else None,
+            header="infer" if self.schema.has_header else None,
+            encoding=self.schema.encoding,
+            skipinitialspace=True,
+            quoting=csv.QUOTE_NONE if quoting == "none" else csv.QUOTE_MINIMAL,
+        )
+
+        if quoting == "minimal":
+            self._warn_if_rows_merged(file_path, df, sep)
+        elif self.schema.quoting is None:
+            self._warn_if_fields_look_quoted(file_path, df)
+        return self._normalize_dataframe_columns(df)
 
     def _warn_if_rows_merged(
-        self, file_path: Path, df: pd.DataFrame, has_header: bool
+        self, file_path: Path, df: pd.DataFrame, sep: str | None
     ) -> None:
         """Warn when quoted fields absorbed lines that look like separate rows.
 
         Legitimate multi-line quoted values trigger this too, which is why it
         is a warning and not an error.
         """
+        # pandas skips lines of only spaces/tabs, unless a tab is the separator
+        blank = " \r\n" if sep == "\t" else " \t\r\n"
         with open(file_path, encoding=self.schema.encoding, errors="replace") as f:
-            data_lines = sum(1 for line in f if line.strip("\r\n"))
-        if has_header:
-            data_lines -= 1
+            data_lines = sum(1 for line in f if line.strip(blank))
+        data_lines -= self.schema.has_header
         merged = data_lines - len(df)
         if merged <= 0:
             return
@@ -279,7 +264,7 @@ class BaseSchemaLoader(abc.ABC):
             "merely starts with '\"'), rows were lost: set `quoting: none` in "
             "the schema.",
             DataLoadWarning,
-            stacklevel=4,
+            stacklevel=3,
         )
 
     def _warn_if_fields_look_quoted(self, file_path: Path, df: pd.DataFrame) -> None:
@@ -295,12 +280,11 @@ class BaseSchemaLoader(abc.ABC):
             # pandas < 3 reads text as object, pandas >= 3 as StringDtype
             if values.dtype != object and not isinstance(values.dtype, pd.StringDtype):
                 continue
-            # '""' inside the value is what a quoting writer leaves behind;
-            # a sentence that merely starts and ends with '"' has no such pair.
+            # A '""' pair inside the wrapping quotes is what a quoting writer
+            # leaves behind; a sentence that merely starts and ends with '"'
+            # has none. The substring test is a cheap pre-filter.
             candidates = values[values.str.contains('""', regex=False, na=False)]
-            quoted = candidates[
-                candidates.str.startswith('"') & candidates.str.endswith('"')
-            ]
+            quoted = candidates[candidates.str.fullmatch(r'".*"".*"')]
             if quoted.empty:
                 continue
             warnings.warn(
@@ -311,7 +295,7 @@ class BaseSchemaLoader(abc.ABC):
                 "set `quoting: minimal` in the schema; set `quoting: none` to "
                 "silence this warning.",
                 DataLoadWarning,
-                stacklevel=4,
+                stacklevel=3,
             )
             return
 
@@ -346,35 +330,33 @@ class BaseSchemaLoader(abc.ABC):
         result.columns = normalized_columns
         return result
 
-    def _resolve_source_column(
-        self, raw_df: pd.DataFrame, source: str | int
+    def _resolve_column(
+        self, columns: pd.Index, source: str | int, kind: str = "index"
     ) -> str | int | None:
-        if source in raw_df.columns:
+        """Find *source* among *columns*, tolerating whitespace/case/BOM
+        differences unless the schema is strict."""
+        if source in columns:
             return source
-        if isinstance(source, int):
-            return source if source in raw_df.columns else None
-        if self.schema.strict:
+        if isinstance(source, int) or self.schema.strict:
             # Strict schemas require exact column names — no fuzzy matching
             return None
 
         stripped_source = source.strip()
-        if stripped_source in raw_df.columns:
+        if stripped_source in columns:
             return stripped_source
 
         normalized_source = self._normalize_column_key(stripped_source)
         matches = [
             column
-            for column in raw_df.columns
+            for column in columns
             if isinstance(column, str)
             and self._normalize_column_key(column) == normalized_source
         ]
-        if len(matches) == 1:
-            return matches[0]
         if len(matches) > 1:
             raise KeyError(
-                f"Column '{source}' matched multiple index columns after normalization: {matches}"
+                f"Column '{source}' matched multiple {kind} columns after normalization: {matches}"
             )
-        return None
+        return matches[0] if matches else None
 
     def _normalize_column_key(self, column: str) -> str:
         cleaned = column.replace("\ufeff", "").strip()
@@ -392,6 +374,12 @@ class BaseSchemaLoader(abc.ABC):
         With the default ``direct`` strategy, a value that resolves to no
         existing file is returned as the first constructed candidate path
         and recorded in *misses* (when given) so the caller can warn.
+
+        Raises:
+            FileNotFoundError: If ``path_match_strategy`` is ``exact`` or
+                ``contains`` and the search finds no file.
+            ValueError: If the ``exact`` or ``contains`` search matches more
+                than one file.
         """
         if pd.isna(value):
             return value
@@ -445,10 +433,16 @@ class BaseSchemaLoader(abc.ABC):
     ) -> Any:
         """Resolve a file path (like ``file_path`` dtype) and return its text content.
 
-        When the value does not resolve to an existing file, the cell becomes
-        missing (``None``) and the value is recorded in *misses* (when given)
-        so the caller can warn — a content column must never silently contain
-        a path instead of the file's text.
+        With the default ``direct`` strategy, a value that does not resolve to
+        an existing file makes the cell missing (``None``) and is recorded in
+        *misses* (when given) so the caller can warn — a content column must
+        never silently contain a path instead of the file's text.
+
+        Raises:
+            FileNotFoundError: If ``path_match_strategy`` is ``exact`` or
+                ``contains`` and the search finds no file.
+            ValueError: If the ``exact`` or ``contains`` search matches more
+                than one file.
         """
         if pd.isna(value):  # if missing value, skip loading
             return value
@@ -724,7 +718,7 @@ class BaseSchemaLoader(abc.ABC):
             if placeholder == "value":
                 return raw_value
 
-            row_key = self._resolve_row_column(row, placeholder)
+            row_key = self._resolve_column(row.index, placeholder, kind="row")
             if row_key is None:
                 raise KeyError(
                     f"Could not render {template_name} placeholder '{placeholder}'. "
@@ -737,33 +731,3 @@ class BaseSchemaLoader(abc.ABC):
             return str(cell_value).strip()
 
         return re.sub(r"\$\{([^}]+)\}", replace, template)
-
-    def _resolve_row_column(
-        self, row: pd.Series, source: str | int
-    ) -> str | int | None:
-        if source in row.index:
-            return source
-        if isinstance(source, int):
-            return source if source in row.index else None
-        if self.schema.strict:
-            # Strict schemas require exact column names — no fuzzy matching
-            return None
-
-        stripped_source = source.strip()
-        if stripped_source in row.index:
-            return stripped_source
-
-        normalized_source = self._normalize_column_key(stripped_source)
-        matches = [
-            column
-            for column in row.index
-            if isinstance(column, str)
-            and self._normalize_column_key(column) == normalized_source
-        ]
-        if len(matches) == 1:
-            return matches[0]
-        if len(matches) > 1:
-            raise KeyError(
-                f"Column '{source}' matched multiple row columns after normalization: {matches}"
-            )
-        return None
