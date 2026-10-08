@@ -1403,8 +1403,11 @@
   and HuggingFace Datasets.</li>
 </ul>
 <h2 id="installation">Installation</h2>
-<p>Install from PyPI:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pip<span class="w"> </span>install<span class="w"> </span>datacollective
+<p>Install from PyPI with <a href="https://docs.astral.sh/uv/">uv</a>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>uv<span class="w"> </span>add<span class="w"> </span>datacollective
+</span></code></pre></div>
+<p>Or with pip:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pip<span class="w"> </span>install<span class="w"> </span>datacollective
 </span></code></pre></div>
 <h2 id="getting-an-api-key">Getting an API Key</h2>
 <p>To download or upload datasets through the Mozilla Data Collective API, you need an API key:</p>
@@ -1427,18 +1430,18 @@
 <li><code>MDC_LOG_PATH</code> - File path for logs (defaults to a <code>.log</code> file in the download directory).</li>
 </ul>
 <p>Example using environment variables directly:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_API_KEY</span><span class="o">=</span>your-api-key-here
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_DOWNLOAD_PATH</span><span class="o">=</span>~/.mozdata/datasets
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>~/.mozdata
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_API_KEY</span><span class="o">=</span>your-api-key-here
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_DOWNLOAD_PATH</span><span class="o">=</span>~/.mozdata/datasets
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>~/.mozdata
 </span></code></pre></div>
 <h3 id="env-file"><code>.env</code> file</h3>
 <p>The client will automatically load configuration from a <code>.env</code> file in your
 project root or present working directory.</p>
 <p>Create a file named <code>.env</code>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># MDC API Configuration</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="nv">MDC_API_KEY</span><span class="o">=</span>your-api-key-here
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nv">MDC_DOWNLOAD_PATH</span><span class="o">=</span>~/.mozdata/datasets
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>~/.mozdata
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># MDC API Configuration</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">MDC_API_KEY</span><span class="o">=</span>your-api-key-here
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="nv">MDC_DOWNLOAD_PATH</span><span class="o">=</span>~/.mozdata/datasets
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>~/.mozdata
 </span></code></pre></div>
 <div class="admonition warning">
 <p class="admonition-title">Security note</p>
@@ -1451,7 +1454,7 @@ To enable logging, pass <code>enable_logging=True</code> to the main functions.
 When enabled, logs are stored in a <code>.log</code> file in the download directory.
 You can change the log file location by setting the <code>MDC_LOG_PATH</code> environment variable to your desired path,
 either through the <code>.env</code> file or by executing on your terminal:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>/path/to/save/the/log/files
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>/path/to/save/the/log/files
 </span></code></pre></div>
 <h2 id="basic-usage">Basic Usage</h2>
 <p><strong>IMPORTANT NOTE:</strong> Before trying to access any dataset, make sure you have thoroughly <strong>read and agreed</strong> to the specific dataset's conditions &amp; licensing terms.</p>
@@ -1461,12 +1464,12 @@ either through the <code>.env</code> file or by executing on your terminal:</p>
 </div>
 <h3 id="download-a-dataset">Download a dataset</h3>
 <p>Use <code>download_dataset</code> to download a dataset to the configured download path:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">download_dataset</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">download_dataset</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">)</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># Depending on the implementation, `dataset` may contain metadata</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="c1"># about the downloaded files or a higher-level dataset object.</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">download_dataset</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">download_dataset</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">)</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
+</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># Depending on the implementation, `dataset` may contain metadata</span>
+</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="c1"># about the downloaded files or a higher-level dataset object.</span>
 </span></code></pre></div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1476,77 +1479,81 @@ either through the <code>.env</code> file or by executing on your terminal:</p>
 <h2 id="programmatic-submissions-and-uploads">Programmatic submissions and uploads</h2>
 <p>The SDK supports creating dataset submissions and uploading files with resumable uploads. 
 The upload state is stored in a JSON file alongside the archive so interrupted uploads can resume automatically.</p>
-<blockquote>
-<p>[!ΝΟΤΕ]
-In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by 
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>In order to be able to upload datasets in the MDC platform you will first need to Request Access to Upload by
 navigating to your <a href="https://mozilladatacollective.com/profile/uploads">profile</a> under the <code>Upload</code> tab.
-Only the credentials (API keys) created <strong><em>after</em></strong> your request has been approved will be able to upload datasets. 
+Only the credentials (API keys) created <strong><em>after</em></strong> your request has been approved will be able to upload datasets.
 Any credentials created before your request was approved will not be able to upload datasets.</p>
-</blockquote>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">DatasetSubmission</span><span class="p">,</span>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">License</span><span class="p">,</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">Task</span><span class="p">,</span>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">Visibility</span><span class="p">,</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="n">create_submission_with_upload</span><span class="p">,</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="p">)</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">submission</span> <span class="o">=</span> <span class="n">DatasetSubmission</span><span class="p">(</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"Dataset Name"</span><span class="p">,</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a>    <span class="n">longDescription</span><span class="o">=</span><span class="s2">"A detailed description of the dataset."</span><span class="p">,</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>    <span class="n">shortDescription</span><span class="o">=</span><span class="s2">"A brief description of the dataset."</span><span class="p">,</span>
-</span><span id="__span-5-13"><a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>    <span class="n">locale</span><span class="o">=</span><span class="s2">"en-US"</span><span class="p">,</span>
-</span><span id="__span-5-14"><a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a>    <span class="n">task</span><span class="o">=</span><span class="n">Task</span><span class="o">.</span><span class="n">ASR</span><span class="p">,</span>
-</span><span id="__span-5-15"><a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">"TSV"</span><span class="p">,</span>
-</span><span id="__span-5-16"><a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a>    <span class="n">licenseAbbreviation</span><span class="o">=</span><span class="n">License</span><span class="o">.</span><span class="n">CC_BY_4_0</span><span class="p">,</span>
-</span><span id="__span-5-17"><a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a>    <span class="n">other</span><span class="o">=</span><span class="s2">"This text should provide a detailed description of the dataset, "</span>
-</span><span id="__span-5-18"><a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a>          <span class="s2">"including its contents, structure, and any relevant information "</span>
-</span><span id="__span-5-19"><a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>          <span class="s2">"that would help users understand what the dataset is about "</span>
-</span><span id="__span-5-20"><a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a>          <span class="s2">"and how it can be used."</span><span class="p">,</span>
-</span><span id="__span-5-21"><a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a>    <span class="n">restrictions</span><span class="o">=</span><span class="s2">"Any restrictions you want to impose on the dataset"</span><span class="p">,</span>
-</span><span id="__span-5-22"><a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a>    <span class="n">forbiddenUsage</span><span class="o">=</span><span class="s2">"Use cases that are not allowed with this dataset"</span><span class="p">,</span>
-</span><span id="__span-5-23"><a id="__codelineno-5-23" name="__codelineno-5-23" href="#__codelineno-5-23"></a>    <span class="n">additionalConditions</span><span class="o">=</span><span class="s2">"Any additional conditions for using the dataset"</span><span class="p">,</span>
-</span><span id="__span-5-24"><a id="__codelineno-5-24" name="__codelineno-5-24" href="#__codelineno-5-24"></a>    <span class="n">pointOfContactFullName</span><span class="o">=</span><span class="s2">"Jane Doe"</span><span class="p">,</span>
-</span><span id="__span-5-25"><a id="__codelineno-5-25" name="__codelineno-5-25" href="#__codelineno-5-25"></a>    <span class="n">pointOfContactEmail</span><span class="o">=</span><span class="s2">"jane@example.com"</span><span class="p">,</span>
-</span><span id="__span-5-26"><a id="__codelineno-5-26" name="__codelineno-5-26" href="#__codelineno-5-26"></a>    <span class="n">fundedByFullName</span><span class="o">=</span><span class="s2">"Funder Name"</span><span class="p">,</span>
-</span><span id="__span-5-27"><a id="__codelineno-5-27" name="__codelineno-5-27" href="#__codelineno-5-27"></a>    <span class="n">fundedByEmail</span><span class="o">=</span><span class="s2">"funder@example.com"</span><span class="p">,</span>
-</span><span id="__span-5-28"><a id="__codelineno-5-28" name="__codelineno-5-28" href="#__codelineno-5-28"></a>    <span class="n">legalContactFullName</span><span class="o">=</span><span class="s2">"Legal Name"</span><span class="p">,</span>
-</span><span id="__span-5-29"><a id="__codelineno-5-29" name="__codelineno-5-29" href="#__codelineno-5-29"></a>    <span class="n">legalContactEmail</span><span class="o">=</span><span class="s2">"legal@example.com"</span><span class="p">,</span>
-</span><span id="__span-5-30"><a id="__codelineno-5-30" name="__codelineno-5-30" href="#__codelineno-5-30"></a>    <span class="n">createdByFullName</span><span class="o">=</span><span class="s2">"Creator Name"</span><span class="p">,</span>
-</span><span id="__span-5-31"><a id="__codelineno-5-31" name="__codelineno-5-31" href="#__codelineno-5-31"></a>    <span class="n">createdByEmail</span><span class="o">=</span><span class="s2">"creator@example.com"</span><span class="p">,</span>
-</span><span id="__span-5-32"><a id="__codelineno-5-32" name="__codelineno-5-32" href="#__codelineno-5-32"></a>    <span class="n">intendedUsage</span><span class="o">=</span><span class="s2">"Describe the intended usage of the dataset, including "</span>
-</span><span id="__span-5-33"><a id="__codelineno-5-33" name="__codelineno-5-33" href="#__codelineno-5-33"></a>                  <span class="s2">"potential applications and use cases."</span><span class="p">,</span>
-</span><span id="__span-5-34"><a id="__codelineno-5-34" name="__codelineno-5-34" href="#__codelineno-5-34"></a>    <span class="n">ethicalReviewProcess</span><span class="o">=</span><span class="s2">"Describe the ethical review process that was "</span>
-</span><span id="__span-5-35"><a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a>                         <span class="s2">"followed for this dataset, including any approvals "</span>
-</span><span id="__span-5-36"><a id="__codelineno-5-36" name="__codelineno-5-36" href="#__codelineno-5-36"></a>                         <span class="s2">"or considerations related to data collection and usage."</span><span class="p">,</span>
-</span><span id="__span-5-37"><a id="__codelineno-5-37" name="__codelineno-5-37" href="#__codelineno-5-37"></a>    <span class="n">showContactInfo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Whether to publicly display the contact information above</span>
-</span><span id="__span-5-38"><a id="__codelineno-5-38" name="__codelineno-5-38" href="#__codelineno-5-38"></a>    <span class="n">visibility</span><span class="o">=</span><span class="n">Visibility</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>  <span class="c1"># public | private | restricted</span>
-</span><span id="__span-5-39"><a id="__codelineno-5-39" name="__codelineno-5-39" href="#__codelineno-5-39"></a>    <span class="n">isPaid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># True = the dataset is compensated and requires `basePriceCents`,</span>
-</span><span id="__span-5-40"><a id="__codelineno-5-40" name="__codelineno-5-40" href="#__codelineno-5-40"></a>                   <span class="c1"># False (default) = the dataset is free to access</span>
-</span><span id="__span-5-41"><a id="__codelineno-5-41" name="__codelineno-5-41" href="#__codelineno-5-41"></a>    <span class="n">exclusivityOptOut</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># True = This dataset is non-exclusive to Mozilla Data Collective, </span>
-</span><span id="__span-5-42"><a id="__codelineno-5-42" name="__codelineno-5-42" href="#__codelineno-5-42"></a>                              <span class="c1"># False = Dataset is exclusively hosted in Mozilla Data Collective</span>
-</span><span id="__span-5-43"><a id="__codelineno-5-43" name="__codelineno-5-43" href="#__codelineno-5-43"></a>    <span class="n">agreeToSubmit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># True = You confirm that you have the right to submit this dataset and </span>
-</span><span id="__span-5-44"><a id="__codelineno-5-44" name="__codelineno-5-44" href="#__codelineno-5-44"></a>                         <span class="c1"># that all information provided in the datasheet is accurate. </span>
-</span><span id="__span-5-45"><a id="__codelineno-5-45" name="__codelineno-5-45" href="#__codelineno-5-45"></a>                         <span class="c1"># Required to be True to complete the submission process</span>
-</span><span id="__span-5-46"><a id="__codelineno-5-46" name="__codelineno-5-46" href="#__codelineno-5-46"></a><span class="p">)</span>
-</span><span id="__span-5-47"><a id="__codelineno-5-47" name="__codelineno-5-47" href="#__codelineno-5-47"></a>
-</span><span id="__span-5-48"><a id="__codelineno-5-48" name="__codelineno-5-48" href="#__codelineno-5-48"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
-</span><span id="__span-5-49"><a id="__codelineno-5-49" name="__codelineno-5-49" href="#__codelineno-5-49"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
-</span><span id="__span-5-50"><a id="__codelineno-5-50" name="__codelineno-5-50" href="#__codelineno-5-50"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
-</span><span id="__span-5-51"><a id="__codelineno-5-51" name="__codelineno-5-51" href="#__codelineno-5-51"></a><span class="p">)</span>
-</span><span id="__span-5-52"><a id="__codelineno-5-52" name="__codelineno-5-52" href="#__codelineno-5-52"></a>
-</span><span id="__span-5-53"><a id="__codelineno-5-53" name="__codelineno-5-53" href="#__codelineno-5-53"></a><span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+</div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>    <span class="n">DatasetSubmission</span><span class="p">,</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="n">License</span><span class="p">,</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">Task</span><span class="p">,</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">Visibility</span><span class="p">,</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">create_submission_with_upload</span><span class="p">,</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">)</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">submission</span> <span class="o">=</span> <span class="n">DatasetSubmission</span><span class="p">(</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">"Dataset Name"</span><span class="p">,</span>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">longDescription</span><span class="o">=</span><span class="s2">"A detailed description of the dataset."</span><span class="p">,</span>
+</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">shortDescription</span><span class="o">=</span><span class="s2">"A brief description of the dataset."</span><span class="p">,</span>
+</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="n">locale</span><span class="o">=</span><span class="s2">"en-US"</span><span class="p">,</span>
+</span><span id="__span-6-14"><a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>    <span class="n">task</span><span class="o">=</span><span class="n">Task</span><span class="o">.</span><span class="n">ASR</span><span class="p">,</span>
+</span><span id="__span-6-15"><a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">"TSV"</span><span class="p">,</span>
+</span><span id="__span-6-16"><a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>    <span class="n">licenseAbbreviation</span><span class="o">=</span><span class="n">License</span><span class="o">.</span><span class="n">CC_BY_4_0</span><span class="p">,</span>
+</span><span id="__span-6-17"><a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>    <span class="n">other</span><span class="o">=</span><span class="s2">"This text should provide a detailed description of the dataset, "</span>
+</span><span id="__span-6-18"><a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>          <span class="s2">"including its contents, structure, and any relevant information "</span>
+</span><span id="__span-6-19"><a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>          <span class="s2">"that would help users understand what the dataset is about "</span>
+</span><span id="__span-6-20"><a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>          <span class="s2">"and how it can be used."</span><span class="p">,</span>
+</span><span id="__span-6-21"><a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a>    <span class="n">restrictions</span><span class="o">=</span><span class="s2">"Any restrictions you want to impose on the dataset"</span><span class="p">,</span>
+</span><span id="__span-6-22"><a id="__codelineno-6-22" name="__codelineno-6-22" href="#__codelineno-6-22"></a>    <span class="n">forbiddenUsage</span><span class="o">=</span><span class="s2">"Use cases that are not allowed with this dataset"</span><span class="p">,</span>
+</span><span id="__span-6-23"><a id="__codelineno-6-23" name="__codelineno-6-23" href="#__codelineno-6-23"></a>    <span class="n">additionalConditions</span><span class="o">=</span><span class="s2">"Any additional conditions for using the dataset"</span><span class="p">,</span>
+</span><span id="__span-6-24"><a id="__codelineno-6-24" name="__codelineno-6-24" href="#__codelineno-6-24"></a>    <span class="n">pointOfContactFullName</span><span class="o">=</span><span class="s2">"Jane Doe"</span><span class="p">,</span>
+</span><span id="__span-6-25"><a id="__codelineno-6-25" name="__codelineno-6-25" href="#__codelineno-6-25"></a>    <span class="n">pointOfContactEmail</span><span class="o">=</span><span class="s2">"jane@example.com"</span><span class="p">,</span>
+</span><span id="__span-6-26"><a id="__codelineno-6-26" name="__codelineno-6-26" href="#__codelineno-6-26"></a>    <span class="n">fundedByFullName</span><span class="o">=</span><span class="s2">"Funder Name"</span><span class="p">,</span>
+</span><span id="__span-6-27"><a id="__codelineno-6-27" name="__codelineno-6-27" href="#__codelineno-6-27"></a>    <span class="n">fundedByEmail</span><span class="o">=</span><span class="s2">"funder@example.com"</span><span class="p">,</span>
+</span><span id="__span-6-28"><a id="__codelineno-6-28" name="__codelineno-6-28" href="#__codelineno-6-28"></a>    <span class="n">legalContactFullName</span><span class="o">=</span><span class="s2">"Legal Name"</span><span class="p">,</span>
+</span><span id="__span-6-29"><a id="__codelineno-6-29" name="__codelineno-6-29" href="#__codelineno-6-29"></a>    <span class="n">legalContactEmail</span><span class="o">=</span><span class="s2">"legal@example.com"</span><span class="p">,</span>
+</span><span id="__span-6-30"><a id="__codelineno-6-30" name="__codelineno-6-30" href="#__codelineno-6-30"></a>    <span class="n">createdByFullName</span><span class="o">=</span><span class="s2">"Creator Name"</span><span class="p">,</span>
+</span><span id="__span-6-31"><a id="__codelineno-6-31" name="__codelineno-6-31" href="#__codelineno-6-31"></a>    <span class="n">createdByEmail</span><span class="o">=</span><span class="s2">"creator@example.com"</span><span class="p">,</span>
+</span><span id="__span-6-32"><a id="__codelineno-6-32" name="__codelineno-6-32" href="#__codelineno-6-32"></a>    <span class="n">intendedUsage</span><span class="o">=</span><span class="s2">"Describe the intended usage of the dataset, including "</span>
+</span><span id="__span-6-33"><a id="__codelineno-6-33" name="__codelineno-6-33" href="#__codelineno-6-33"></a>                  <span class="s2">"potential applications and use cases."</span><span class="p">,</span>
+</span><span id="__span-6-34"><a id="__codelineno-6-34" name="__codelineno-6-34" href="#__codelineno-6-34"></a>    <span class="n">ethicalReviewProcess</span><span class="o">=</span><span class="s2">"Describe the ethical review process that was "</span>
+</span><span id="__span-6-35"><a id="__codelineno-6-35" name="__codelineno-6-35" href="#__codelineno-6-35"></a>                         <span class="s2">"followed for this dataset, including any approvals "</span>
+</span><span id="__span-6-36"><a id="__codelineno-6-36" name="__codelineno-6-36" href="#__codelineno-6-36"></a>                         <span class="s2">"or considerations related to data collection and usage."</span><span class="p">,</span>
+</span><span id="__span-6-37"><a id="__codelineno-6-37" name="__codelineno-6-37" href="#__codelineno-6-37"></a>    <span class="n">showContactInfo</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># Whether to publicly display the contact information above</span>
+</span><span id="__span-6-38"><a id="__codelineno-6-38" name="__codelineno-6-38" href="#__codelineno-6-38"></a>    <span class="n">visibility</span><span class="o">=</span><span class="n">Visibility</span><span class="o">.</span><span class="n">PUBLIC</span><span class="p">,</span>  <span class="c1"># public | private | restricted</span>
+</span><span id="__span-6-39"><a id="__codelineno-6-39" name="__codelineno-6-39" href="#__codelineno-6-39"></a>    <span class="n">isPaid</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># True = the dataset is compensated and requires `basePriceCents`,</span>
+</span><span id="__span-6-40"><a id="__codelineno-6-40" name="__codelineno-6-40" href="#__codelineno-6-40"></a>                   <span class="c1"># False (default) = the dataset is free to access</span>
+</span><span id="__span-6-41"><a id="__codelineno-6-41" name="__codelineno-6-41" href="#__codelineno-6-41"></a>    <span class="n">exclusivityOptOut</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># True = This dataset is non-exclusive to Mozilla Data Collective, </span>
+</span><span id="__span-6-42"><a id="__codelineno-6-42" name="__codelineno-6-42" href="#__codelineno-6-42"></a>                              <span class="c1"># False = Dataset is exclusively hosted in Mozilla Data Collective</span>
+</span><span id="__span-6-43"><a id="__codelineno-6-43" name="__codelineno-6-43" href="#__codelineno-6-43"></a>    <span class="n">agreeToSubmit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># True = You confirm that you have the right to submit this dataset and </span>
+</span><span id="__span-6-44"><a id="__codelineno-6-44" name="__codelineno-6-44" href="#__codelineno-6-44"></a>                         <span class="c1"># that all information provided in the datasheet is accurate. </span>
+</span><span id="__span-6-45"><a id="__codelineno-6-45" name="__codelineno-6-45" href="#__codelineno-6-45"></a>                         <span class="c1"># Required to be True to complete the submission process</span>
+</span><span id="__span-6-46"><a id="__codelineno-6-46" name="__codelineno-6-46" href="#__codelineno-6-46"></a><span class="p">)</span>
+</span><span id="__span-6-47"><a id="__codelineno-6-47" name="__codelineno-6-47" href="#__codelineno-6-47"></a>
+</span><span id="__span-6-48"><a id="__codelineno-6-48" name="__codelineno-6-48" href="#__codelineno-6-48"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_submission_with_upload</span><span class="p">(</span>
+</span><span id="__span-6-49"><a id="__codelineno-6-49" name="__codelineno-6-49" href="#__codelineno-6-49"></a>    <span class="n">file_path</span><span class="o">=</span><span class="s2">"/path/to/dataset.tar.gz"</span><span class="p">,</span>
+</span><span id="__span-6-50"><a id="__codelineno-6-50" name="__codelineno-6-50" href="#__codelineno-6-50"></a>    <span class="n">submission</span><span class="o">=</span><span class="n">submission</span>
+</span><span id="__span-6-51"><a id="__codelineno-6-51" name="__codelineno-6-51" href="#__codelineno-6-51"></a><span class="p">)</span>
+</span><span id="__span-6-52"><a id="__codelineno-6-52" name="__codelineno-6-52" href="#__codelineno-6-52"></a>
+</span><span id="__span-6-53"><a id="__codelineno-6-53" name="__codelineno-6-53" href="#__codelineno-6-53"></a><span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
 </span></code></pre></div>
 <p>For predefined licenses, pass <code>licenseAbbreviation=License.&lt;VALUE&gt;</code> and leave <code>licenseUrl</code> and <code>license</code> unset. For a custom license, pass a custom string to <code>license</code> and optionally include <code>licenseUrl</code> and <code>licenseAbbreviation</code>.</p>
 <p>To publish a compensated dataset instead of a free one, set <code>isPaid=True</code> and a <code>basePriceCents</code> price in <strong>USD cents</strong> (US Dollars). See <a href="upload/#pricing">Pricing</a> for details.</p>
-<blockquote>
-<p>[!TIP]
-To also attach an optional sample of your dataset, pass <code>sample_file_path="/path/to/dataset-sample.tar.gz"</code> to <code>create_submission_with_upload</code>, or upload it separately with <code>upload_sample_file(file_path=..., submission_id=...)</code>.</p>
-<p>[!TIP]
-To upload a new <code>.tar.gz</code> version to an already approved and published dataset, call <code>upload_dataset_file(file_path=..., submission_id=...)</code> directly. Get the submission ID from <strong>Profile → Uploads</strong> by opening the approved dataset and copying the value after <code>/profile/submissions/</code> in the URL. This submission ID is different from the dataset ID.</p>
-<p>[!TIP]
-If a file upload is interrupted, simply rerun the same function above and the upload will resume from where it left off.</p>
-</blockquote>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>To also attach an optional sample of your dataset, pass <code>sample_file_path="/path/to/dataset-sample.tar.gz"</code> to <code>create_submission_with_upload</code>, or upload it separately with <code>upload_sample_file(file_path=..., submission_id=...)</code>.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>To upload a new <code>.tar.gz</code> version to an already approved and published dataset, call <code>upload_dataset_file(file_path=..., submission_id=...)</code> directly. Get the submission ID from <strong>Profile → Uploads</strong> by opening the approved dataset and copying the value after <code>/profile/submissions/</code> in the URL. This submission ID is different from the dataset ID.</p>
+</div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>If a file upload is interrupted, simply rerun the same function above and the upload will resume from where it left off.</p>
+</div>
 <h2 id="loading-and-querying-datasets">Loading and Querying Datasets</h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -1554,12 +1561,12 @@ If a file upload is interrupted, simply rerun the same function above and the up
 </div>
 <p>You can load supported datasets into memory as a <code>pandas</code> <code>DataFrame</code> for
 analysis:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">df</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">)</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># Inspect the loaded DataFrame</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">df</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">)</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># Inspect the loaded DataFrame</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
 </span></code></pre></div>
 <p>Once loaded into a <code>DataFrame</code>, you can use standard <code>pandas</code> operations
 to filter, aggregate, and analyze the data.</p>
@@ -1571,12 +1578,12 @@ to filter, aggregate, and analyze the data.</p>
 <p>You can also load supported datasets directly as HuggingFace
 <a href="https://huggingface.co/docs/datasets"><code>datasets</code></a> objects. This requires the
 optional <code>hf</code> dependency:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"datacollective[hf]"</span><span class="w">  </span><span class="c1"># or pip install "datacollective[hf]"</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"datacollective[hf]"</span><span class="w">  </span><span class="c1"># or pip install "datacollective[hf]"</span>
 </span></code></pre></div>
 <p>Then pass <code>return_format="hf"</code> to <code>load_dataset</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">,</span> <span class="n">return_format</span><span class="o">=</span><span class="s2">"hf"</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_dataset</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">load_dataset</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">,</span> <span class="n">return_format</span><span class="o">=</span><span class="s2">"hf"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>The returned object is a <code>Dataset</code>, or a <code>DatasetDict</code> keyed by split name
 (e.g. <code>ds["train"]</code>) if the dataset defines multiple splits. If you want an
@@ -1591,14 +1598,14 @@ To decode the audio lazily on access, cast the column to the
 <a href="https://huggingface.co/docs/datasets/audio_load"><code>Audio</code></a> feature type.
 Audio decoding requires extra dependencies, which you can install with
 <code>pip install "datasets[audio]"</code> or <code>uv add "datasets[audio]"</code>:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Audio</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">cast_column</span><span class="p">(</span><span class="s2">"audio"</span><span class="p">,</span> <span class="n">Audio</span><span class="p">(</span><span class="n">sampling_rate</span><span class="o">=</span><span class="mi">16_000</span><span class="p">))</span>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="c1"># Nothing is decoded yet, decoding happens on access, one example at a time:</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="n">sample</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"audio"</span><span class="p">]</span>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">"sampling_rate"</span><span class="p">])</span>  <span class="c1"># 16000</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">"array"</span><span class="p">])</span>          <span class="c1"># numpy array with the decoded waveform</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="kn">import</span> <span class="n">Audio</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">cast_column</span><span class="p">(</span><span class="s2">"audio"</span><span class="p">,</span> <span class="n">Audio</span><span class="p">(</span><span class="n">sampling_rate</span><span class="o">=</span><span class="mi">16_000</span><span class="p">))</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="c1"># Nothing is decoded yet, decoding happens on access, one example at a time:</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="n">sample</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"audio"</span><span class="p">]</span>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">"sampling_rate"</span><span class="p">])</span>  <span class="c1"># 16000</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">sample</span><span class="p">[</span><span class="s2">"array"</span><span class="p">])</span>          <span class="c1"># numpy array with the decoded waveform</span>
 </span></code></pre></div>
 <p>This keeps memory usage low: the dataset only stores the file paths, and each
 audio file is decoded (and resampled, if you specify a <code>sampling_rate</code>) at the
@@ -1606,60 +1613,60 @@ moment you access it.</p>
 <h2 id="get-dataset-details">Get dataset details</h2>
 <p>You can retrieve info from the datasheet of a dataset without downloading it.
 This is a public endpoint, so it works without an API key:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_dataset_details</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">get_dataset_details</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">)</span>
-</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_dataset_details</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">info</span> <span class="o">=</span> <span class="n">get_dataset_details</span><span class="p">(</span><span class="s2">"your-dataset-id"</span><span class="p">)</span>
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">info</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="browse-and-search-the-dataset-catalog">Browse and search the dataset catalog</h2>
 <p>You can list or search all published datasets. Results are
 paginated and each entry is a <code>DatasetDetails</code>, the same model returned by
 <code>get_dataset_details</code>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_datasets</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="c1"># Free-text search, narrowed down with filters</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">page</span> <span class="o">=</span> <span class="n">list_datasets</span><span class="p">(</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="s2">"swahili speech"</span><span class="p">,</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">task</span><span class="o">=</span><span class="s2">"ASR"</span><span class="p">,</span>  <span class="c1"># a Task enum value or string, or a list of them</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">license_abbr</span><span class="o">=</span><span class="s2">"CC0-1.0"</span><span class="p">,</span>  <span class="c1"># a License enum value or string, or a list of them</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="n">locale</span><span class="o">=</span><span class="p">[</span><span class="s2">"sw"</span><span class="p">,</span> <span class="s2">"sw-KE"</span><span class="p">],</span>  <span class="c1"># any of the given locales</span>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="n">sort</span><span class="o">=</span><span class="s2">"newest"</span><span class="p">,</span>
-</span><span id="__span-11-10"><a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>    <span class="n">results_per_page</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-</span><span id="__span-11-11"><a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="n">page_number</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-</span><span id="__span-11-12"><a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">)</span>
-</span><span id="__span-11-13"><a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>
-</span><span id="__span-11-14"><a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">page</span><span class="o">.</span><span class="n">total</span><span class="si">}</span><span class="s2"> datasets match, showing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">page</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
-</span><span id="__span-11-15"><a id="__codelineno-11-15" name="__codelineno-11-15" href="#__codelineno-11-15"></a><span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
-</span><span id="__span-11-16"><a id="__codelineno-11-16" name="__codelineno-11-16" href="#__codelineno-11-16"></a>    <span class="n">size_gb</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">sizeBytes</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span>
-</span><span id="__span-11-17"><a id="__codelineno-11-17" name="__codelineno-11-17" href="#__codelineno-11-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">task</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">locale</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">size_gb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> GB)"</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_datasets</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="c1"># Free-text search, narrowed down with filters</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">page</span> <span class="o">=</span> <span class="n">list_datasets</span><span class="p">(</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="s2">"swahili speech"</span><span class="p">,</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">task</span><span class="o">=</span><span class="s2">"ASR"</span><span class="p">,</span>  <span class="c1"># a Task enum value or string, or a list of them</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">license_abbr</span><span class="o">=</span><span class="s2">"CC0-1.0"</span><span class="p">,</span>  <span class="c1"># a License enum value or string, or a list of them</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">locale</span><span class="o">=</span><span class="p">[</span><span class="s2">"sw"</span><span class="p">,</span> <span class="s2">"sw-KE"</span><span class="p">],</span>  <span class="c1"># any of the given locales</span>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="n">sort</span><span class="o">=</span><span class="s2">"newest"</span><span class="p">,</span>
+</span><span id="__span-12-10"><a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>    <span class="n">results_per_page</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+</span><span id="__span-12-11"><a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>    <span class="n">page_number</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+</span><span id="__span-12-12"><a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a><span class="p">)</span>
+</span><span id="__span-12-13"><a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>
+</span><span id="__span-12-14"><a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">page</span><span class="o">.</span><span class="n">total</span><span class="si">}</span><span class="s2"> datasets match, showing </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">page</span><span class="p">)</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</span><span id="__span-12-15"><a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="k">for</span> <span class="n">dataset</span> <span class="ow">in</span> <span class="n">page</span><span class="p">:</span>
+</span><span id="__span-12-16"><a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>    <span class="n">size_gb</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">sizeBytes</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span>
+</span><span id="__span-12-17"><a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">task</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">locale</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">size_gb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> GB)"</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Other filters: <code>format</code> (e.g. <code>"WAV"</code>), <code>upload_date</code> (<code>"today"</code>, <code>"thisWeek"</code>,
 <code>"thisMonth"</code>, <code>"thisYear"</code>), <code>has_sample=True</code> for datasets with a sample file,
 <code>pricing</code> (<code>"free"</code> or <code>"compensated"</code>) and <code>sort_direction</code> (<code>"asc"</code>/<code>"desc"</code>).
 <code>limit</code> accepts 1 to 100 results per page (the platform defaults to 24).</p>
 <p>To walk through every page, increase <code>page</code> until you have collected <code>total</code> items:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_datasets</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">page_number</span><span class="p">,</span> <span class="n">collected</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[]</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="n">page</span> <span class="o">=</span> <span class="n">list_datasets</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="s2">"TTS"</span><span class="p">,</span> <span class="n">results_per_page</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">page_number</span><span class="o">=</span><span class="n">page_number</span><span class="p">)</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">collected</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">items</span><span class="p">)</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">page</span><span class="o">.</span><span class="n">items</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">collected</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">page</span><span class="o">.</span><span class="n">total</span><span class="p">:</span>
-</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>        <span class="k">break</span>
-</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="n">page_number</span> <span class="o">+=</span> <span class="mi">1</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_datasets</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">page_number</span><span class="p">,</span> <span class="n">collected</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[]</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    <span class="n">page</span> <span class="o">=</span> <span class="n">list_datasets</span><span class="p">(</span><span class="n">task</span><span class="o">=</span><span class="s2">"TTS"</span><span class="p">,</span> <span class="n">results_per_page</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">page_number</span><span class="o">=</span><span class="n">page_number</span><span class="p">)</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="n">collected</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">page</span><span class="o">.</span><span class="n">items</span><span class="p">)</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">page</span><span class="o">.</span><span class="n">items</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">collected</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">page</span><span class="o">.</span><span class="n">total</span><span class="p">:</span>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>        <span class="k">break</span>
+</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>    <span class="n">page_number</span> <span class="o">+=</span> <span class="mi">1</span>
 </span></code></pre></div>
 <h3 id="discover-the-available-filter-values">Discover the available filter values</h3>
 <p>The <code>task</code>, <code>locale</code>, <code>license</code> and <code>format</code> values that the catalog can currently
 be filtered by are exposed as well. Every value except a task is drawn from the
 published catalog, so it only appears while some dataset carries it. Filtering on a
 value absent from these lists matches nothing rather than failing:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_dataset_filters</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">filters</span> <span class="o">=</span> <span class="n">list_dataset_filters</span><span class="p">()</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span>     <span class="c1"># e.g. ['ASR', 'TTS', 'NLP', ...]</span>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">locales</span><span class="p">)</span>   <span class="c1"># e.g. ['el', 'en', 'sw', ...]</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">licenses</span><span class="p">)</span>  <span class="c1"># e.g. ['CC0-1.0', 'CC-BY-4.0', ...]</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">formats</span><span class="p">)</span>   <span class="c1"># e.g. ['MP3', 'WAV', 'TSV', ...]</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_dataset_filters</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">filters</span> <span class="o">=</span> <span class="n">list_dataset_filters</span><span class="p">()</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">tasks</span><span class="p">)</span>     <span class="c1"># e.g. ['ASR', 'TTS', 'NLP', ...]</span>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">locales</span><span class="p">)</span>   <span class="c1"># e.g. ['el', 'en', 'sw', ...]</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">licenses</span><span class="p">)</span>  <span class="c1"># e.g. ['CC0-1.0', 'CC-BY-4.0', ...]</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">filters</span><span class="o">.</span><span class="n">formats</span><span class="p">)</span>   <span class="c1"># e.g. ['MP3', 'WAV', 'TSV', ...]</span>
 </span></code></pre></div>
 <h3 id="automatic-download-resume">Automatic Download Resume</h3>
 <p>The SDK automatically handles interrupted downloads. If a download is interrupted
@@ -1701,7 +1708,7 @@ The SDK identifies the data if the extracted folder name matches the archive nam
 </div>
 <h2 id="tests">Tests</h2>
 <p>Run the full test suite:
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>pytest<span class="w"> </span>-v
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>pytest<span class="w"> </span>-v
 </span></code></pre></div></p>
 <p>Internal SDK development workflows, including live E2E configuration and API
 endpoint overrides, are documented in <a href="library_development/">Internal Development</a>.</p>

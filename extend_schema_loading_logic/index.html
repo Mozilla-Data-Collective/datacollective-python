@@ -1236,10 +1236,11 @@
 </span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="p">}</span>
 </span></code></pre></div>
 <p>A contract violation emits a <code>TaskValidationWarning</code> (via Python's <code>warnings</code> module, so it is visible even when package logging is disabled) and the DataFrame is still returned. Schemas whose task has no contract (e.g. <code>OTH</code>), or with no task at all, load without validation.</p>
-<blockquote>
-<p><strong>Note for registry schemas:</strong> keep the <code>task</code> field in existing <code>schema.yaml</code>
+<div class="admonition note">
+<p class="admonition-title">Registry schemas</p>
+<p>Keep the <code>task</code> field in existing <code>schema.yaml</code>
 files — older SDK versions still require it.</p>
-</blockquote>
+</div>
 <h2 id="3-architecture-overview">3. Architecture Overview</h2>
 <h3 id="data-flow">Data Flow</h3>
 <p>When a user calls <code>load_dataset("id")</code>:</p>

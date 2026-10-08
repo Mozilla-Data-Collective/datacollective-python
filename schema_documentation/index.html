@@ -1399,7 +1399,7 @@ without executing any custom code outside the datacollective library.</p>
 <ol>
 <li><strong>Resolve the schema</strong>: check local cache or the schema registry for <code>schema.yaml</code>. If the dataset is not registered this step raises a warning, so we never download an unsupported archive.</li>
 <li><strong>Download</strong> the archive (with resume support). The schema we fetched in step 1 tells the loader how the files are structured.</li>
-<li><strong>Extract</strong> the <code>.tar.gz</code> / <code>.zip</code> to a local directory.</li>
+<li><strong>Extract</strong> the <code>.tar.gz</code> / <code>.tgz</code> archive to a local directory.</li>
 <li><strong>Parse</strong> the YAML into a validated <code>DatasetSchema</code> (Pydantic model) and dispatch to the loader for the schema's <code>root_strategy</code> (index, glob, …), which returns the final <strong>DataFrame</strong>. When the schema declares a <code>task</code> with a known contract (ASR, TTS, LLM), the loaded DataFrame is checked for the task's required logical columns; a <code>TaskValidationWarning</code> is emitted if any are missing (the DataFrame is still returned).</li>
 </ol>
 <p>The schema file describes:</p>
