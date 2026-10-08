@@ -3972,6 +3972,16 @@
                                 }
                             }
                         }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded: upload parts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -4069,6 +4079,16 @@
                     },
                     "409": {
                         "description": "Upload is not in a completable state",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded: upload completions",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -4303,6 +4323,16 @@
                                 }
                             }
                         }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded: upload parts",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -4414,6 +4444,16 @@
                     },
                     "409": {
                         "description": "Upload is not in a completable state",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Rate limit exceeded: upload completions",
                         "content": {
                             "application/json": {
                                 "schema": {
