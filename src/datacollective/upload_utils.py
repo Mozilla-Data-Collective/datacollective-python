@@ -218,7 +218,10 @@ def _complete_upload(
     url = f"{base_url}/{request.fileUploadId}"
     # `fileUploadId` goes in the URL, not the body
     payload = request.model_dump(exclude={"fileUploadId"}, exclude_none=True)
-    _send_api_request("POST", url, json_body=payload)
+    try:
+        _send_api_request("POST", url, json_body=payload)
+    except RateLimitError as exc:
+        raise RateLimitError(response=exc.response) from exc
 
 
 def _load_upload_state(path: Path) -> UploadState | None:
