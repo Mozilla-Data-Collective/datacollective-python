@@ -288,13 +288,13 @@ For more control over the upload process, you can use the individual functions:
 
 ### Step 1: Create a Draft Submission
 
+Only `name` is sent when creating a draft. Any other field you set on the model
+is ignored at this step and has to be sent with `update_submission` (Step 2).
+
 ```python
 from datacollective import DatasetSubmission, create_submission_draft
 
-submission = DatasetSubmission(
-    name="Dataset Name",
-    longDescription="A detailed description of the dataset.",
-)
+submission = DatasetSubmission(name="Dataset Name")
 
 draft = create_submission_draft(submission)
 
@@ -324,6 +324,7 @@ from datacollective import (
 )
 
 update_fields = DatasetSubmission(
+    longDescription="A detailed description of the dataset.",
     task=Task.ASR,
     licenseAbbreviation=License.CC_BY_4_0,
     locale="en-US",

@@ -33,8 +33,10 @@ def create_submission_draft(submission: DatasetSubmission) -> dict[str, Any]:
     Create a draft dataset submission.
 
     Args:
-        submission: Dataset submission model containing at least `name`
-            and `longDescription`.
+        submission: Dataset submission model containing `name`. In this function
+        only the `name` field is sent and every other field will be ignored and
+        must be sent instead with `update_submission` before the submission can
+        be submitted for review.
 
     Returns:
         The full API response dict (contains a ``submission`` key with
