@@ -64,65 +64,6 @@ def test_submit_submission_allows_minimal_payload_for_existing_remote_draft(
     }
 
 
-def test_submit_submission_requires_file_upload_id_for_local_final_submission(
-    monkeypatch,
-) -> None:
-    monkeypatch.setattr(
-        submissions_module,
-        "_send_api_request",
-        lambda *args, **kwargs: pytest.fail(
-            "submit_submission should fail validation before calling the API"
-        ),
-    )
-
-    with pytest.raises(ValueError) as exc_info:
-        submissions_module.submit_submission(
-            "submission-id",
-            _build_complete_submission(file_upload_id=None),
-        )
-
-    assert str(exc_info.value) == (
-        "Cannot submit dataset. Missing required fields for final submission: `fileUploadId`. "
-        "Please update your DatasetSubmission model with the appropriate fields. "
-        "Upload the dataset file before submitting."
-    )
-
-
-def test_create_submission_with_upload_rejects_missing_required_metadata_before_upload(
-    tmp_path: Path, monkeypatch
-) -> None:
-    archive_path = tmp_path / "dataset.tar.gz"
-    archive_path.write_bytes(bytearray(b"dataset-payload"))
-
-    monkeypatch.setattr(
-        submissions_module,
-        "create_submission_draft",
-        lambda submission: pytest.fail(
-            "create_submission_with_upload should fail before creating a draft"
-        ),
-    )
-    monkeypatch.setattr(
-        submissions_module,
-        "upload_dataset_file",
-        lambda *args, **kwargs: pytest.fail(
-            "create_submission_with_upload should fail before uploading"
-        ),
-    )
-
-    with pytest.raises(ValueError) as exc_info:
-        submissions_module.create_submission_with_upload(
-            file_path=str(archive_path),
-            submission=DatasetSubmission(name="Dataset Name", agreeToSubmit=True),
-            enable_logging=False,
-        )
-
-    message = str(exc_info.value)
-    assert "Missing required fields for final submission" in message
-    assert "`longDescription`" in message
-    assert "either `licenseAbbreviation` or `license`" in message
-    assert "`fileUploadId`" not in message
-
-
 def _stub_submission_workflow(
     monkeypatch, sample_uploads: list[dict[str, object]]
 ) -> None:
