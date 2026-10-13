@@ -2282,7 +2282,8 @@
                             },
                             {
                                 "type": "string",
-                                "enum": [
+                                "maxLength": 0,
+                                "examples": [
                                     ""
                                 ]
                             }
@@ -2313,7 +2314,8 @@
                             },
                             {
                                 "type": "string",
-                                "enum": [
+                                "maxLength": 0,
+                                "examples": [
                                     ""
                                 ]
                             }
@@ -2331,7 +2333,8 @@
                             },
                             {
                                 "type": "string",
-                                "enum": [
+                                "maxLength": 0,
+                                "examples": [
                                     ""
                                 ]
                             }
@@ -2349,7 +2352,8 @@
                             },
                             {
                                 "type": "string",
-                                "enum": [
+                                "maxLength": 0,
+                                "examples": [
                                     ""
                                 ]
                             }
@@ -2367,7 +2371,8 @@
                             },
                             {
                                 "type": "string",
-                                "enum": [
+                                "maxLength": 0,
+                                "examples": [
                                     ""
                                 ]
                             }
@@ -2428,7 +2433,8 @@
                             },
                             {
                                 "type": "string",
-                                "enum": [
+                                "maxLength": 0,
+                                "examples": [
                                     ""
                                 ]
                             }
@@ -2445,7 +2451,8 @@
                             },
                             {
                                 "type": "string",
-                                "enum": [
+                                "maxLength": 0,
+                                "examples": [
                                     ""
                                 ]
                             }
