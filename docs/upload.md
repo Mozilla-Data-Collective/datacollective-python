@@ -127,8 +127,8 @@ See [Uploading a Sample File](#uploading-a-sample-file) for details.
 For `Visibility.RESTRICTED` datasets you can also set `autoApproveAccessRequests=True`. The platform
 then grants every access request automatically as soon as it is made, instead of leaving it pending
 for you to review. The requester's email is shared with you and you can still revoke access later.
-The flag defaults to `False` on the platform when left unset. The SDK rejects it for `public`
-datasets, which need no access request, and for `private` datasets, which are only visible to your
+The flag defaults to `False` on the platform when left unset. It has no effect on `public`
+datasets, which need no access request, or on `private` datasets, which are only visible to your
 organization.
 
 ```python
@@ -160,12 +160,9 @@ submission = DatasetSubmission(
     For example, `basePriceCents=100_000` sets the price to **$1,000.00 USD**.
 
 !!! note
-    The platform validates that the price falls within an acceptable range and rejects the
-    submission otherwise.
-
-- `isPaid=True` requires `basePriceCents` to be set.
-- `basePriceCents` cannot be set unless `isPaid=True`, since the price would otherwise be
-  ignored and the dataset would stay uncompensated.
+    The platform validates the pricing fields and rejects the submission otherwise:
+    `isPaid=True` requires a `basePriceCents` within the platform's allowed range, and
+    `basePriceCents` cannot be set unless `isPaid=True`.
 
 To change the price of an existing submission, pass both fields to `update_submission`:
 
@@ -262,14 +259,23 @@ If the upload is interrupted, rerun the same call and the SDK will resume from t
 
 For a detailed explanation of the required fields in the `DatasetSubmission` model, see the [API Reference](api.md#datacollective.models.DatasetSubmission) section.
 
-To complete the submission process, the submission **must** include at least all of the following fields:
+The platform decides which fields a submission must contain and validates them when the
+submission is sent for review (`submit_submission`, or the last step of
+`create_submission_with_upload`). The SDK does not check completeness itself, so the platform
+is the single source of truth. An incomplete submission is rejected with a
+`requests.HTTPError` (HTTP 400) whose message names the fields that failed validation; the
+draft and the uploaded files are kept, so you can fix the metadata with `update_submission` and
+call `submit_submission` again.
+
+At the time of writing, the platform requires at least the following fields:
 
 - `name`
 - `longDescription`
 - `task`
 - `locale`
 - `format`
-- `licenseAbbreviation` or `license`
+- `licenseAbbreviation` and `license` (choosing a predefined `License` fills in `license` and
+  `licenseUrl` on the platform; for a custom license set both yourself)
 - `restrictions`
 - `forbiddenUsage`
 - `pointOfContactFullName`
@@ -562,16 +568,19 @@ The SDK raises specific exceptions for common error cases:
 |-----------|-------|
 | `FileNotFoundError` | The specified file path does not exist, or the submission was not found |
 | `ResourceRemovedError` | The submission was deleted. Subclasses `FileNotFoundError` |
-| `ValidationError` | Invalid `DatasetSubmission` or required string inputs |
+| `ValidationError` | Invalid `DatasetSubmission` (unknown field, wrong type, empty string or invalid enum value) |
 | `ValueError` | Missing or invalid required parameter |
+| `requests.HTTPError` | The platform rejected the request (HTTP 400), e.g. a field is too long or the submission is incomplete. The error message carries the platform's explanation |
 | `AuthenticationError` | The API key is invalid, expired or revoked |
 | `PermissionError` | Your organization is not approved to upload datasets (or the API key was created before the approval was granted), the submission belongs to another organization, or it has already been published. The error message carries the API's explanation |
 | `RuntimeError` | Rate limit exceeded or upload failed |
 
 ## Using the DatasetSubmission Model
 
-All submission inputs use the `DatasetSubmission` Pydantic model, so validation happens
-as soon as you construct the model (before any network calls are made).
+All submission inputs use the `DatasetSubmission` Pydantic model, so types, enum values and
+unknown fields are validated as soon as you construct the model (before any network calls are
+made). Business rules — which fields are required, length limits, pricing and license
+consistency — are enforced by the platform and reported through `requests.HTTPError`.
 
 ## API Reference
 
