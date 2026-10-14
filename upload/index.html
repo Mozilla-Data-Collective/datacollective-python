@@ -1819,8 +1819,8 @@
 <p>For <code>Visibility.RESTRICTED</code> datasets you can also set <code>autoApproveAccessRequests=True</code>. The platform
 then grants every access request automatically as soon as it is made, instead of leaving it pending
 for you to review. The requester's email is shared with you and you can still revoke access later.
-The flag defaults to <code>False</code> on the platform when left unset. The SDK rejects it for <code>public</code>
-datasets, which need no access request, and for <code>private</code> datasets, which are only visible to your
+The flag defaults to <code>False</code> on the platform when left unset. It has no effect on <code>public</code>
+datasets, which need no access request, or on <code>private</code> datasets, which are only visible to your
 organization.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">submission</span> <span class="o">=</span> <span class="n">DatasetSubmission</span><span class="p">(</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">visibility</span><span class="o">=</span><span class="n">Visibility</span><span class="o">.</span><span class="n">RESTRICTED</span><span class="p">,</span>
@@ -1846,14 +1846,10 @@ For example, <code>basePriceCents=100_000</code> sets the price to <strong>$1,00
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>The platform validates that the price falls within an acceptable range and rejects the
-submission otherwise.</p>
+<p>The platform validates the pricing fields and rejects the submission otherwise:
+<code>isPaid=True</code> requires a <code>basePriceCents</code> within the platform's allowed range, and
+<code>basePriceCents</code> cannot be set unless <code>isPaid=True</code>.</p>
 </div>
-<ul>
-<li><code>isPaid=True</code> requires <code>basePriceCents</code> to be set.</li>
-<li><code>basePriceCents</code> cannot be set unless <code>isPaid=True</code>, since the price would otherwise be
-  ignored and the dataset would stay uncompensated.</li>
-</ul>
 <p>To change the price of an existing submission, pass both fields to <code>update_submission</code>:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">DatasetSubmission</span><span class="p">,</span> <span class="n">update_submission</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
@@ -1930,14 +1926,22 @@ sample file right after, before the submission is sent for review. A missing
 <p>If the upload is interrupted, rerun the same call and the SDK will resume from the saved state file.</p>
 <h2 id="required-submission-fields">Required Submission Fields</h2>
 <p>For a detailed explanation of the required fields in the <code>DatasetSubmission</code> model, see the <a href="../api/#datacollective.models.DatasetSubmission">API Reference</a> section.</p>
-<p>To complete the submission process, the submission <strong>must</strong> include at least all of the following fields:</p>
+<p>The platform decides which fields a submission must contain and validates them when the
+submission is sent for review (<code>submit_submission</code>, or the last step of
+<code>create_submission_with_upload</code>). The SDK does not check completeness itself, so the platform
+is the single source of truth. An incomplete submission is rejected with a
+<code>requests.HTTPError</code> (HTTP 400) whose message names the fields that failed validation; the
+draft and the uploaded files are kept, so you can fix the metadata with <code>update_submission</code> and
+call <code>submit_submission</code> again.</p>
+<p>At the time of writing, the platform requires at least the following fields:</p>
 <ul>
 <li><code>name</code></li>
 <li><code>longDescription</code></li>
 <li><code>task</code></li>
 <li><code>locale</code></li>
 <li><code>format</code></li>
-<li><code>licenseAbbreviation</code> or <code>license</code></li>
+<li><code>licenseAbbreviation</code> and <code>license</code> (choosing a predefined <code>License</code> fills in <code>license</code> and
+  <code>licenseUrl</code> on the platform; for a custom license set both yourself)</li>
 <li><code>restrictions</code></li>
 <li><code>forbiddenUsage</code></li>
 <li><code>pointOfContactFullName</code></li>
@@ -2210,11 +2214,15 @@ Finding the right balance of values for these two variables depends on the size 
 </tr>
 <tr>
 <td><code>ValidationError</code></td>
-<td>Invalid <code>DatasetSubmission</code> or required string inputs</td>
+<td>Invalid <code>DatasetSubmission</code> (unknown field, wrong type, empty string or invalid enum value)</td>
 </tr>
 <tr>
 <td><code>ValueError</code></td>
 <td>Missing or invalid required parameter</td>
+</tr>
+<tr>
+<td><code>requests.HTTPError</code></td>
+<td>The platform rejected the request (HTTP 400), e.g. a field is too long or the submission is incomplete. The error message carries the platform's explanation</td>
 </tr>
 <tr>
 <td><code>AuthenticationError</code></td>
@@ -2231,8 +2239,10 @@ Finding the right balance of values for these two variables depends on the size 
 </tbody>
 </table>
 <h2 id="using-the-datasetsubmission-model">Using the DatasetSubmission Model</h2>
-<p>All submission inputs use the <code>DatasetSubmission</code> Pydantic model, so validation happens
-as soon as you construct the model (before any network calls are made).</p>
+<p>All submission inputs use the <code>DatasetSubmission</code> Pydantic model, so types, enum values and
+unknown fields are validated as soon as you construct the model (before any network calls are
+made). Business rules — which fields are required, length limits, pricing and license
+consistency — are enforced by the platform and reported through <code>requests.HTTPError</code>.</p>
 <h2 id="api-reference">API Reference</h2>
 <p>For detailed API documentation, see the <a href="../api/">API Reference</a> section.</p>
 <h3 id="key-functions">Key Functions</h3>
