@@ -85,6 +85,7 @@ def download_dataset(
     show_progress: bool = True,
     overwrite_existing: bool = False,
     enable_logging: bool = False,
+    extract: bool = False,
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
@@ -92,6 +93,11 @@ def download_dataset(
 
     Automatically resumes interrupted downloads if a matching .checksum file exists from a
     previous attempt.
+
+    With `extract=True`, also unpacks the archive into a directory beside it, named after
+    the archive without its extension, and returns that directory instead. An existing
+    directory is reused unless `overwrite_existing=True`. This is the directory
+    `load_dataset` extracts to, so the two never unpack the same archive twice.
 
     Note: Previously called `save_dataset_to_disk`, which remains available as a
     deprecated alias for backward compatibility.
@@ -101,14 +107,18 @@ def download_dataset(
         download_directory: Directory where to save the downloaded archive file.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
-        overwrite_existing: Whether to overwrite the existing archive file.
+        overwrite_existing: Whether to overwrite the existing archive file, and with
+            `extract=True` the extracted directory too.
         enable_logging: Whether to enable SDK logging to console and a local log file.
+        extract: Whether to also unpack the archive and return the extracted directory.
 
     Returns:
-        Path to the downloaded dataset archive.
+        Path to the downloaded dataset archive, or to the extracted directory if
+        `extract=True`.
 
     Raises:
-        ValueError: If dataset_id is empty.
+        ValueError: If dataset_id is empty, or `extract=True` and the archive is not a
+            `.tar.gz` / `.tgz` file.
         FileNotFoundError: If the dataset does not exist (404).
         ResourceRemovedError: If the dataset is no longer available (410).
         PermissionError: If access is denied (403) or download directory is not writable.
@@ -122,6 +132,7 @@ def download_dataset(
         overwrite_existing,
         enable_logging,
         download_source=DOWNLOAD_SOURCE_DOWNLOAD,
+        extract=extract,
     )
 
 
@@ -131,6 +142,7 @@ def download_sample(
     show_progress: bool = True,
     overwrite_existing: bool = False,
     enable_logging: bool = False,
+    extract: bool = False,
 ) -> Path:
     """
     Download the dataset's sample archive to a local directory and return the archive path.
@@ -143,6 +155,10 @@ def download_sample(
     Unlike `download_dataset`, an interrupted sample download starts again rather than
     resuming: the API returns no checksum for samples to match a partial file against.
 
+    With `extract=True`, also unpacks the archive into a directory beside it, named after
+    the archive without its extension, and returns that directory instead. An existing
+    directory is reused unless `overwrite_existing=True`.
+
     Requires an API key whose organization has agreed to the dataset's terms on the MDC
     platform. Buying the dataset is not required.
 
@@ -151,14 +167,18 @@ def download_sample(
         download_directory: Directory under which to save the sample archive.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
-        overwrite_existing: Whether to download the sample again, replacing the existing one.
+        overwrite_existing: Whether to download the sample again, replacing the existing one
+            and, with `extract=True`, its extracted directory.
         enable_logging: Whether to enable SDK logging to console and a local log file.
+        extract: Whether to also unpack the archive and return the extracted directory.
 
     Returns:
-        Path to the downloaded sample archive.
+        Path to the downloaded sample archive, or to the extracted directory if
+        `extract=True`.
 
     Raises:
-        ValueError: If dataset_id is empty.
+        ValueError: If dataset_id is empty, or `extract=True` and the archive is not a
+            `.tar.gz` / `.tgz` file.
         FileNotFoundError: If the dataset does not exist, or publishes no sample (404).
         ResourceRemovedError: If the dataset is no longer available (410).
         PermissionError: If the dataset's terms have not been agreed to or the dataset is
@@ -171,13 +191,16 @@ def download_sample(
 
     dataset_details = get_dataset_details(dataset_id)
 
-    return _download_sample(
+    archive_path = _download_sample(
         dataset_id=dataset_details.id,
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
         download_source=DOWNLOAD_SOURCE_SAMPLE,
     )
+    if not extract:
+        return archive_path
+    return _extract_beside(archive_path, overwrite_existing)
 
 
 def _download_archive(
@@ -187,6 +210,7 @@ def _download_archive(
     overwrite_existing: bool,
     enable_logging: bool,
     download_source: str,
+    extract: bool = False,
 ) -> Path:
     """Shared body of `download_dataset` and its deprecated alias; the
     *download_source* sent with the request tells them apart."""
@@ -195,13 +219,26 @@ def _download_archive(
 
     dataset_details = get_dataset_details(dataset_id)
 
-    return _download_dataset(
+    archive_path = _download_dataset(
         dataset_id=dataset_details.id,
         archive_filename=_require_archive_filename(dataset_details),
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
         download_source=download_source,
+    )
+    if not extract:
+        return archive_path
+    return _extract_beside(archive_path, overwrite_existing)
+
+
+def _extract_beside(archive_path: Path, overwrite_existing: bool) -> Path:
+    """Unpack an archive into a directory beside it, as `load_dataset` does. A
+    re-downloaded archive (`overwrite_existing`) is unpacked afresh."""
+    return _extract_archive(
+        archive_path=archive_path,
+        dest_dir=archive_path.parent,
+        overwrite_extracted=overwrite_existing,
     )
 
 

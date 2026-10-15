@@ -103,3 +103,71 @@ def test_download_sample_resolves_id_and_reports_its_own_source(
             "download_source": "download_sample",
         }
     ]
+
+
+@pytest.mark.parametrize("overwrite_existing", [False, True])
+def test_download_dataset_extract_returns_extracted_directory(
+    monkeypatch: MonkeyPatch, overwrite_existing: bool
+) -> None:
+    _capture_downloads(monkeypatch)
+    extracted: list[dict[str, object]] = []
+
+    def fake_extract_archive(**kwargs: object) -> Path:
+        extracted.append(kwargs)
+        return Path("archive")
+
+    monkeypatch.setattr(datasets, "_extract_archive", fake_extract_archive)
+
+    result = datasets.download_dataset(
+        "ds", extract=True, overwrite_existing=overwrite_existing
+    )
+
+    assert result == Path("archive")
+    assert extracted == [
+        {
+            "archive_path": Path("archive.tar.gz"),
+            "dest_dir": Path("."),
+            "overwrite_extracted": overwrite_existing,
+        }
+    ]
+
+
+def test_download_dataset_without_extract_does_not_extract(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    _capture_downloads(monkeypatch)
+    monkeypatch.setattr(
+        datasets,
+        "_extract_archive",
+        lambda **kwargs: pytest.fail("extracted without extract=True"),
+    )
+
+    assert datasets.download_dataset("ds") == Path("archive.tar.gz")
+
+
+def test_download_sample_extract_returns_extracted_directory(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    sample = Path("samples") / "ds" / "sample.tar.gz"
+    monkeypatch.setattr(
+        datasets, "get_dataset_details", lambda dataset_id: DatasetDetails(id="ds")
+    )
+    monkeypatch.setattr(datasets, "_download_sample", lambda **kwargs: sample)
+    extracted: list[dict[str, object]] = []
+
+    def fake_extract_archive(**kwargs: object) -> Path:
+        extracted.append(kwargs)
+        return sample.parent / "sample"
+
+    monkeypatch.setattr(datasets, "_extract_archive", fake_extract_archive)
+
+    result = datasets.download_sample("ds", extract=True, overwrite_existing=True)
+
+    assert result == sample.parent / "sample"
+    assert extracted == [
+        {
+            "archive_path": sample,
+            "dest_dir": sample.parent,
+            "overwrite_extracted": True,
+        }
+    ]

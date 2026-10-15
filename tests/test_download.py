@@ -373,6 +373,21 @@ def test_download_sample_overwrite_replaces_previous_sample(
     assert sorted(p.name for p in result.parent.iterdir()) == ["new-sample.tar.gz"]
 
 
+def test_download_sample_replacing_removes_old_extracted_directory(
+    tmp_path: Path, monkeypatch
+) -> None:
+    sample_dir = tmp_path / "samples" / "ds"
+    (sample_dir / "old-sample").mkdir(parents=True)
+    (sample_dir / "old-sample" / "clip.wav").write_bytes(b"old")
+    (sample_dir / "old-sample.tar.gz").write_bytes(b"old")
+    api = _FakeSampleApi(_sample_payload("new-sample.tar.gz"))
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    _download_sample("ds", str(tmp_path), show_progress=False, overwrite_existing=True)
+
+    assert sorted(p.name for p in sample_dir.iterdir()) == ["new-sample.tar.gz"]
+
+
 @pytest.mark.parametrize(
     "filename", ["../escape.tar.gz", "nested/sample.tar.gz", "", ".hidden.tar.gz"]
 )
