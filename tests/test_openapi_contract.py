@@ -50,6 +50,7 @@ SCHEMA_REF_PREFIX = "#/components/schemas/"
 SDK_OPERATIONS = {
     ("get", "/datasets/{datasetId}"),
     ("post", "/datasets/{datasetId}/download"),
+    ("post", "/datasets/{datasetId}/sample-download"),
     ("post", "/submissions"),
     ("get", "/submissions/{submissionId}"),
     ("patch", "/submissions/{submissionId}"),
@@ -319,6 +320,12 @@ def test_download_session_fields(schemas: dict[str, Any]) -> None:
     # download._build_download_plan reads these keys and requires the first two.
     assert {"downloadUrl", "sizeBytes"} <= _required(schema)
     assert "checksum" in _properties(schema, schemas)
+
+
+def test_sample_download_fields(schemas: dict[str, Any]) -> None:
+    schema = _resolve(schemas["SampleDownload"], schemas)
+    # download._get_sample_download_plan reads these keys and requires all three.
+    assert {"downloadUrl", "sizeBytes", "filename"} <= _required(schema)
 
 
 """

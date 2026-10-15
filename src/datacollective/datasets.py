@@ -23,8 +23,10 @@ from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
     DOWNLOAD_SOURCE_DOWNLOAD,
     DOWNLOAD_SOURCE_LOAD,
+    DOWNLOAD_SOURCE_SAMPLE,
     DOWNLOAD_SOURCE_SAVE,
     _download_dataset,
+    _download_sample,
 )
 from datacollective.hf_utils import _convert_to_hf, _require_datasets
 from datacollective.logging_utils import (
@@ -120,6 +122,61 @@ def download_dataset(
         overwrite_existing,
         enable_logging,
         download_source=DOWNLOAD_SOURCE_DOWNLOAD,
+    )
+
+
+def download_sample(
+    dataset_id: str,
+    download_directory: str | None = None,
+    show_progress: bool = True,
+    overwrite_existing: bool = False,
+    enable_logging: bool = False,
+) -> Path:
+    """
+    Download the dataset's sample archive to a local directory and return the archive path.
+    The sample is a small excerpt of the dataset that its publisher provides for evaluation.
+
+    The archive is saved under `samples/<dataset_id>/` inside the download directory, apart
+    from the full dataset archive. Skips download if the sample is already there (unless
+    `overwrite_existing=True`, which also picks up a sample the publisher has since replaced).
+
+    Unlike `download_dataset`, an interrupted sample download starts again rather than
+    resuming: the API returns no checksum for samples to match a partial file against.
+
+    Requires an API key whose organization has agreed to the dataset's terms on the MDC
+    platform. Buying the dataset is not required.
+
+    Args:
+        dataset_id: The dataset ID (as shown in MDC platform) or slug.
+        download_directory: Directory under which to save the sample archive.
+            If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
+        show_progress: Whether to show a progress bar during download.
+        overwrite_existing: Whether to download the sample again, replacing the existing one.
+        enable_logging: Whether to enable SDK logging to console and a local log file.
+
+    Returns:
+        Path to the downloaded sample archive.
+
+    Raises:
+        ValueError: If dataset_id is empty.
+        FileNotFoundError: If the dataset does not exist, or publishes no sample (404).
+        ResourceRemovedError: If the dataset is no longer available (410).
+        PermissionError: If the dataset's terms have not been agreed to or the dataset is
+            private to another organization (403), or download directory is not writable.
+        RuntimeError: If rate limit is exceeded (429) or unexpected response format.
+        requests.HTTPError: For other non-2xx responses.
+    """
+    _enable_logging(enable_logging)
+    logger.info(f"Downloading sample of dataset {dataset_id}")
+
+    dataset_details = get_dataset_details(dataset_id)
+
+    return _download_sample(
+        dataset_id=dataset_details.id,
+        download_directory=download_directory,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+        download_source=DOWNLOAD_SOURCE_SAMPLE,
     )
 
 

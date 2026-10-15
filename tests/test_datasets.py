@@ -73,3 +73,33 @@ def test_save_dataset_to_disk_warns_and_reports_its_own_source(
             "download_source": "save_dataset_to_disk",
         }
     ]
+
+
+def test_download_sample_resolves_id_and_reports_its_own_source(
+    monkeypatch: MonkeyPatch,
+) -> None:
+    calls: list[dict[str, object]] = []
+
+    def fake_download_sample(**kwargs: object) -> Path:
+        calls.append(kwargs)
+        return Path("sample.tar.gz")
+
+    monkeypatch.setattr(
+        datasets,
+        "get_dataset_details",
+        lambda dataset_id: DatasetDetails(id="canonical-id"),
+    )
+    monkeypatch.setattr(datasets, "_download_sample", fake_download_sample)
+
+    result = datasets.download_sample("a-dataset-slug", download_directory="dir")
+
+    assert result == Path("sample.tar.gz")
+    assert calls == [
+        {
+            "dataset_id": "canonical-id",
+            "download_directory": "dir",
+            "show_progress": True,
+            "overwrite_existing": False,
+            "download_source": "download_sample",
+        }
+    ]
