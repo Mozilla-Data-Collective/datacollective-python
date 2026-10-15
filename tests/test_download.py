@@ -3,8 +3,11 @@ from pathlib import Path
 import logging
 from typing import Any
 
+import pytest
+
 from datacollective.download import (
     DownloadPlan,
+    _download_sample,
     _get_checksum_filepath,
     _determine_resume_state,
     _resolve_download_dir,
@@ -229,3 +232,159 @@ def test_execute_download_plan_forwards_download_source(
     assert captured["url"] == plan.download_url
     assert captured["source_function"] == "download_dataset"
     assert captured["include_auth_headers"] is False
+
+
+"""
+Sample downloads
+"""
+
+
+class _FakeSampleApi:
+    """Stands in for `_send_api_request`: answers the sample-download POST with *payload*
+    and the presigned GET with *content*, recording every call."""
+
+    def __init__(self, payload: dict[str, Any], content: bytes = b"sample") -> None:
+        self.payload = payload
+        self.content = content
+        self.calls: list[dict[str, Any]] = []
+
+    def __call__(self, **kwargs: Any) -> Any:
+        self.calls.append(kwargs)
+        api = self
+
+        class FakeResponse:
+            def json(self) -> dict[str, Any]:
+                return api.payload
+
+            def __enter__(self) -> "FakeResponse":
+                return self
+
+            def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+                return None
+
+            def iter_content(self, chunk_size: int):
+                yield api.content
+
+        return FakeResponse()
+
+
+def _sample_payload(filename: str = "sample.tar.gz") -> dict[str, Any]:
+    return {
+        "downloadUrl": "https://example.com/sample",
+        "filename": filename,
+        "sizeBytes": "6",
+        "contentType": "application/gzip",
+        "expiresAt": "2026-08-27T12:00:00.000Z",
+    }
+
+
+def test_download_sample_saves_under_samples_dir(tmp_path: Path, monkeypatch) -> None:
+    api = _FakeSampleApi(_sample_payload())
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    result = _download_sample(
+        "ds",
+        str(tmp_path),
+        show_progress=False,
+        overwrite_existing=False,
+        download_source="download_sample",
+    )
+
+    assert result == tmp_path / "samples" / "ds" / "sample.tar.gz"
+    assert result.read_bytes() == b"sample"
+    assert sorted(p.name for p in result.parent.iterdir()) == ["sample.tar.gz"]
+
+    post, get = api.calls
+    assert post["method"] == "POST"
+    assert post["url"].endswith("/datasets/ds/sample-download")
+    assert post["source_function"] == "download_sample"
+    assert post.get("include_auth_headers", True) is True
+    assert get["method"] == "GET"
+    assert get["url"] == "https://example.com/sample"
+    assert get["include_auth_headers"] is False
+
+
+def test_download_sample_skips_api_when_already_downloaded(
+    tmp_path: Path, monkeypatch
+) -> None:
+    existing = tmp_path / "samples" / "ds" / "sample.tar.gz"
+    existing.parent.mkdir(parents=True)
+    existing.write_bytes(b"cached")
+    api = _FakeSampleApi(_sample_payload())
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    result = _download_sample(
+        "ds", str(tmp_path), show_progress=False, overwrite_existing=False
+    )
+
+    assert result == existing
+    assert result.read_bytes() == b"cached"
+    assert api.calls == []
+
+
+def test_download_sample_ignores_hidden_files(tmp_path: Path, monkeypatch) -> None:
+    sample_dir = tmp_path / "samples" / "ds"
+    sample_dir.mkdir(parents=True)
+    (sample_dir / ".DS_Store").write_bytes(b"finder")
+    api = _FakeSampleApi(_sample_payload())
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    result = _download_sample(
+        "ds", str(tmp_path), show_progress=False, overwrite_existing=False
+    )
+
+    assert result.name == "sample.tar.gz"
+    assert (sample_dir / ".DS_Store").exists()
+
+
+def test_download_sample_restarts_interrupted_download(
+    tmp_path: Path, monkeypatch, caplog
+) -> None:
+    partial = tmp_path / "samples" / "ds" / "sample.tar.gz.part"
+    partial.parent.mkdir(parents=True)
+    partial.write_bytes(b"stale")
+    api = _FakeSampleApi(_sample_payload())
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    with caplog.at_level(logging.INFO, logger="datacollective.download"):
+        result = _download_sample(
+            "ds", str(tmp_path), show_progress=False, overwrite_existing=False
+        )
+
+    assert result.read_bytes() == b"sample"
+    assert not partial.exists()
+    assert "Samples cannot be resumed" in caplog.text
+
+
+def test_download_sample_overwrite_replaces_previous_sample(
+    tmp_path: Path, monkeypatch
+) -> None:
+    old = tmp_path / "samples" / "ds" / "old-sample.tar.gz"
+    old.parent.mkdir(parents=True)
+    old.write_bytes(b"old")
+    api = _FakeSampleApi(_sample_payload("new-sample.tar.gz"))
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    result = _download_sample(
+        "ds", str(tmp_path), show_progress=False, overwrite_existing=True
+    )
+
+    assert result.name == "new-sample.tar.gz"
+    assert sorted(p.name for p in result.parent.iterdir()) == ["new-sample.tar.gz"]
+
+
+@pytest.mark.parametrize(
+    "filename", ["../escape.tar.gz", "nested/sample.tar.gz", "", ".hidden.tar.gz"]
+)
+def test_download_sample_rejects_unsafe_filename(
+    tmp_path: Path, monkeypatch, filename: str
+) -> None:
+    api = _FakeSampleApi(_sample_payload(filename))
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    with pytest.raises(RuntimeError, match="Unexpected sample filename"):
+        _download_sample(
+            "ds", str(tmp_path), show_progress=False, overwrite_existing=False
+        )
+
+    assert len(api.calls) == 1  # nothing downloaded
