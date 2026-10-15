@@ -1,10 +1,12 @@
 import os
+import shutil
 from pathlib import Path
 from typing import Any
 
 from fox_progress_bar import ProgressBar
 from pydantic import Field
 
+from datacollective.archive_utils import _extracted_dir_name
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
     HTTP_TIMEOUT,
@@ -150,7 +152,7 @@ def _download_sample(
     )
 
     # Keep one sample per dataset: remove any earlier one the publisher has since replaced,
-    # along with its leftover partial files.
+    # along with its leftover partial files and the directory it was extracted into.
     for other in sample_dir.iterdir():
         if (
             other != target_filepath
@@ -158,6 +160,9 @@ def _download_sample(
             and not other.name.startswith(".")
         ):
             other.unlink()
+            stale_dir_name = _extracted_dir_name(other.name)
+            if stale_dir_name and (sample_dir / stale_dir_name).is_dir():
+                shutil.rmtree(sample_dir / stale_dir_name)
 
     return target_filepath
 

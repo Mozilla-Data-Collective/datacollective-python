@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from datacollective.archive_utils import _extract_archive
+from datacollective.archive_utils import _extract_archive, _extracted_dir_name
 
 
 def _make_tar_gz(tmp_path: Path, name: str = "sample.tar.gz") -> Path:
@@ -54,3 +54,48 @@ def test_extract_archive_rejects_non_tar_gz(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match=r"\.tar\.gz or \.tgz"):
         _extract_archive(archive, tmp_path, overwrite_extracted=False)
+
+
+def test_extract_archive_interrupted_leaves_no_finished_directory(
+    tmp_path: Path,
+) -> None:
+    archive = _make_tar_gz(tmp_path)
+    good = archive.read_bytes()
+    archive.write_bytes(good[: len(good) // 2])  # truncated, as if cut off mid-download
+    dest = tmp_path / "out"
+
+    with pytest.raises((tarfile.TarError, EOFError)):
+        _extract_archive(archive, dest, overwrite_extracted=False)
+
+    # Nothing that looks finished, so the next call extracts rather than skipping
+    assert not (dest / "sample").exists()
+
+    archive.write_bytes(good)
+    target = _extract_archive(archive, dest, overwrite_extracted=False)
+
+    assert (target / "data.txt").read_text() == "hello"
+    assert sorted(p.name for p in dest.iterdir()) == ["sample"]
+
+
+def test_extract_archive_overwrite_replaces_directory(tmp_path: Path) -> None:
+    archive = _make_tar_gz(tmp_path)
+    stale = tmp_path / "out" / "sample"
+    stale.mkdir(parents=True)
+    (stale / "old.txt").write_text("stale")
+
+    target = _extract_archive(archive, tmp_path / "out", overwrite_extracted=True)
+
+    assert sorted(p.name for p in target.iterdir()) == ["data.txt"]
+
+
+@pytest.mark.parametrize(
+    ("archive_name", "expected"),
+    [
+        ("dataset.tar.gz", "dataset"),
+        ("dataset.tgz", "dataset"),
+        ("dataset.zip", None),
+        (".tar.gz", None),
+    ],
+)
+def test_extracted_dir_name(archive_name: str, expected: str | None) -> None:
+    assert _extracted_dir_name(archive_name) == expected
