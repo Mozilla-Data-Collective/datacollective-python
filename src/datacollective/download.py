@@ -123,7 +123,6 @@ def _download_sample(
     sample_dir = (
         _resolve_download_dir(download_directory) / SAMPLES_DIRNAME / dataset_id
     )
-    sample_dir.mkdir(parents=True, exist_ok=True)
 
     existing = _find_downloaded_sample(sample_dir)
     if existing and not overwrite_existing:
@@ -135,6 +134,9 @@ def _download_sample(
         sample_dir=sample_dir,
         download_source=download_source,
     )
+
+    # Created only now, so a refused request leaves no empty directory behind.
+    sample_dir.mkdir(parents=True, exist_ok=True)
 
     if download_plan.tmp_filepath.exists():
         logger.info("Samples cannot be resumed. Starting the sample download again...")
@@ -449,6 +451,8 @@ def _resolve_download_dir(download_directory: str | None) -> Path:
 def _find_downloaded_sample(sample_dir: Path) -> Path | None:
     """Return the finished sample archive in *sample_dir*, or None if there is none.
     Hidden files, such as the `.DS_Store` macOS leaves behind, are not samples."""
+    if not sample_dir.is_dir():
+        return None
     finished = [
         p
         for p in sample_dir.iterdir()

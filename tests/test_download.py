@@ -388,3 +388,19 @@ def test_download_sample_rejects_unsafe_filename(
         )
 
     assert len(api.calls) == 1  # nothing downloaded
+
+
+def test_download_sample_refused_leaves_no_directory(
+    tmp_path: Path, monkeypatch
+) -> None:
+    def refuse(**kwargs: Any) -> Any:
+        raise PermissionError("You must agree to the terms of use")
+
+    monkeypatch.setattr("datacollective.download._send_api_request", refuse)
+
+    with pytest.raises(PermissionError):
+        _download_sample(
+            "ds", str(tmp_path), show_progress=False, overwrite_existing=False
+        )
+
+    assert not (tmp_path / "samples").exists()
