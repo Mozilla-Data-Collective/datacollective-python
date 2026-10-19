@@ -31,7 +31,7 @@ DEDICATED_ERROR_STATUSES = frozenset({401, 403, 404, 410, 429})
 GENERIC_ERROR_STATUSES = frozenset({400, 402, 409, 422})
 
 
-load_dotenv(find_dotenv())
+load_dotenv(find_dotenv(usecwd=True))
 
 
 def _send_api_request(
