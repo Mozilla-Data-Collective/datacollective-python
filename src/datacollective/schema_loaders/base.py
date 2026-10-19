@@ -364,7 +364,7 @@ class BaseSchemaLoader(abc.ABC):
 
     def _resolve_file_path(
         self,
-        value: object,
+        value: Any,
         col_map: ColumnMapping,
         row: pd.Series | None = None,
         misses: list[str] | None = None,
@@ -426,7 +426,7 @@ class BaseSchemaLoader(abc.ABC):
 
     def _load_file_content(
         self,
-        value: object,
+        value: Any,
         col_map: ColumnMapping,
         row: pd.Series | None = None,
         misses: list[str] | None = None,
