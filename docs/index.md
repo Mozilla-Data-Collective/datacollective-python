@@ -113,6 +113,34 @@ dataset = download_dataset("your-dataset-id")
 
 The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets`).
 
+### Download a dataset's sample
+
+Some publishers provide a **sample**: a small excerpt of the dataset for evaluation before
+downloading the full archive. Use `download_sample` to fetch it:
+
+```python
+from datacollective import download_sample
+
+sample_path = download_sample("your-dataset-id")
+```
+
+The sample archive is saved under `samples/<dataset-id>/` inside `MDC_DOWNLOAD_PATH`,
+apart from the full dataset archives. A sample may share a filename with the full archive,
+so keeping them in separate directories ensures one is never mistaken for the other.
+
+The function returns the path to the sample archive. The archive is not extracted; use
+`load_dataset` for the full dataset if you want a loaded DataFrame.
+
+If the sample is already present, it is returned without downloading again. Pass
+`overwrite_existing=True` to download it again and replace the existing file.
+
+!!! note
+    Downloading a sample requires an API key whose organization has agreed to the dataset's
+    terms on the MDC platform, just like downloading the full dataset. Datasets that
+    publish no sample raise `FileNotFoundError`. To find datasets with a sample, pass
+    `has_sample=True` to `list_datasets` (see
+    [Browse and search the dataset catalog](#browse-and-search-the-dataset-catalog)).
+
 ## Programmatic submissions and uploads
 
 The SDK supports creating dataset submissions and uploading files with resumable uploads. 
@@ -367,6 +395,10 @@ or `load_dataset` again.
   the checksum mismatch and starts a fresh download.
 - If only partial files exist without proper tracking data, the SDK safely starts
   a fresh download.
+
+!!! note
+    Sample downloads (`download_sample`) do not resume. The API returns no checksum for
+    samples, so an interrupted sample download starts again from the beginning.
 
 
 ### Automatically check for extracted archives
