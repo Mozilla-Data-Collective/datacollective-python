@@ -79,8 +79,8 @@ def _send_api_request(
         headers.update(extra_headers)
 
     logger.debug(
-        f"API request: {method.upper()} {url} (stream={stream})\n"
-        f"json_body: {_redact_sensitive(json_body)}"
+        f"API request: {method.upper()} {_redact_url(url)} (stream={stream})\n"
+        f"json_body: {_redact_sensitive(json_body)}\n"
         f"params: {_redact_sensitive(params)}"
     )
 
@@ -99,7 +99,7 @@ def _send_api_request(
     if resp.status_code == 404:
         detail = _extract_error_detail(resp)
         raise FileNotFoundError(
-            f"Resource not found: {method.upper()} {url}"
+            f"Resource not found: {method.upper()} {_redact_url(url)}"
             + (f" — {detail}" if detail else "")
         )
     if resp.status_code == 410:
@@ -107,7 +107,7 @@ def _send_api_request(
 
         detail = _extract_error_detail(resp)
         raise ResourceRemovedError(
-            f"Resource no longer available: {method.upper()} {url}. The dataset was"
+            f"Resource no longer available: {method.upper()} {_redact_url(url)}. The dataset was"
             " removed from the MDC platform, or the submission was deleted."
             + (f" — {detail}" if detail else "")
         )
@@ -125,9 +125,9 @@ def _send_api_request(
         # common cases for when it is missing.
         detail = _extract_error_detail(resp)
         raise PermissionError(
-            f"Access denied: {method.upper()} {url} — {detail}"
+            f"Access denied: {method.upper()} {_redact_url(url)} — {detail}"
             if detail
-            else f"Access denied: {method.upper()} {url}. Common causes: the dataset's"
+            else f"Access denied: {method.upper()} {_redact_url(url)}. Common causes: the dataset's"
             " Terms & Conditions have not been agreed to on its MDC platform page, the"
             " dataset or submission belongs to another organization, the submission"
             " has already been published, or your organization is not approved to"
@@ -212,6 +212,16 @@ def _format_bytes(bytes_val: int) -> str:
             return f"{value:.1f} {unit}"
         value /= 1024
     return f"{value:.1f} PB"
+
+
+def _redact_url(url: str) -> str:
+    """Return *url* with its query string redacted.
+
+    Presigned storage URLs carry their signature in the query string; SDK API
+    requests pass query parameters separately (``params``), never in the URL.
+    """
+    base, _, query = url.partition("?")
+    return f"{base}?{_REDACTED}" if query else url
 
 
 def _redact_sensitive(value: Any) -> Any:
