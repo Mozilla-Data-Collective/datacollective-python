@@ -142,10 +142,8 @@ def _download_sample(
     # Created only now, so a refused request leaves no empty directory behind.
     sample_dir.mkdir(parents=True, exist_ok=True)
 
-    if download_plan.tmp_filepath.exists():
-        logger.info("Samples cannot be resumed. Starting the sample download again...")
-        _cleanup_partial_download(download_plan)
-
+    # With no checksum in the plan, `_determine_resume_state` discards any leftover
+    # .part file and the download starts again, which is all a sample can do.
     return _run_download_plan(
         download_plan=download_plan,
         show_progress=show_progress,
