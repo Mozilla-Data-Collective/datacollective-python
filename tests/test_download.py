@@ -360,7 +360,7 @@ def test_download_sample_restarts_interrupted_download(
 
     assert result.read_bytes() == b"sample"
     assert not partial.exists()
-    assert "Samples cannot be resumed" in caplog.text
+    assert "Starting fresh download" in caplog.text
 
 
 def test_download_sample_overwrite_replaces_existing_sample(
