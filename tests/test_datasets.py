@@ -105,11 +105,25 @@ def test_download_sample_resolves_id_and_reports_its_own_source(
     ]
 
 
-@pytest.mark.parametrize("overwrite_existing", [False, True])
+# A re-downloaded archive is always unpacked afresh; otherwise only on request.
+_OVERWRITE_CASES = [
+    (False, False, False),
+    (True, False, True),
+    (False, True, True),
+    (True, True, True),
+]
+
+
+@pytest.mark.parametrize(
+    ("overwrite_existing", "overwrite_extracted", "expected"), _OVERWRITE_CASES
+)
 def test_download_dataset_extract_returns_extracted_directory(
-    monkeypatch: MonkeyPatch, overwrite_existing: bool
+    monkeypatch: MonkeyPatch,
+    overwrite_existing: bool,
+    overwrite_extracted: bool,
+    expected: bool,
 ) -> None:
-    _capture_downloads(monkeypatch)
+    calls = _capture_downloads(monkeypatch)
     extracted: list[dict[str, object]] = []
 
     def fake_extract_archive(**kwargs: object) -> Path:
@@ -119,27 +133,44 @@ def test_download_dataset_extract_returns_extracted_directory(
     monkeypatch.setattr(datasets, "_extract_archive", fake_extract_archive)
 
     result = datasets.download_dataset(
-        "ds", extract=True, overwrite_existing=overwrite_existing
+        "ds",
+        extract=True,
+        overwrite_existing=overwrite_existing,
+        overwrite_extracted=overwrite_extracted,
     )
 
     assert result == Path("archive")
+    # Re-extracting never triggers a re-download on its own.
+    assert calls[0]["overwrite_existing"] is overwrite_existing
     assert extracted == [
         {
             "archive_path": Path("archive.tar.gz"),
             "dest_dir": Path("."),
-            "overwrite_extracted": overwrite_existing,
+            "overwrite_extracted": expected,
         }
     ]
 
 
+@pytest.mark.parametrize(
+    ("overwrite_existing", "overwrite_extracted", "expected"), _OVERWRITE_CASES
+)
 def test_download_sample_extract_returns_extracted_directory(
     monkeypatch: MonkeyPatch,
+    overwrite_existing: bool,
+    overwrite_extracted: bool,
+    expected: bool,
 ) -> None:
     sample = Path("samples") / "ds" / "sample.tar.gz"
+    calls: list[dict[str, object]] = []
+
+    def fake_download_sample(**kwargs: object) -> Path:
+        calls.append(kwargs)
+        return sample
+
     monkeypatch.setattr(
         datasets, "get_dataset_details", lambda dataset_id: DatasetDetails(id="ds")
     )
-    monkeypatch.setattr(datasets, "_download_sample", lambda **kwargs: sample)
+    monkeypatch.setattr(datasets, "_download_sample", fake_download_sample)
     extracted: list[dict[str, object]] = []
 
     def fake_extract_archive(**kwargs: object) -> Path:
@@ -148,13 +179,19 @@ def test_download_sample_extract_returns_extracted_directory(
 
     monkeypatch.setattr(datasets, "_extract_archive", fake_extract_archive)
 
-    result = datasets.download_sample("ds", extract=True, overwrite_existing=True)
+    result = datasets.download_sample(
+        "ds",
+        extract=True,
+        overwrite_existing=overwrite_existing,
+        overwrite_extracted=overwrite_extracted,
+    )
 
     assert result == sample.parent / "sample"
+    assert calls[0]["overwrite_existing"] is overwrite_existing
     assert extracted == [
         {
             "archive_path": sample,
             "dest_dir": sample.parent,
-            "overwrite_extracted": True,
+            "overwrite_extracted": expected,
         }
     ]
