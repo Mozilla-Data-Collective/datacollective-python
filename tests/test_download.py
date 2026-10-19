@@ -304,7 +304,7 @@ def test_download_sample_saves_under_samples_dir(tmp_path: Path, monkeypatch) ->
     assert get["include_auth_headers"] is False
 
 
-def test_download_sample_skips_api_when_already_downloaded(
+def test_download_sample_skips_download_when_already_downloaded(
     tmp_path: Path, monkeypatch
 ) -> None:
     existing = tmp_path / "samples" / "ds" / "sample.tar.gz"
@@ -319,22 +319,29 @@ def test_download_sample_skips_api_when_already_downloaded(
 
     assert result == existing
     assert result.read_bytes() == b"cached"
-    assert api.calls == []
+    assert [call["method"] for call in api.calls] == ["POST"]  # no GET of the file
 
 
-def test_download_sample_ignores_hidden_files(tmp_path: Path, monkeypatch) -> None:
+def test_download_sample_fetches_replaced_sample_without_overwrite(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The existence check is on the exact filename the API returns, so an earlier sample
+    with another name does not mask a sample the publisher has since replaced."""
     sample_dir = tmp_path / "samples" / "ds"
     sample_dir.mkdir(parents=True)
-    (sample_dir / ".DS_Store").write_bytes(b"finder")
-    api = _FakeSampleApi(_sample_payload())
+    (sample_dir / "old-sample.tar.gz").write_bytes(b"old")
+    (sample_dir / "notes.txt").write_bytes(b"mine")
+    api = _FakeSampleApi(_sample_payload("new-sample.tar.gz"))
     monkeypatch.setattr("datacollective.download._send_api_request", api)
 
     result = _download_sample(
         "ds", str(tmp_path), show_progress=False, overwrite_existing=False
     )
 
-    assert result.name == "sample.tar.gz"
-    assert (sample_dir / ".DS_Store").exists()
+    assert result == sample_dir / "new-sample.tar.gz"
+    assert result.read_bytes() == b"sample"
+    assert (sample_dir / "old-sample.tar.gz").read_bytes() == b"old"
+    assert (sample_dir / "notes.txt").read_bytes() == b"mine"
 
 
 def test_download_sample_restarts_interrupted_download(
@@ -353,39 +360,28 @@ def test_download_sample_restarts_interrupted_download(
 
     assert result.read_bytes() == b"sample"
     assert not partial.exists()
-    assert "Samples cannot be resumed" in caplog.text
+    assert "Starting fresh download" in caplog.text
 
 
-def test_download_sample_overwrite_replaces_previous_sample(
+def test_download_sample_overwrite_replaces_existing_sample(
     tmp_path: Path, monkeypatch
 ) -> None:
-    old = tmp_path / "samples" / "ds" / "old-sample.tar.gz"
-    old.parent.mkdir(parents=True)
-    old.write_bytes(b"old")
-    api = _FakeSampleApi(_sample_payload("new-sample.tar.gz"))
+    sample_dir = tmp_path / "samples" / "ds"
+    sample_dir.mkdir(parents=True)
+    (sample_dir / "sample.tar.gz").write_bytes(b"old")
+    (sample_dir / "notes.txt").write_bytes(b"mine")
+    api = _FakeSampleApi(_sample_payload())
     monkeypatch.setattr("datacollective.download._send_api_request", api)
 
     result = _download_sample(
         "ds", str(tmp_path), show_progress=False, overwrite_existing=True
     )
 
-    assert result.name == "new-sample.tar.gz"
-    assert sorted(p.name for p in result.parent.iterdir()) == ["new-sample.tar.gz"]
-
-
-def test_download_sample_replacing_removes_old_extracted_directory(
-    tmp_path: Path, monkeypatch
-) -> None:
-    sample_dir = tmp_path / "samples" / "ds"
-    (sample_dir / "old-sample").mkdir(parents=True)
-    (sample_dir / "old-sample" / "clip.wav").write_bytes(b"old")
-    (sample_dir / "old-sample.tar.gz").write_bytes(b"old")
-    api = _FakeSampleApi(_sample_payload("new-sample.tar.gz"))
-    monkeypatch.setattr("datacollective.download._send_api_request", api)
-
-    _download_sample("ds", str(tmp_path), show_progress=False, overwrite_existing=True)
-
-    assert sorted(p.name for p in sample_dir.iterdir()) == ["new-sample.tar.gz"]
+    assert result == sample_dir / "sample.tar.gz"
+    assert result.read_bytes() == b"sample"
+    assert [call["method"] for call in api.calls] == ["POST", "GET"]
+    # Only the sample itself is replaced; other files in the directory are left alone.
+    assert (sample_dir / "notes.txt").read_bytes() == b"mine"
 
 
 @pytest.mark.parametrize(

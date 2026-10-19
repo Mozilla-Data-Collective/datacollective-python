@@ -148,9 +148,11 @@ def download_sample(
     Download the dataset's sample archive to a local directory and return the archive path.
     The sample is a small excerpt of the dataset that its publisher provides for evaluation.
 
-    The archive is saved under `samples/<dataset_id>/` inside the download directory, apart
-    from the full dataset archive. Skips download if the sample is already there (unless
-    `overwrite_existing=True`, which also picks up a sample the publisher has since replaced).
+    The archive is saved under `samples/<dataset_id>/` inside the download directory, so it
+    can never be mistaken for the full dataset archive even when the two share a filename.
+    Skips download if the sample the API currently serves is already there, unless
+    `overwrite_existing=True`. A sample the publisher has since replaced is downloaded under
+    its new filename, leaving the earlier file in place.
 
     Unlike `download_dataset`, an interrupted sample download starts again rather than
     resuming: the API returns no checksum for samples to match a partial file against.
@@ -167,18 +169,15 @@ def download_sample(
         download_directory: Directory under which to save the sample archive.
             If None or empty, falls back to env MDC_DOWNLOAD_PATH or default.
         show_progress: Whether to show a progress bar during download.
-        overwrite_existing: Whether to download the sample again, replacing the existing one
-            and, with `extract=True`, its extracted directory.
+        overwrite_existing: Whether to download the sample again, replacing the existing one.
         enable_logging: Whether to enable SDK logging to console and a local log file.
         extract: Whether to also unpack the archive and return the extracted directory.
 
     Returns:
-        Path to the downloaded sample archive, or to the extracted directory if
-        `extract=True`.
+        Path to the downloaded sample archive.
 
     Raises:
-        ValueError: If dataset_id is empty, or `extract=True` and the archive is not a
-            `.tar.gz` / `.tgz` file.
+        ValueError: If dataset_id is empty.
         FileNotFoundError: If the dataset does not exist, or publishes no sample (404).
         ResourceRemovedError: If the dataset is no longer available (410).
         PermissionError: If the dataset's terms have not been agreed to or the dataset is

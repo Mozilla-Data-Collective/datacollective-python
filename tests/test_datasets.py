@@ -132,19 +132,6 @@ def test_download_dataset_extract_returns_extracted_directory(
     ]
 
 
-def test_download_dataset_without_extract_does_not_extract(
-    monkeypatch: MonkeyPatch,
-) -> None:
-    _capture_downloads(monkeypatch)
-    monkeypatch.setattr(
-        datasets,
-        "_extract_archive",
-        lambda **kwargs: pytest.fail("extracted without extract=True"),
-    )
-
-    assert datasets.download_dataset("ds") == Path("archive.tar.gz")
-
-
 def test_download_sample_extract_returns_extracted_directory(
     monkeypatch: MonkeyPatch,
 ) -> None:

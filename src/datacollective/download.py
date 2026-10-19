@@ -1,12 +1,10 @@
 import os
-import shutil
 from pathlib import Path
 from typing import Any
 
 from fox_progress_bar import ProgressBar
 from pydantic import Field
 
-from datacollective.archive_utils import _extracted_dir_name
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
     HTTP_TIMEOUT,
@@ -24,9 +22,10 @@ DOWNLOAD_SOURCE_SAVE = "save_dataset_to_disk"
 DOWNLOAD_SOURCE_LOAD = "load_dataset"
 DOWNLOAD_SOURCE_SAMPLE = "download_sample"
 
-# Samples live under <download directory>/samples/<dataset id>/, apart from full archives.
+# Samples live under <download directory>/samples/<dataset id>/ rather than next to the full
+# archives: a sample may carry the same filename as its dataset's archive, or as another
+# dataset's sample, and sharing a directory would let one be mistaken for the other.
 SAMPLES_DIRNAME = "samples"
-_PARTIAL_SUFFIXES = (".part", ".checksum")
 
 
 class DownloadPlan(NonEmptyStrModel):
@@ -34,9 +33,8 @@ class DownloadPlan(NonEmptyStrModel):
     target_filepath: Path
     tmp_filepath: Path
     size_bytes: int = Field(..., gt=0)
-    checksum: (
-        str | None
-    )  # We allow None if the API does not return a checksum, but that's generally unexpected.
+    # The API returns no checksum for a sample, so a sample download can never be resumed.
+    checksum: str | None
     checksum_filepath: Path
 
 
@@ -107,9 +105,10 @@ def _download_sample(
 
     Follows the same flow as `_download_dataset`, with two differences:
 
-    - The sample's filename is only known once the API is called, so samples are kept in a
-      directory of their own, `<download directory>/samples/<dataset id>/`. A finished file
-      there means the sample is already downloaded, and the API is not called.
+    - The sample's filename is only known once the API is called, so the API is asked first
+      and the existence check is done on the exact filename it returns. Samples are kept in a
+      directory of their own, `<download directory>/samples/<dataset id>/`, since a sample's
+      filename may collide with the full archive's or with another dataset's sample.
     - The API returns no checksum for a sample, so an interrupted download cannot be matched
       to the current sample and starts again instead of resuming.
 
@@ -126,45 +125,30 @@ def _download_sample(
         _resolve_download_dir(download_directory) / SAMPLES_DIRNAME / dataset_id
     )
 
-    existing = _find_downloaded_sample(sample_dir)
-    if existing and not overwrite_existing:
-        logger.info(f"Skipping download. Sample archive already exists at `{existing}`")
-        return existing
-
     download_plan = _get_sample_download_plan(
         dataset_id=dataset_id,
         sample_dir=sample_dir,
         download_source=download_source,
     )
+    target_filepath = download_plan.target_filepath
+
+    if target_filepath.exists() and not overwrite_existing:
+        logger.info(
+            f"Skipping download. Sample archive already exists at `{target_filepath}`"
+        )
+        return target_filepath
 
     # Created only now, so a refused request leaves no empty directory behind.
     sample_dir.mkdir(parents=True, exist_ok=True)
 
-    if download_plan.tmp_filepath.exists():
-        logger.info("Samples cannot be resumed. Starting the sample download again...")
-        _cleanup_partial_download(download_plan)
-
-    target_filepath = _run_download_plan(
+    # With no checksum in the plan, `_determine_resume_state` discards any leftover
+    # .part file and the download starts again, which is all a sample can do.
+    return _run_download_plan(
         download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
         download_source=download_source,
     )
-
-    # Keep one sample per dataset: remove any earlier one the publisher has since replaced,
-    # along with its leftover partial files and the directory it was extracted into.
-    for other in sample_dir.iterdir():
-        if (
-            other != target_filepath
-            and other.is_file()
-            and not other.name.startswith(".")
-        ):
-            other.unlink()
-            stale_dir_name = _extracted_dir_name(other.name)
-            if stale_dir_name and (sample_dir / stale_dir_name).is_dir():
-                shutil.rmtree(sample_dir / stale_dir_name)
-
-    return target_filepath
 
 
 def _run_download_plan(
@@ -279,8 +263,7 @@ def _get_sample_download_plan(
 
     payload: dict[str, Any] = resp.json()
     filename = str(payload.get("filename") or "")
-    # The filename becomes a path on disk, so accept a bare name only. Hidden names are
-    # refused too, since they are skipped when looking for an existing sample.
+    # The filename becomes a path on disk, so accept a bare, visible name only.
     if Path(filename).name != filename or not filename or filename.startswith("."):
         raise RuntimeError(f"Unexpected sample filename in response: {filename!r}")
 
@@ -337,6 +320,8 @@ def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
     A download is resumed only when both the .part and .checksum files exist
     and the stored checksum matches the current one. In every other case the
     leftover .part / .checksum files are removed and the download starts fresh.
+    A plan without a checksum (a sample) can never be resumed, so any leftover
+    .part file is simply discarded.
 
     Args:
         download_plan: The DownloadPlan object with download details.
@@ -345,6 +330,16 @@ def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
         The checksum to use for resumption, or None if starting fresh.
     """
     part_exists = download_plan.tmp_filepath.exists()
+
+    if download_plan.checksum is None:
+        if part_exists:
+            logger.info(
+                "Partial download found but the download cannot be resumed. "
+                "Starting fresh download..."
+            )
+        _cleanup_partial_download(download_plan)
+        return None
+
     checksum_filepath = download_plan.checksum_filepath
     stored_checksum = (
         checksum_filepath.read_text().strip() if checksum_filepath.exists() else None
@@ -451,21 +446,6 @@ def _resolve_download_dir(download_directory: str | None) -> Path:
         raise PermissionError(f"Directory `{p}` is not writable")
     logger.debug(f"Download directory set: {p}")
     return p
-
-
-def _find_downloaded_sample(sample_dir: Path) -> Path | None:
-    """Return the finished sample archive in *sample_dir*, or None if there is none.
-    Hidden files, such as the `.DS_Store` macOS leaves behind, are not samples."""
-    if not sample_dir.is_dir():
-        return None
-    finished = [
-        p
-        for p in sample_dir.iterdir()
-        if p.is_file()
-        and not p.name.startswith(".")
-        and not p.name.endswith(_PARTIAL_SUFFIXES)
-    ]
-    return max(finished, key=lambda p: p.stat().st_mtime, default=None)
 
 
 def _get_checksum_filepath(target_filepath: Path) -> Path:
