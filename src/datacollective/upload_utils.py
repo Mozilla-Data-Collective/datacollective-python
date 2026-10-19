@@ -16,8 +16,6 @@ from datacollective.api_utils import (
     _get_api_url,
     _send_api_request,
     _format_bytes,
-    _redact_query_strings,
-    _redact_request_exception,
 )
 from datacollective.logging_utils import get_logger
 from datacollective.models import NonEmptyStrModel, UploadPart
@@ -526,21 +524,10 @@ def _upload_part(
     session: requests.Session | None = None,
 ) -> requests.Response:
     put = session.put if session else requests.put
-    # The presigned URL carries its signature in the query string, which
-    # `requests` quotes in its error messages: never let it out unredacted.
-    try:
-        resp = put(presigned_url, data=payload, timeout=UPLOAD_TIMEOUT)
-    except requests.RequestException as exc:
-        raise _redact_request_exception(exc, presigned_url) from None
+    resp = put(presigned_url, data=payload, timeout=UPLOAD_TIMEOUT)
     if resp.status_code == 429:
         raise RateLimitError(response=resp)
-    try:
-        resp.raise_for_status()
-    except requests.HTTPError as exc:
-        raise requests.HTTPError(
-            _redact_query_strings(str(exc), presigned_url, resp.url or ""),
-            response=resp,
-        ) from None
+    resp.raise_for_status()
     return resp
 
 

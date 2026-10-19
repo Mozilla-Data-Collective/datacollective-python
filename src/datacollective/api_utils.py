@@ -79,31 +79,27 @@ def _send_api_request(
         headers.update(extra_headers)
 
     logger.debug(
-        f"API request: {method.upper()} {_redact_url(url)} (stream={stream})\n"
+        f"API request: {method.upper()} {url} (stream={stream})\n"
         f"json_body: {_redact_sensitive(json_body)}\n"
         f"params: {_redact_sensitive(params)}"
     )
 
-    try:
-        resp = requests.request(
-            method=method.upper(),
-            url=url,
-            stream=stream,
-            headers=headers,
-            timeout=timeout,
-            json=json_body,
-            params=params,
-        )
-    except requests.RequestException as exc:
-        # Transport errors quote the URL, query string included.
-        raise _redact_request_exception(exc, url) from None
+    resp = requests.request(
+        method=method.upper(),
+        url=url,
+        stream=stream,
+        headers=headers,
+        timeout=timeout,
+        json=json_body,
+        params=params,
+    )
 
     logger.debug(f"API response: {_response_body_for_logging(resp, stream=stream)}")
 
     if resp.status_code == 404:
         detail = _extract_error_detail(resp)
         raise FileNotFoundError(
-            f"Resource not found: {method.upper()} {_redact_url(url)}"
+            f"Resource not found: {method.upper()} {url}"
             + (f" — {detail}" if detail else "")
         )
     if resp.status_code == 410:
@@ -111,7 +107,7 @@ def _send_api_request(
 
         detail = _extract_error_detail(resp)
         raise ResourceRemovedError(
-            f"Resource no longer available: {method.upper()} {_redact_url(url)}. The dataset was"
+            f"Resource no longer available: {method.upper()} {url}. The dataset was"
             " removed from the MDC platform, or the submission was deleted."
             + (f" — {detail}" if detail else "")
         )
@@ -129,9 +125,9 @@ def _send_api_request(
         # common cases for when it is missing.
         detail = _extract_error_detail(resp)
         raise PermissionError(
-            f"Access denied: {method.upper()} {_redact_url(url)} — {detail}"
+            f"Access denied: {method.upper()} {url} — {detail}"
             if detail
-            else f"Access denied: {method.upper()} {_redact_url(url)}. Common causes: the dataset's"
+            else f"Access denied: {method.upper()} {url}. Common causes: the dataset's"
             " Terms & Conditions have not been agreed to on its MDC platform page, the"
             " dataset or submission belongs to another organization, the submission"
             " has already been published, or your organization is not approved to"
@@ -145,13 +141,11 @@ def _send_api_request(
         resp.raise_for_status()
     except requests.HTTPError as exc:
         # Surface the API's message (e.g. which query parameter was
-        # rejected with 400) instead of only the generic status line. The
-        # status line quotes the URL, so redact its query string first.
-        message = _redact_query_strings(str(exc), url, resp.url or "")
+        # rejected with 400) instead of only the generic status line.
         detail = _extract_error_detail(resp)
         if detail:
-            message = f"{message} — {detail}"
-        raise requests.HTTPError(message, response=resp) from None
+            raise requests.HTTPError(f"{exc} — {detail}", response=resp) from None
+        raise
 
     return resp
 
@@ -218,41 +212,6 @@ def _format_bytes(bytes_val: int) -> str:
             return f"{value:.1f} {unit}"
         value /= 1024
     return f"{value:.1f} PB"
-
-
-def _redact_url(url: str) -> str:
-    """Return *url* with its query string redacted.
-
-    Presigned storage URLs carry their signature in the query string; SDK API
-    requests pass query parameters separately (``params``), never in the URL.
-    """
-    base, _, query = url.partition("?")
-    return f"{base}?{_REDACTED}" if query else url
-
-
-def _redact_query_strings(text: str, *urls: str) -> str:
-    """Return *text* with the query string of each of *urls* blanked out
-    wherever it appears, e.g. in an exception message quoting the URL."""
-    for candidate in urls:
-        query = candidate.partition("?")[2]
-        if query:
-            text = text.replace(query, _REDACTED)
-    return text
-
-
-def _redact_request_exception(
-    exc: requests.RequestException, url: str
-) -> requests.RequestException:
-    """Rebuild *exc* with the query string of *url* redacted from its message.
-
-    The result has the same class, request and response, so callers that
-    retry on `requests.ConnectionError` / `requests.Timeout` keep working.
-    Raise it ``from None`` so the original, unredacted exception is not
-    chained as the cause.
-    """
-    message = _redact_query_strings(str(exc), url)
-    redacted = exc.__class__(message, request=exc.request, response=exc.response)
-    return redacted.with_traceback(exc.__traceback__)
 
 
 def _redact_sensitive(value: Any) -> Any:
