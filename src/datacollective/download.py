@@ -33,9 +33,8 @@ class DownloadPlan(NonEmptyStrModel):
     target_filepath: Path
     tmp_filepath: Path
     size_bytes: int = Field(..., gt=0)
-    checksum: (
-        str | None
-    )  # We allow None if the API does not return a checksum, but that's generally unexpected.
+    # The API returns no checksum for a sample, so a sample download can never be resumed.
+    checksum: str | None
     checksum_filepath: Path
 
 
@@ -321,6 +320,8 @@ def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
     A download is resumed only when both the .part and .checksum files exist
     and the stored checksum matches the current one. In every other case the
     leftover .part / .checksum files are removed and the download starts fresh.
+    A plan without a checksum (a sample) can never be resumed, so any leftover
+    .part file is simply discarded.
 
     Args:
         download_plan: The DownloadPlan object with download details.
@@ -329,6 +330,16 @@ def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
         The checksum to use for resumption, or None if starting fresh.
     """
     part_exists = download_plan.tmp_filepath.exists()
+
+    if download_plan.checksum is None:
+        if part_exists:
+            logger.info(
+                "Partial download found but the download cannot be resumed. "
+                "Starting fresh download..."
+            )
+        _cleanup_partial_download(download_plan)
+        return None
+
     checksum_filepath = download_plan.checksum_filepath
     stored_checksum = (
         checksum_filepath.read_text().strip() if checksum_filepath.exists() else None
