@@ -88,6 +88,35 @@ def test_extract_archive_overwrite_replaces_directory(tmp_path: Path) -> None:
     assert sorted(p.name for p in target.iterdir()) == ["data.txt"]
 
 
+def test_extract_archive_failed_overwrite_keeps_existing_directory(
+    tmp_path: Path,
+) -> None:
+    archive = _make_tar_gz(tmp_path)
+    good = archive.read_bytes()
+    dest = tmp_path / "out"
+    existing = _extract_archive(archive, dest, overwrite_extracted=False)
+    archive.write_bytes(good[: len(good) // 2])  # the re-downloaded archive is corrupt
+
+    with pytest.raises((tarfile.TarError, EOFError)):
+        _extract_archive(archive, dest, overwrite_extracted=True)
+
+    # The good directory is untouched and the failed attempt left nothing behind.
+    assert (existing / "data.txt").read_text() == "hello"
+    assert sorted(p.name for p in dest.iterdir()) == ["sample"]
+
+
+def test_extract_archive_failure_removes_partial_directory(tmp_path: Path) -> None:
+    archive = _make_tar_gz(tmp_path)
+    good = archive.read_bytes()
+    archive.write_bytes(good[: len(good) // 2])
+    dest = tmp_path / "out"
+
+    with pytest.raises((tarfile.TarError, EOFError)):
+        _extract_archive(archive, dest, overwrite_extracted=False)
+
+    assert not (dest / "sample.partial").exists()
+
+
 @pytest.mark.parametrize("overwrite_extracted", [False, True])
 @pytest.mark.parametrize("stray_name", ["sample", "sample.partial"])
 def test_extract_archive_refuses_to_touch_stray_file(

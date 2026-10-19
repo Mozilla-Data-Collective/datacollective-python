@@ -18,7 +18,10 @@ def _extract_archive(
     directory already exists and overwrite_extracted is False, skip extraction.
 
     The archive is extracted under a temporary name and renamed once complete, so an
-    interrupted extraction is never mistaken for a finished one.
+    interrupted extraction is never mistaken for a finished one. When overwriting, the
+    existing directory is replaced only after the new extraction has succeeded, so a bad
+    archive never costs the user a good directory. A failed extraction cleans up after
+    itself.
 
     Args:
         archive_path: Path to the archive file.
@@ -51,24 +54,28 @@ def _extract_archive(
                 "directory. Move or remove it first."
             )
 
-    if target.exists():
-        if not overwrite_extracted:
-            logger.info(
-                f"Extracted directory already exists. Skipping extraction: `{target}`"
-            )
-            return target
-
-        logger.info(f"Overwriting existing extracted directory: `{target}`")
-        shutil.rmtree(target)
+    if target.exists() and not overwrite_extracted:
+        logger.info(
+            f"Extracted directory already exists. Skipping extraction: `{target}`"
+        )
+        return target
 
     # Left over from an interrupted extraction; start again.
     if partial.exists():
         shutil.rmtree(partial)
 
     partial.mkdir(parents=True)
-    with tarfile.open(archive_path, "r:gz") as tf:
-        tf.extractall(path=partial, filter="data")
-    partial.rename(target)
+    try:
+        with tarfile.open(archive_path, "r:gz") as tf:
+            tf.extractall(path=partial, filter="data")
+        # Only now, with a complete extraction in hand, is the old directory given up.
+        if target.exists():
+            logger.info(f"Overwriting existing extracted directory: `{target}`")
+            shutil.rmtree(target)
+        partial.rename(target)
+    except BaseException:
+        shutil.rmtree(partial, ignore_errors=True)
+        raise
     return target
 
 

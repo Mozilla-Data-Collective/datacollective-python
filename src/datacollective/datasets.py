@@ -215,7 +215,7 @@ def download_sample(
     )
     if not extract:
         return archive_path
-    return _extract_beside(archive_path, overwrite_existing or overwrite_extracted)
+    return _extract_beside(archive_path, overwrite_existing, overwrite_extracted)
 
 
 def _download_archive(
@@ -245,16 +245,22 @@ def _download_archive(
     )
     if not extract:
         return archive_path
-    return _extract_beside(archive_path, overwrite_existing or overwrite_extracted)
+    return _extract_beside(archive_path, overwrite_existing, overwrite_extracted)
 
 
-def _extract_beside(archive_path: Path, overwrite_extracted: bool) -> Path:
-    """Unpack an archive into a directory beside it, as `load_dataset` does. Callers pass
-    `overwrite_extracted=True` when a re-downloaded archive must be unpacked afresh too."""
+def _extract_beside(
+    archive_path: Path, overwrite_existing: bool, overwrite_extracted: bool
+) -> Path:
+    """
+    Unpack an archive into a directory beside it, named after the archive without its
+    suffix. The one place that decides when an existing directory is unpacked again: on
+    request (`overwrite_extracted`), or because the archive itself was downloaded again
+    (`overwrite_existing`) and the directory may no longer match it.
+    """
     return _extract_archive(
         archive_path=archive_path,
         dest_dir=archive_path.parent,
-        overwrite_extracted=overwrite_extracted,
+        overwrite_extracted=overwrite_existing or overwrite_extracted,
     )
 
 
@@ -306,7 +312,8 @@ def load_dataset(
     unless `overwrite_existing=True`.
 
     If there is a directory with the same name as the archive file without the suffix extension, we assume
-    it has already been extracted, and it will not be re-extracted unless `overwrite_extracted=True`.
+    it has already been extracted, and it will not be re-extracted unless `overwrite_extracted=True`
+    or the archive was downloaded again with `overwrite_existing=True`.
 
     Uses the dataset schema to determine the loading strategy.
 
@@ -379,12 +386,7 @@ def load_dataset(
         download_source=DOWNLOAD_SOURCE_LOAD,
     )
 
-    base_dir = archive_path.parent
-    extract_dir = _extract_archive(
-        archive_path=archive_path,
-        dest_dir=base_dir,
-        overwrite_extracted=overwrite_extracted,
-    )
+    extract_dir = _extract_beside(archive_path, overwrite_existing, overwrite_extracted)
 
     schema = _resolve_schema(_id, extract_dir, archive_checksum)
     df = _load_dataset_from_schema(schema, extract_dir)

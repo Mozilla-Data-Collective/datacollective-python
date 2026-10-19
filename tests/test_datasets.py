@@ -154,6 +154,45 @@ def test_download_dataset_extract_returns_extracted_directory(
 @pytest.mark.parametrize(
     ("overwrite_existing", "overwrite_extracted", "expected"), _OVERWRITE_CASES
 )
+def test_load_dataset_re_extracts_a_re_downloaded_archive(
+    monkeypatch: MonkeyPatch,
+    overwrite_existing: bool,
+    overwrite_extracted: bool,
+    expected: bool,
+) -> None:
+    _capture_downloads(monkeypatch)
+    monkeypatch.setattr(datasets, "_get_dataset_schema", lambda _id: object())
+    monkeypatch.setattr(datasets, "_resolve_schema", lambda *args: object())
+    monkeypatch.setattr(
+        datasets, "_load_dataset_from_schema", lambda schema, extract_dir: extract_dir
+    )
+    extracted: list[dict[str, object]] = []
+
+    def fake_extract_archive(**kwargs: object) -> Path:
+        extracted.append(kwargs)
+        return Path("archive")
+
+    monkeypatch.setattr(datasets, "_extract_archive", fake_extract_archive)
+
+    result = datasets.load_dataset(
+        "ds",
+        overwrite_existing=overwrite_existing,
+        overwrite_extracted=overwrite_extracted,
+    )
+
+    assert result == Path("archive")
+    assert extracted == [
+        {
+            "archive_path": Path("archive.tar.gz"),
+            "dest_dir": Path("."),
+            "overwrite_extracted": expected,
+        }
+    ]
+
+
+@pytest.mark.parametrize(
+    ("overwrite_existing", "overwrite_extracted", "expected"), _OVERWRITE_CASES
+)
 def test_download_sample_extract_returns_extracted_directory(
     monkeypatch: MonkeyPatch,
     overwrite_existing: bool,
