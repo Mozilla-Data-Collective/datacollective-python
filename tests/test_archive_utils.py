@@ -88,6 +88,25 @@ def test_extract_archive_overwrite_replaces_directory(tmp_path: Path) -> None:
     assert sorted(p.name for p in target.iterdir()) == ["data.txt"]
 
 
+@pytest.mark.parametrize("overwrite_extracted", [False, True])
+@pytest.mark.parametrize("stray_name", ["sample", "sample.partial"])
+def test_extract_archive_refuses_to_touch_stray_file(
+    tmp_path: Path, stray_name: str, overwrite_extracted: bool
+) -> None:
+    archive = _make_tar_gz(tmp_path)
+    dest = tmp_path / "out"
+    dest.mkdir()
+    stray = dest / stray_name
+    stray.write_text("mine")
+
+    with pytest.raises(FileExistsError, match="is not a directory"):
+        _extract_archive(archive, dest, overwrite_extracted=overwrite_extracted)
+
+    # The stray file is left exactly as it was and nothing else was created.
+    assert stray.read_text() == "mine"
+    assert sorted(p.name for p in dest.iterdir()) == [stray_name]
+
+
 @pytest.mark.parametrize(
     ("archive_name", "expected"),
     [

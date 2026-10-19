@@ -123,6 +123,8 @@ def download_dataset(
     Raises:
         ValueError: If dataset_id is empty, or `extract=True` and the archive is not a
             `.tar.gz` / `.tgz` file.
+        FileExistsError: If `extract=True` and a file, rather than a directory, sits
+            where the archive would be extracted.
         FileNotFoundError: If the dataset does not exist (404).
         ResourceRemovedError: If the dataset is no longer available (410).
         PermissionError: If access is denied (403) or download directory is not writable.
@@ -190,6 +192,8 @@ def download_sample(
     Raises:
         ValueError: If dataset_id is empty, or `extract=True` and the sample is not a
             `.tar.gz` / `.tgz` file.
+        FileExistsError: If `extract=True` and a file, rather than a directory, sits
+            where the sample would be extracted.
         FileNotFoundError: If the dataset does not exist, or publishes no sample (404).
         ResourceRemovedError: If the dataset is no longer available (410).
         PermissionError: If the dataset's terms have not been agreed to or the dataset is
@@ -331,6 +335,8 @@ def load_dataset(
             is invalid.
         MissingDependencyError: If `return_format="hf"` and the HuggingFace `datasets`
             library is not installed.
+        FileExistsError: If a file, rather than a directory, sits where the archive
+            would be extracted.
         FileNotFoundError: If the dataset does not exist (404).
         ResourceRemovedError: If the dataset is no longer available (410).
         PermissionError: If access is denied (403) or download directory is not writable.
