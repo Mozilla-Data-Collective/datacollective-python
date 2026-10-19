@@ -69,4 +69,7 @@ jobs:
         run: uv pip install --system -e . --group dev
 
       - name: Run e2e tests
+        env:
+          MDC_TEST_API_KEY: ${{ secrets.MDC_TEST_API_KEY }}
+          MDC_TEST_API_URL: ${{ secrets.MDC_TEST_API_URL }}
         run: pytest -q tests/e2e
