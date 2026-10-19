@@ -18,7 +18,7 @@
         
       
       
-      <link rel="icon" href="../docs/mdc_ccc.png">
+      <link rel="icon" href="../mdc_ccc.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -94,7 +94,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href=".." title="Mozilla Data Collective Python SDK" class="md-header__button md-logo" aria-label="Mozilla Data Collective Python SDK" data-md-component="logo">
       
-  <img src="../docs/mdc_logo.png" alt="logo">
+  <img src="../mdc_logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -229,7 +229,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href=".." title="Mozilla Data Collective Python SDK" class="md-nav__button md-logo" aria-label="Mozilla Data Collective Python SDK" data-md-component="logo">
       
-  <img src="../docs/mdc_logo.png" alt="logo">
+  <img src="../mdc_logo.png" alt="logo">
 
     </a>
     Mozilla Data Collective Python SDK
@@ -1397,7 +1397,7 @@ without executing any custom code outside the datacollective library.</p>
 </span></code></pre></div>
 <p>Under the hood, <code>load_dataset()</code> performs the following steps automatically:</p>
 <ol>
-<li><strong>Resolve the schema</strong>: check local cache or the schema registry for <code>schema.yaml</code>. If the dataset is not registered this step raises a warning, so we never download an unsupported archive.</li>
+<li><strong>Resolve the schema</strong>: check the schema registry for <code>schema.yaml</code>. If the dataset is not registered this step raises a <code>RuntimeError</code>, so we never download an unsupported archive.</li>
 <li><strong>Download</strong> the archive (with resume support). The schema we fetched in step 1 tells the loader how the files are structured.</li>
 <li><strong>Extract</strong> the <code>.tar.gz</code> / <code>.tgz</code> archive to a local directory.</li>
 <li><strong>Parse</strong> the YAML into a validated <code>DatasetSchema</code> (Pydantic model) and dispatch to the loader for the schema's <code>root_strategy</code> (index, glob, …), which returns the final <strong>DataFrame</strong>. When the schema declares a <code>task</code> with a known contract (ASR, TTS, LLM), the loaded DataFrame is checked for the task's required logical columns; a <code>TaskValidationWarning</code> is emitted if any are missing (the DataFrame is still returned).</li>
@@ -2025,13 +2025,13 @@ are kept under the <code>extra</code> catch-all, and unknown <code>root_strategy
 at parse time.</p>
 <hr />
 <h2 id="complete-examples">Complete examples</h2>
-<p>For full examples for each strategy, visit the respective strategy documentation pages under <a href="./loaders/">docs/loaders/</a>.</p>
+<p>For full examples for each strategy, visit the respective strategy documentation pages under <a href="../loaders/">Loading Strategies</a>.</p>
 <h2 id="schema-caching">Schema caching</h2>
 <p>The SDK caches the <code>schema.yaml</code> inside the extracted dataset directory to
 minimise API calls:</p>
 <ol>
 <li>When <code>load_dataset()</code> runs, it obtains the <strong>archive checksum</strong> from the
-   download plan.</li>
+   dataset details returned by the API.</li>
 <li>If a local <code>schema.yaml</code> exists and its stored <code>checksum</code> matches the
    archive checksum, the cached copy is used and no network request needed.</li>
 <li>If the checksums differ (dataset was updated) or no cache exists, the

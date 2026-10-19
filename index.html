@@ -16,7 +16,7 @@
         
       
       
-      <link rel="icon" href="docs/mdc_ccc.png">
+      <link rel="icon" href="mdc_ccc.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
     
     
@@ -92,7 +92,7 @@
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="." title="Mozilla Data Collective Python SDK" class="md-header__button md-logo" aria-label="Mozilla Data Collective Python SDK" data-md-component="logo">
       
-  <img src="docs/mdc_logo.png" alt="logo">
+  <img src="mdc_logo.png" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -227,7 +227,7 @@
   <label class="md-nav__title" for="__drawer">
     <a href="." title="Mozilla Data Collective Python SDK" class="md-nav__button md-logo" aria-label="Mozilla Data Collective Python SDK" data-md-component="logo">
       
-  <img src="docs/mdc_logo.png" alt="logo">
+  <img src="mdc_logo.png" alt="logo">
 
     </a>
     Mozilla Data Collective Python SDK
@@ -1449,7 +1449,7 @@
 <ul>
 <li><code>MDC_DOWNLOAD_PATH</code> - Local directory where datasets will be downloaded
   (defaults to <code>~/.mozdata/datasets</code>).</li>
-<li><code>MDC_LOG_PATH</code> - File path for logs (defaults to a <code>.log</code> file in the download directory).</li>
+<li><code>MDC_LOG_PATH</code> - Directory or file path for the log file (defaults to <code>~/.mozdata/datacollective.log</code>).</li>
 </ul>
 <p>Example using environment variables directly:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_API_KEY</span><span class="o">=</span>your-api-key-here
@@ -1457,8 +1457,8 @@
 </span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>~/.mozdata
 </span></code></pre></div>
 <h3 id="env-file"><code>.env</code> file</h3>
-<p>The client will automatically load configuration from a <code>.env</code> file in your
-project root or present working directory.</p>
+<p>The client will automatically load configuration from a <code>.env</code> file in the
+directory you run your code from, or in any of its parent directories.</p>
 <p>Create a file named <code>.env</code>:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># MDC API Configuration</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="nv">MDC_API_KEY</span><span class="o">=</span>your-api-key-here
@@ -1473,7 +1473,7 @@ project root or present working directory.</p>
 <p>The library has the ability to emit detailed logs for debugging and monitoring purposes, 
 on both the console and a local log file. This is disabled by default.
 To enable logging, pass <code>enable_logging=True</code> to the main functions.
-When enabled, logs are stored in a <code>.log</code> file in the download directory.
+When enabled, logs are written to <code>~/.mozdata/datacollective.log</code> (rotated at 10 MB, 5 backups kept).
 You can change the log file location by setting the <code>MDC_LOG_PATH</code> environment variable to your desired path,
 either through the <code>.env</code> file or by executing on your terminal:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nb">export</span><span class="w"> </span><span class="nv">MDC_LOG_PATH</span><span class="o">=</span>/path/to/save/the/log/files
@@ -1693,11 +1693,11 @@ paginated and each entry is a <code>DatasetDetails</code>, the same model return
 </span><span id="__span-15-16"><a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>    <span class="n">size_gb</span> <span class="o">=</span> <span class="p">(</span><span class="n">dataset</span><span class="o">.</span><span class="n">sizeBytes</span> <span class="ow">or</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="mf">1e9</span>
 </span><span id="__span-15-17"><a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2">  </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">  (</span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">task</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">dataset</span><span class="o">.</span><span class="n">locale</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">size_gb</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> GB)"</span><span class="p">)</span>
 </span></code></pre></div>
-<p>Other filters: <code>format</code> (e.g. <code>"WAV"</code>), <code>upload_date</code> (<code>"today"</code>, <code>"thisWeek"</code>,
+<p>Other filters: <code>file_format</code> (e.g. <code>"WAV"</code>), <code>upload_date</code> (<code>"today"</code>, <code>"thisWeek"</code>,
 <code>"thisMonth"</code>, <code>"thisYear"</code>), <code>has_sample=True</code> for datasets with a sample file,
 <code>pricing</code> (<code>"free"</code> or <code>"compensated"</code>) and <code>sort_direction</code> (<code>"asc"</code>/<code>"desc"</code>).
-<code>limit</code> accepts 1 to 100 results per page (the platform defaults to 24).</p>
-<p>To walk through every page, increase <code>page</code> until you have collected <code>total</code> items:</p>
+<code>results_per_page</code> accepts 1 to 100 results per page (the platform defaults to 24).</p>
+<p>To walk through every page, increase <code>page_number</code> until you have collected <code>total</code> items:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">list_datasets</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
 </span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">page_number</span><span class="p">,</span> <span class="n">collected</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="p">[]</span>
