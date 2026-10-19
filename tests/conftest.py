@@ -1,3 +1,3 @@
 from dotenv import find_dotenv, load_dotenv
 
-load_dotenv(find_dotenv(), override=False)
+load_dotenv(find_dotenv(usecwd=True), override=False)

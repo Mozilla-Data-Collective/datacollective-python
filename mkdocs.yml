@@ -1,6 +1,8 @@
 site_name: Mozilla Data Collective Python SDK
 repo_url: https://github.com/Mozilla-Data-Collective/datacollective-python
 repo_name: datacollective-python
+exclude_docs: |
+  downloads/
 
 nav:
   - Home: index.md
@@ -36,10 +38,8 @@ theme:
       toggle:
         icon: material/lightbulb-outline
         name: Switch to light mode
-  logo: docs/mdc_logo.png
-  favicon: docs/mdc_ccc.png
-  extra_css:
-    - assets/custom.css
+  logo: mdc_logo.png
+  favicon: mdc_ccc.png
   features:
     - content.code.copy
     - content.tabs.link

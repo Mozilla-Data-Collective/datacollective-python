@@ -47,7 +47,7 @@ Optional:
 
 - `MDC_DOWNLOAD_PATH` - Local directory where datasets will be downloaded
   (defaults to `~/.mozdata/datasets`).
-- `MDC_LOG_PATH` - File path for logs (defaults to a `.log` file in the download directory).
+- `MDC_LOG_PATH` - Directory or file path for the log file (defaults to `~/.mozdata/datacollective.log`).
 
 Example using environment variables directly:
 
@@ -59,8 +59,8 @@ export MDC_LOG_PATH=~/.mozdata
 
 ### `.env` file
 
-The client will automatically load configuration from a `.env` file in your
-project root or present working directory.
+The client will automatically load configuration from a `.env` file in the
+directory you run your code from, or in any of its parent directories.
 
 Create a file named `.env`:
 
@@ -79,7 +79,7 @@ MDC_LOG_PATH=~/.mozdata
 The library has the ability to emit detailed logs for debugging and monitoring purposes, 
 on both the console and a local log file. This is disabled by default.
 To enable logging, pass `enable_logging=True` to the main functions.
-When enabled, logs are stored in a `.log` file in the download directory.
+When enabled, logs are written to `~/.mozdata/datacollective.log` (rotated at 10 MB, 5 backups kept).
 You can change the log file location by setting the `MDC_LOG_PATH` environment variable to your desired path,
 either through the `.env` file or by executing on your terminal:
 
@@ -347,12 +347,12 @@ for dataset in page:
     print(f"{dataset.id}  {dataset.name}  ({dataset.task}, {dataset.locale}, {size_gb:.1f} GB)")
 ```
 
-Other filters: `format` (e.g. `"WAV"`), `upload_date` (`"today"`, `"thisWeek"`,
+Other filters: `file_format` (e.g. `"WAV"`), `upload_date` (`"today"`, `"thisWeek"`,
 `"thisMonth"`, `"thisYear"`), `has_sample=True` for datasets with a sample file,
 `pricing` (`"free"` or `"compensated"`) and `sort_direction` (`"asc"`/`"desc"`).
-`limit` accepts 1 to 100 results per page (the platform defaults to 24).
+`results_per_page` accepts 1 to 100 results per page (the platform defaults to 24).
 
-To walk through every page, increase `page` until you have collected `total` items:
+To walk through every page, increase `page_number` until you have collected `total` items:
 
 ```python
 from datacollective import list_datasets

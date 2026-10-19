@@ -18,7 +18,7 @@ authors = [
 ]
 description = "A Python package for interfacing with the Mozilla Data Collective's API"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11.4"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -39,6 +39,10 @@ dev = [
     "bump-my-version>=1.2.6",
     "datasets>=5.0.0",
     "pandas-stubs~=2.3.3",
+    "ruff==0.14.6",
+    "mypy==1.18.2",
+    "types-requests",
+    "types-PyYAML",
 ]
 
 docs = [
@@ -52,12 +56,15 @@ Homepage = "https://github.com/Mozilla-Data-Collective/datacollective-python"
 Documentation = "https://Mozilla-Data-Collective.github.io/datacollective-python/"
 Issues = "https://github.com/Mozilla-Data-Collective/datacollective-python/issues"
 
-[project.scripts]
-lint = "ruff:__main__"
-typecheck = "mypy:__main__"
-
 [tool.uv]
 preview = true
+
+[tool.mypy]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["fox_progress_bar", "fox_progress_bar.*", "datasets", "datasets.*"]
+ignore_missing_imports = true
 
 [[tool.uv.index]]
 name = "testpypi"
@@ -76,7 +83,7 @@ regex = false
 ignore_missing_version = false
 tag = false
 sign_tags = false
-tag_name = "v{new_version}"
+tag_name = "{new_version}"
 tag_message = "Bump version: {current_version} → {new_version}"
 allow_dirty = false
 commit = false
