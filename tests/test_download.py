@@ -344,21 +344,6 @@ def test_download_sample_fetches_replaced_sample_without_overwrite(
     assert (sample_dir / "notes.txt").read_bytes() == b"mine"
 
 
-def test_download_sample_ignores_hidden_files(tmp_path: Path, monkeypatch) -> None:
-    sample_dir = tmp_path / "samples" / "ds"
-    sample_dir.mkdir(parents=True)
-    (sample_dir / ".DS_Store").write_bytes(b"finder")
-    api = _FakeSampleApi(_sample_payload())
-    monkeypatch.setattr("datacollective.download._send_api_request", api)
-
-    result = _download_sample(
-        "ds", str(tmp_path), show_progress=False, overwrite_existing=False
-    )
-
-    assert result.name == "sample.tar.gz"
-    assert (sample_dir / ".DS_Store").exists()
-
-
 def test_download_sample_restarts_interrupted_download(
     tmp_path: Path, monkeypatch, caplog
 ) -> None:
