@@ -189,7 +189,7 @@ def test_currency_is_set_only_when_paid() -> None:
 
 def test_currency_is_not_a_settable_field() -> None:
     with pytest.raises(ValidationError):
-        DatasetSubmission(isPaid=True, basePriceCents=25_000, currency="eur")
+        DatasetSubmission(isPaid=True, basePriceCents=25_000, currency="eur")  # type: ignore[call-arg]  # extra="forbid" at runtime
 
 
 def test_dataset_details_requires_id() -> None:
@@ -217,7 +217,7 @@ def test_dataset_details_accepts_unknown_enum_values() -> None:
     details = DatasetDetails.model_validate(
         {"id": "abc", "visibility": "hidden", "task": "BRAND_NEW_TASK"}
     )
-    assert details.visibility == "hidden"
+    assert details.visibility == "hidden"  # type: ignore[attr-defined]  # extra="allow" field
     assert details.task == "BRAND_NEW_TASK"
 
 

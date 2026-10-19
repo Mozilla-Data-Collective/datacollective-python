@@ -158,7 +158,7 @@ class TestMultiSectionsLoader:
         df = MultiSectionsLoader(schema, tmp_path).load()
 
         assert not [w for w in recwarn if issubclass(w.category, DataLoadWarning)]
-        resolved = {row.section: Path(row.audio_path) for row in df.itertuples()}
+        resolved = {row.section: Path(str(row.audio_path)) for row in df.itertuples()}
         assert (
             resolved["General"]
             == (tmp_path / "dataset" / "General" / "clips" / "general.wav").resolve()

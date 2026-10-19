@@ -55,3 +55,40 @@ def test_redact_sensitive_masks_urls_tokens_and_emails() -> None:
 def test_redact_sensitive_passes_through_non_dict_values() -> None:
     assert api_utils._redact_sensitive(None) is None
     assert api_utils._redact_sensitive("plain") == "plain"
+
+
+def test_redact_url_hides_query_string_only() -> None:
+    signed = (
+        "https://storage.example.com/d/x.tar.gz?X-Amz-Signature=abc&X-Amz-Expires=60"
+    )
+    assert api_utils._redact_url(signed) == (
+        f"https://storage.example.com/d/x.tar.gz?{api_utils._REDACTED}"
+    )
+    plain = "https://mozilladatacollective.com/api/datasets/abc"
+    assert api_utils._redact_url(plain) == plain
+
+
+def test_send_api_request_never_logs_or_raises_presigned_query(
+    monkeypatch, caplog
+) -> None:
+    import logging
+
+    import requests
+
+    signed = "https://storage.example.com/d/x.tar.gz?X-Amz-Signature=secret123"
+    resp = requests.Response()
+    resp.status_code = 403
+    resp._content = b"{}"
+    monkeypatch.setattr(api_utils.requests, "request", lambda **kwargs: resp)
+
+    with caplog.at_level(logging.DEBUG, logger=api_utils.logger.name):
+        try:
+            api_utils._send_api_request("GET", signed, include_auth_headers=False)
+        except PermissionError as exc:
+            assert "secret123" not in str(exc)
+            assert api_utils._REDACTED in str(exc)
+        else:  # pragma: no cover
+            raise AssertionError("expected PermissionError")
+
+    assert "secret123" not in caplog.text
+    assert api_utils._REDACTED in caplog.text
