@@ -102,11 +102,20 @@ Use `download_dataset` to download a dataset to the configured download path:
 ```python
 from datacollective import download_dataset
 
-dataset = download_dataset("your-dataset-id")
-
-# Depending on the implementation, `dataset` may contain metadata
-# about the downloaded files or a higher-level dataset object.
+archive_path = download_dataset("your-dataset-id")
 ```
+
+The function returns the path to the downloaded archive. Pass `extract=True` to also unpack
+it into a directory beside the archive, named after the archive without its extension, and
+get that directory back instead:
+
+```python
+dataset_dir = download_dataset("your-dataset-id", extract=True)
+```
+
+An existing archive is reused unless `overwrite_existing=True`, and an existing extracted
+directory is reused unless `overwrite_extracted=True` (or the archive was downloaded again).
+This is the same directory `load_dataset` extracts to, so the two never unpack an archive twice.
 
 !!! note
     `download_dataset` was previously called `save_dataset_to_disk`. The old name still works for backward compatibility, but it is deprecated and new code should use `download_dataset`.
@@ -128,11 +137,17 @@ The sample archive is saved under `samples/<dataset-id>/` inside `MDC_DOWNLOAD_P
 apart from the full dataset archives. A sample may share a filename with the full archive,
 so keeping them in separate directories ensures one is never mistaken for the other.
 
-The function returns the path to the sample archive. The archive is not extracted; use
-`load_dataset` for the full dataset if you want a loaded DataFrame.
+The function returns the path to the sample archive. Pass `extract=True` to also unpack it
+into a directory beside the archive and get that directory back instead:
+
+```python
+sample_dir = download_sample("your-dataset-id", extract=True)
+```
 
 If the sample is already present, it is returned without downloading again. Pass
-`overwrite_existing=True` to download it again and replace the existing file.
+`overwrite_existing=True` to download it again and replace the existing file. With
+`extract=True`, an existing extracted directory is likewise reused unless
+`overwrite_extracted=True` or the sample was downloaded again.
 
 !!! note
     Downloading a sample requires an API key whose organization has agreed to the dataset's
