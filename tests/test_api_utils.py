@@ -1,4 +1,5 @@
 import re
+import pytest
 
 import datacollective.api_utils as api_utils
 
@@ -92,3 +93,59 @@ def test_send_api_request_never_logs_or_raises_presigned_query(
 
     assert "secret123" not in caplog.text
     assert api_utils._REDACTED in caplog.text
+
+
+def test_redact_query_strings_blanks_only_the_query() -> None:
+    signed = "https://storage.example.com/x.tar.gz?X-Amz-Signature=secret123"
+    text = f"400 Client Error: Bad Request for url: {signed}"
+    redacted = api_utils._redact_query_strings(text, signed)
+    assert "secret123" not in redacted
+    assert redacted.endswith(f"x.tar.gz?{api_utils._REDACTED}")
+    plain = "https://mozilladatacollective.com/api/datasets/abc"
+    assert api_utils._redact_query_strings(f"GET {plain}", plain) == f"GET {plain}"
+
+
+def test_send_api_request_redacts_generic_http_error(monkeypatch) -> None:
+    import requests
+
+    signed = "https://storage.example.com/x.tar.gz?X-Amz-Signature=secret123"
+    resp = requests.Response()
+    resp.status_code = 400
+    resp.reason = "Bad Request"
+    resp.url = signed
+    resp._content = b'{"message": "AuthorizationQueryParametersError"}'
+    monkeypatch.setattr(api_utils.requests, "request", lambda **kwargs: resp)
+
+    with pytest.raises(requests.HTTPError) as excinfo:
+        api_utils._send_api_request("GET", signed, include_auth_headers=False)
+
+    message = str(excinfo.value)
+    assert "secret123" not in message
+    assert api_utils._REDACTED in message
+    assert "AuthorizationQueryParametersError" in message
+    assert excinfo.value.response is resp
+    assert excinfo.value.__cause__ is None
+
+
+def test_send_api_request_redacts_transport_errors(monkeypatch) -> None:
+    import requests
+
+    signed = "https://storage.example.com/x.tar.gz?X-Amz-Signature=secret123"
+
+    def boom(**kwargs):
+        raise requests.ConnectionError(
+            f"Max retries exceeded with url: /x.tar.gz?X-Amz-Signature=secret123 ({signed})"
+        )
+
+    monkeypatch.setattr(api_utils.requests, "request", boom)
+
+    with pytest.raises(requests.ConnectionError) as excinfo:
+        api_utils._send_api_request("GET", signed, include_auth_headers=False)
+
+    assert "secret123" not in str(excinfo.value)
+    assert excinfo.value.__cause__ is None
+    assert (
+        excinfo.value.__context__ is None
+        or "secret123" not in str(excinfo.value.__context__)
+        or excinfo.value.__suppress_context__
+    )

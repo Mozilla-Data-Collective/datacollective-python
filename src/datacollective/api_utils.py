@@ -84,15 +84,19 @@ def _send_api_request(
         f"params: {_redact_sensitive(params)}"
     )
 
-    resp = requests.request(
-        method=method.upper(),
-        url=url,
-        stream=stream,
-        headers=headers,
-        timeout=timeout,
-        json=json_body,
-        params=params,
-    )
+    try:
+        resp = requests.request(
+            method=method.upper(),
+            url=url,
+            stream=stream,
+            headers=headers,
+            timeout=timeout,
+            json=json_body,
+            params=params,
+        )
+    except requests.RequestException as exc:
+        # Transport errors quote the URL, query string included.
+        raise _redact_request_exception(exc, url) from None
 
     logger.debug(f"API response: {_response_body_for_logging(resp, stream=stream)}")
 
@@ -141,11 +145,13 @@ def _send_api_request(
         resp.raise_for_status()
     except requests.HTTPError as exc:
         # Surface the API's message (e.g. which query parameter was
-        # rejected with 400) instead of only the generic status line.
+        # rejected with 400) instead of only the generic status line. The
+        # status line quotes the URL, so redact its query string first.
+        message = _redact_query_strings(str(exc), url, resp.url or "")
         detail = _extract_error_detail(resp)
         if detail:
-            raise requests.HTTPError(f"{exc} — {detail}", response=resp) from None
-        raise
+            message = f"{message} — {detail}"
+        raise requests.HTTPError(message, response=resp) from None
 
     return resp
 
@@ -222,6 +228,31 @@ def _redact_url(url: str) -> str:
     """
     base, _, query = url.partition("?")
     return f"{base}?{_REDACTED}" if query else url
+
+
+def _redact_query_strings(text: str, *urls: str) -> str:
+    """Return *text* with the query string of each of *urls* blanked out
+    wherever it appears, e.g. in an exception message quoting the URL."""
+    for candidate in urls:
+        query = candidate.partition("?")[2]
+        if query:
+            text = text.replace(query, _REDACTED)
+    return text
+
+
+def _redact_request_exception(
+    exc: requests.RequestException, url: str
+) -> requests.RequestException:
+    """Rebuild *exc* with the query string of *url* redacted from its message.
+
+    The result has the same class, request and response, so callers that
+    retry on `requests.ConnectionError` / `requests.Timeout` keep working.
+    Raise it ``from None`` so the original, unredacted exception is not
+    chained as the cause.
+    """
+    message = _redact_query_strings(str(exc), url)
+    redacted = exc.__class__(message, request=exc.request, response=exc.response)
+    return redacted.with_traceback(exc.__traceback__)
 
 
 def _redact_sensitive(value: Any) -> Any:

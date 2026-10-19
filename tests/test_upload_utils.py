@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 from requests.adapters import HTTPAdapter
 
+import datacollective.api_utils as api_utils_module
 import datacollective.upload_utils as upload_utils_module
 from datacollective.models import UploadPart
 from datacollective.upload_utils import (
@@ -243,3 +244,52 @@ def test_storage_session_pool_fits_all_workers() -> None:
         adapter = session.get_adapter("https://storage.test/1")
         assert isinstance(adapter, HTTPAdapter)
         assert adapter.poolmanager.connection_pool_kw["maxsize"] == 6
+
+
+_SIGNED_PART_URL = "https://storage.example.com/part/1?X-Amz-Signature=secret123"
+
+
+def test_upload_part_redacts_storage_http_error(monkeypatch) -> None:
+    import requests
+
+    resp = requests.Response()
+    resp.status_code = 403
+    resp.reason = "Forbidden"
+    resp.url = _SIGNED_PART_URL
+    resp._content = b"SignatureDoesNotMatch"
+    monkeypatch.setattr(upload_utils_module.requests, "put", lambda *a, **k: resp)
+
+    with pytest.raises(requests.HTTPError) as excinfo:
+        upload_utils_module._upload_part(_SIGNED_PART_URL, b"data")
+
+    assert "secret123" not in str(excinfo.value)
+    assert api_utils_module._REDACTED in str(excinfo.value)
+    assert excinfo.value.response is resp
+    assert excinfo.value.__cause__ is None
+
+
+def test_upload_part_redacts_transport_error_and_stays_retryable(monkeypatch) -> None:
+    import requests
+
+    attempts: list[int] = []
+
+    def flaky_put(*args, **kwargs):
+        attempts.append(1)
+        raise requests.ConnectionError(
+            "Max retries exceeded with url: /part/1?X-Amz-Signature=secret123"
+        )
+
+    monkeypatch.setattr(upload_utils_module.requests, "put", flaky_put)
+    monkeypatch.setattr(upload_utils_module.time, "sleep", lambda s: None)
+
+    with pytest.raises(RuntimeError) as excinfo:
+        upload_utils_module._upload_part_with_retry(
+            _SIGNED_PART_URL, b"data", max_retries=2
+        )
+
+    # Still a ConnectionError for the retry loop, retried the configured number of times
+    assert len(attempts) == 2
+    cause = excinfo.value.__cause__
+    assert isinstance(cause, requests.ConnectionError)
+    assert "secret123" not in str(cause)
+    assert cause.__cause__ is None
