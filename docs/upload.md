@@ -368,7 +368,7 @@ print(f"Upload complete! File Upload ID: {upload_state.fileUploadId}")
 ```
 
 !!! tip
-    You can also find your submission ID by going to your [Uploads](https://mozilladatacollective.com/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://mozilladatacollective.com/submissions/cmmjpewijXXXXXXXXX`).
+    You can also find your submission ID by going to your [Uploads](https://mozilladatacollective.com/profile/uploads) in your profile, click on the dataset submission of your choice, and the URL will contain the submission ID (e.g., `https://mozilladatacollective.com/profile/submissions/cmmjpewijXXXXXXXXX`).
 
 ### Step 4 (Optional): Upload a Sample File
 

@@ -28,7 +28,7 @@ The official Python SDK for accessing and contributing to the [Mozilla Data Coll
 
 ## Features
 
-- **Download datasets** to local storage with automatic resume after an interruption.
+- **Download datasets** to local storage with automatic resume after an interruption, or just a dataset's **sample** to evaluate it first.
 - **Load datasets into pandas DataFrames or HuggingFace `Dataset` objects**, with optional lazy audio decoding.
 - **Browse and search the public catalog** from Python, no API key needed.
 - **Upload datasets programmatically**: create a submission, set its metadata, upload the archive, and send it for review in a single call.
@@ -197,6 +197,9 @@ Parts of the dataset are uploaded concurrently and uploads are resumable. Tune t
 
 > [!TIP]
 > To also attach an optional sample of your dataset, pass `sample_file_path="/path/to/dataset-sample.tar.gz"` to `create_submission_with_upload`, or upload it separately with `upload_sample_file(file_path=..., submission_id=...)`.
+
+> [!TIP]
+> A submission that has not been published yet can be discarded, together with its uploaded files, with `delete_submission(submission_id)`. This cannot be undone.
 
 > [!TIP]
 > To upload a new `.tar.gz` version to an already approved dataset, call `upload_dataset_file(file_path=..., submission_id=...)` directly. Find the submission under **Profile → Uploads**, open the approved dataset, and copy the value after `/profile/submissions/` in the URL. Note that this value is the submission ID, which is different from the public dataset ID.

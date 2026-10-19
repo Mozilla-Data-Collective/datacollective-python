@@ -16,7 +16,7 @@ print(df.head())
 
 Under the hood, `load_dataset()` performs the following steps automatically:
 
-1. **Resolve the schema**: check local cache or the schema registry for `schema.yaml`. If the dataset is not registered this step raises a warning, so we never download an unsupported archive.
+1. **Resolve the schema**: check the schema registry for `schema.yaml`. If the dataset is not registered this step raises a `RuntimeError`, so we never download an unsupported archive.
 2. **Download** the archive (with resume support). The schema we fetched in step 1 tells the loader how the files are structured.
 3. **Extract** the `.tar.gz` / `.tgz` archive to a local directory.
 4. **Parse** the YAML into a validated `DatasetSchema` (Pydantic model) and dispatch to the loader for the schema's `root_strategy` (index, glob, …), which returns the final **DataFrame**. When the schema declares a `task` with a known contract (ASR, TTS, LLM), the loaded DataFrame is checked for the task's required logical columns; a `TaskValidationWarning` is emitted if any are missing (the DataFrame is still returned).
@@ -389,7 +389,7 @@ at parse time.
 
 ## Complete examples
 
-For full examples for each strategy, visit the respective strategy documentation pages under [docs/loaders/](./loaders/).
+For full examples for each strategy, visit the respective strategy documentation pages under [Loading Strategies](loaders/index.md).
 
 ## Schema caching
 
@@ -397,7 +397,7 @@ The SDK caches the `schema.yaml` inside the extracted dataset directory to
 minimise API calls:
 
 1. When `load_dataset()` runs, it obtains the **archive checksum** from the
-   download plan.
+   dataset details returned by the API.
 2. If a local `schema.yaml` exists and its stored `checksum` matches the
    archive checksum, the cached copy is used and no network request needed.
 3. If the checksums differ (dataset was updated) or no cache exists, the
