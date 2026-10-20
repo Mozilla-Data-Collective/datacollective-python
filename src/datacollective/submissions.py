@@ -196,13 +196,14 @@ def create_submission_with_upload(
     return response
 
 
-def delete_submission(submission_id: str) -> None:
+def delete_submission(submission_id: str, enable_logging: bool = False) -> None:
     """
     Delete a dataset submission that has not been published, and every file
     uploaded for it. WARNING: The deletion cannot be undone!
 
     Args:
         submission_id: Dataset submission ID.
+        enable_logging: Whether to enable SDK logging to console and a local log file.
 
     Raises:
         ValueError: If submission_id is empty.
@@ -216,6 +217,14 @@ def delete_submission(submission_id: str) -> None:
     if not submission_id or not submission_id.strip():
         raise ValueError("`submission_id` must be a non-empty string")
 
+    _enable_logging(enable_logging)
+
     url = f"{_get_api_url()}/submissions/{submission_id}"
-    # 204 No Content: there is no body to return.
-    _send_api_request("DELETE", url)
+    logger.info(f"Deleting submission {submission_id}...")
+    try:
+        # 204 No Content: there is no body to return.
+        _send_api_request("DELETE", url)
+    except Exception as exc:
+        logger.error(f"Failed to delete submission {submission_id}: {exc}")
+        raise
+    logger.info(f"Submission {submission_id} deleted.")
