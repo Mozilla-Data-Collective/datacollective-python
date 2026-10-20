@@ -4,6 +4,7 @@ from datacollective import (
     Task,
     Visibility,
     create_submission_with_upload,
+    delete_submission,
 )
 
 submission = DatasetSubmission(
@@ -53,3 +54,6 @@ response = create_submission_with_upload(
 )
 
 print(response)
+
+# Completely remove the submission
+delete_submission(response["submission"]["id"], enable_logging=True)
