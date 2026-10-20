@@ -398,7 +398,7 @@ A submission that has not been published can be deleted, together with every fil
 ```python
 from datacollective import delete_submission
 
-delete_submission(submission_id="your-submission-id")
+delete_submission(submission_id="your-submission-id", enable_logging=True)
 ```
 
 Deleting a published submission, or one that belongs to another organization, raises `PermissionError`.
