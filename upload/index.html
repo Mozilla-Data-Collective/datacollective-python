@@ -2043,7 +2043,7 @@ submission still has its metadata filled in.</p>
 <p>A submission that has not been published can be deleted, together with every file uploaded for it. Use this to discard a draft or a submission still under review. The deletion cannot be undone.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datacollective</span><span class="w"> </span><span class="kn">import</span> <span class="n">delete_submission</span>
 </span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
-</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">delete_submission</span><span class="p">(</span><span class="n">submission_id</span><span class="o">=</span><span class="s2">"your-submission-id"</span><span class="p">)</span>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">delete_submission</span><span class="p">(</span><span class="n">submission_id</span><span class="o">=</span><span class="s2">"your-submission-id"</span><span class="p">,</span> <span class="n">enable_logging</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </span></code></pre></div>
 <p>Deleting a published submission, or one that belongs to another organization, raises <code>PermissionError</code>.</p>
 <h2 id="tuning-the-part-size">Tuning the Part Size</h2>
