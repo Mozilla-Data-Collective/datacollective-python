@@ -31,7 +31,7 @@ DEDICATED_ERROR_STATUSES = frozenset({401, 403, 404, 410, 429})
 GENERIC_ERROR_STATUSES = frozenset({400, 402, 409, 422})
 
 
-load_dotenv(find_dotenv())
+load_dotenv(find_dotenv(usecwd=True))
 
 
 def _send_api_request(
@@ -80,7 +80,7 @@ def _send_api_request(
 
     logger.debug(
         f"API request: {method.upper()} {url} (stream={stream})\n"
-        f"json_body: {_redact_sensitive(json_body)}"
+        f"json_body: {_redact_sensitive(json_body)}\n"
         f"params: {_redact_sensitive(params)}"
     )
 

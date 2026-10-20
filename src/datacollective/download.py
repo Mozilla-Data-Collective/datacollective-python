@@ -20,6 +20,12 @@ logger = get_logger(__name__)
 DOWNLOAD_SOURCE_DOWNLOAD = "download_dataset"
 DOWNLOAD_SOURCE_SAVE = "save_dataset_to_disk"
 DOWNLOAD_SOURCE_LOAD = "load_dataset"
+DOWNLOAD_SOURCE_SAMPLE = "download_sample"
+
+# Samples live under <download directory>/samples/<dataset id>/ rather than next to the full
+# archives: a sample may carry the same filename as its dataset's archive, or as another
+# dataset's sample, and sharing a directory would let one be mistaken for the other.
+SAMPLES_DIRNAME = "samples"
 
 
 class DownloadPlan(NonEmptyStrModel):
@@ -27,9 +33,8 @@ class DownloadPlan(NonEmptyStrModel):
     target_filepath: Path
     tmp_filepath: Path
     size_bytes: int = Field(..., gt=0)
-    checksum: (
-        str | None
-    )  # We allow None if the API does not return a checksum, but that's generally unexpected.
+    # The API returns no checksum for a sample, so a sample download can never be resumed.
+    checksum: str | None
     checksum_filepath: Path
 
 
@@ -79,6 +84,93 @@ def _download_dataset(
         target_filepath=target_filepath,
         download_source=download_source,
     )
+
+    return _run_download_plan(
+        download_plan=download_plan,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+        download_source=download_source,
+    )
+
+
+def _download_sample(
+    dataset_id: str,
+    download_directory: str | None,
+    show_progress: bool,
+    overwrite_existing: bool,
+    download_source: str | None = None,
+) -> Path:
+    """
+    Download a dataset's sample archive from MDC to a local directory.
+
+    Follows the same flow as `_download_dataset`, with two differences:
+
+    - The sample's filename is only known once the API is called, so the API is asked first
+      and the existence check is done on the exact filename it returns. Samples are kept in a
+      directory of their own, `<download directory>/samples/<dataset id>/`, since a sample's
+      filename may collide with the full archive's or with another dataset's sample.
+    - The API returns no checksum for a sample, so an interrupted download cannot be matched
+      to the current sample and starts again instead of resuming.
+
+    Args:
+        dataset_id: The unique dataset ID.
+        download_directory: The base directory to download into.
+        show_progress: Show a progress bar when downloading the sample.
+        overwrite_existing: If True, download the sample again and replace any existing one.
+        download_source: Optional context appended to the User-Agent for download analytics.
+    Returns:
+        The full path to the downloaded sample archive.
+    """
+    sample_dir = (
+        _resolve_download_dir(download_directory) / SAMPLES_DIRNAME / dataset_id
+    )
+
+    download_plan = _get_sample_download_plan(
+        dataset_id=dataset_id,
+        sample_dir=sample_dir,
+        download_source=download_source,
+    )
+    target_filepath = download_plan.target_filepath
+
+    if target_filepath.exists() and not overwrite_existing:
+        logger.info(
+            f"Skipping download. Sample archive already exists at `{target_filepath}`"
+        )
+        return target_filepath
+
+    # Created only now, so a refused request leaves no empty directory behind.
+    sample_dir.mkdir(parents=True, exist_ok=True)
+
+    # With no checksum in the plan, `_determine_resume_state` discards any leftover
+    # .part file and the download starts again, which is all a sample can do.
+    return _run_download_plan(
+        download_plan=download_plan,
+        show_progress=show_progress,
+        overwrite_existing=overwrite_existing,
+        download_source=download_source,
+    )
+
+
+def _run_download_plan(
+    download_plan: DownloadPlan,
+    show_progress: bool,
+    overwrite_existing: bool,
+    download_source: str | None = None,
+) -> Path:
+    """
+    Carry out a download plan: clean up when overwriting, resume where possible, download to
+    the temporary file, then move it into place.
+
+    Args:
+        download_plan: The DownloadPlan object with download details.
+        show_progress: Whether to show a progress bar during download.
+        overwrite_existing: If True, remove any existing complete or partial download first.
+        download_source: Optional context appended to the User-Agent for download analytics.
+
+    Returns:
+        The full path to the downloaded archive.
+    """
+    target_filepath = download_plan.target_filepath
 
     # If overwriting, clean up any existing complete or partial download files
     if overwrite_existing:
@@ -138,6 +230,62 @@ def _get_download_plan(
     )
 
     payload: dict[str, Any] = resp.json()
+    return _build_download_plan(payload, target_filepath)
+
+
+def _get_sample_download_plan(
+    dataset_id: str,
+    sample_dir: Path,
+    download_source: str | None = None,
+) -> DownloadPlan:
+    """
+    Send a POST request to the API to receive the download details for a dataset's sample.
+
+    Args:
+        dataset_id: The dataset ID (as shown in MDC platform).
+        sample_dir: Resolved, absolute directory to save the sample in.
+        download_source: Optional context appended to the User-Agent for download analytics.
+
+    Returns:
+        a DownloadPlan object
+
+    Raises:
+        FileNotFoundError: If the dataset does not exist or publishes no sample (404).
+        ResourceRemovedError: If the dataset is no longer available (410).
+        PermissionError: If access is denied (403).
+        RuntimeError: If rate limit is exceeded (429) or unexpected response format.
+        requests.HTTPError: For other non-2xx responses.
+    """
+    sample_url = f"{_get_api_url()}/datasets/{dataset_id}/sample-download"
+    resp = _send_api_request(
+        method="POST", url=sample_url, source_function=download_source
+    )
+
+    payload: dict[str, Any] = resp.json()
+    filename = str(payload.get("filename") or "")
+    # The filename becomes a path on disk, so accept a bare, visible name only.
+    if Path(filename).name != filename or not filename or filename.startswith("."):
+        raise RuntimeError(f"Unexpected sample filename in response: {filename!r}")
+
+    return _build_download_plan(payload, sample_dir / filename)
+
+
+def _build_download_plan(
+    payload: dict[str, Any], target_filepath: Path
+) -> DownloadPlan:
+    """
+    Build a DownloadPlan from a download response of the MDC API.
+
+    Args:
+        payload: The JSON body of the response.
+        target_filepath: Resolved, absolute full file path to save the download.
+
+    Returns:
+        a DownloadPlan object
+
+    Raises:
+        RuntimeError: If the response lacks a download URL or size.
+    """
     download_url = payload.get("downloadUrl")
     size_bytes = payload.get("sizeBytes")
     checksum = payload.get("checksum")
@@ -172,6 +320,8 @@ def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
     A download is resumed only when both the .part and .checksum files exist
     and the stored checksum matches the current one. In every other case the
     leftover .part / .checksum files are removed and the download starts fresh.
+    A plan without a checksum (a sample) can never be resumed, so any leftover
+    .part file is simply discarded.
 
     Args:
         download_plan: The DownloadPlan object with download details.
@@ -180,6 +330,16 @@ def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
         The checksum to use for resumption, or None if starting fresh.
     """
     part_exists = download_plan.tmp_filepath.exists()
+
+    if download_plan.checksum is None:
+        if part_exists:
+            logger.info(
+                "Partial download found but the download cannot be resumed. "
+                "Starting fresh download..."
+            )
+        _cleanup_partial_download(download_plan)
+        return None
+
     checksum_filepath = download_plan.checksum_filepath
     stored_checksum = (
         checksum_filepath.read_text().strip() if checksum_filepath.exists() else None

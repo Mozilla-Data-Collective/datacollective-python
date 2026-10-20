@@ -14,8 +14,6 @@ from datacollective.models import (
     _payload_for_fields,
     DRAFT_FIELDS,
     UPDATE_FIELDS,
-    _should_validate_local_final_submission,
-    _validate_final_submission_fields,
     SUBMIT_FIELDS,
 )
 from datacollective.upload import upload_dataset_file, upload_sample_file
@@ -34,9 +32,9 @@ def create_submission_draft(submission: DatasetSubmission) -> dict[str, Any]:
 
     Args:
         submission: Dataset submission model containing `name`. In this function
-        only the `name` field is sent and every other field will be ignored and
-        must be sent instead with `update_submission` before the submission can
-        be submitted for review.
+            only the `name` field is sent and every other field will be ignored and
+            must be sent instead with `update_submission` before the submission can
+            be submitted for review.
 
     Returns:
         The full API response dict (contains a ``submission`` key with
@@ -94,9 +92,7 @@ def submit_submission(
     """
     submission = _ensure_submission_model(submission)
 
-    if _should_validate_local_final_submission(submission):
-        _validate_final_submission_fields(submission, require_file_upload_id=True)
-    elif submission.agreeToSubmit is not True:
+    if submission.agreeToSubmit is not True:
         raise ValueError("`agreeToSubmit` must be True to submit a dataset")
 
     payload = _payload_for_fields(submission, SUBMIT_FIELDS)
@@ -136,8 +132,6 @@ def create_submission_with_upload(
 
     submission = _ensure_submission_model(submission)
 
-    _validate_final_submission_fields(submission, require_file_upload_id=False)
-
     # Fail fast on a missing sample file, before uploading the dataset archive
     if sample_file_path and not Path(sample_file_path).exists():
         raise FileNotFoundError(f"Sample file not found: `{sample_file_path}`")
@@ -170,7 +164,7 @@ def create_submission_with_upload(
 
     update_submission(submission_id, submission)
 
-    upload_state = upload_dataset_file(
+    upload_dataset_file(
         file_path=file_path,
         submission_id=submission_id,
         state_path=state_path,
@@ -191,12 +185,8 @@ def create_submission_with_upload(
         )
 
     # The uploaded file is linked to the submission automatically when the
-    # multipart upload completes (the upload was started with `submissionId`),
-    # so `fileUploadId` is not sent on the metadata PATCH. We still record it on
-    # the model to satisfy the local completeness check below.
-    submission.fileUploadId = upload_state.fileUploadId
-    _validate_final_submission_fields(submission, require_file_upload_id=True)
-
+    # multipart upload completes (the upload was started with `submissionId`).
+    # Completeness of the submission is validated by the platform on submit.
     logger.info("Submitting dataset for review...")
 
     response = submit_submission(submission_id, submission)

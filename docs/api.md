@@ -15,6 +15,12 @@
 
 ::: datacollective.models
 
+::: datacollective.errors
+
+::: datacollective.archive_utils
+
+::: datacollective.hf_utils
+
 ::: datacollective.schema
 
 ::: datacollective.schema_loaders.base

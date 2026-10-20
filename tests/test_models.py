@@ -112,16 +112,9 @@ def test_custom_license_allows_optional_details() -> None:
     assert model.licenseUrl == "https://example.com/license"
 
 
-def test_license_details_require_license_name() -> None:
-    with pytest.raises(ValidationError):
-        DatasetSubmission(licenseAbbreviation="Custom")
-    with pytest.raises(ValidationError):
-        DatasetSubmission(licenseUrl="https://example.com/license")
-
-
-def test_empty_license_abbreviation_requires_or_uses_license_name() -> None:
-    with pytest.raises(ValidationError):
-        DatasetSubmission(licenseAbbreviation="")
+def test_empty_license_abbreviation_is_accepted() -> None:
+    # The platform uses "" to clear the field; completeness is checked on submit.
+    assert DatasetSubmission(licenseAbbreviation="").licenseAbbreviation == ""
 
     model = DatasetSubmission(
         licenseAbbreviation="",
@@ -168,22 +161,6 @@ def test_paid_dataset_accepts_price_within_platform_bounds() -> None:
     assert model.basePriceCents == 25_000
 
 
-def test_paid_dataset_requires_price() -> None:
-    with pytest.raises(ValidationError) as exc_info:
-        DatasetSubmission(isPaid=True)
-    assert "`basePriceCents` is required when `isPaid` is True" in str(exc_info.value)
-
-
-def test_price_requires_paid_dataset() -> None:
-    with pytest.raises(ValidationError) as exc_info:
-        DatasetSubmission(basePriceCents=25_000)
-    assert "`isPaid` must be True when providing `basePriceCents`" in str(
-        exc_info.value
-    )
-    with pytest.raises(ValidationError):
-        DatasetSubmission(isPaid=False, basePriceCents=25_000)
-
-
 def test_auto_approve_access_requests_allowed_for_restricted() -> None:
     model = DatasetSubmission(
         visibility=Visibility.RESTRICTED, autoApproveAccessRequests=True
@@ -200,13 +177,6 @@ def test_auto_approve_access_requests_allowed_for_restricted() -> None:
     )
 
 
-def test_auto_approve_access_requests_rejected_for_non_restricted() -> None:
-    for visibility in (Visibility.PUBLIC, Visibility.PRIVATE):
-        with pytest.raises(ValidationError) as exc_info:
-            DatasetSubmission(visibility=visibility, autoApproveAccessRequests=True)
-        assert "only applies to `restricted` datasets" in str(exc_info.value)
-
-
 def test_currency_is_set_only_when_paid() -> None:
     free = DatasetSubmission(name="Free")
     assert free.currency is None
@@ -219,7 +189,7 @@ def test_currency_is_set_only_when_paid() -> None:
 
 def test_currency_is_not_a_settable_field() -> None:
     with pytest.raises(ValidationError):
-        DatasetSubmission(isPaid=True, basePriceCents=25_000, currency="eur")
+        DatasetSubmission(isPaid=True, basePriceCents=25_000, currency="eur")  # type: ignore[call-arg]  # extra="forbid" at runtime
 
 
 def test_dataset_details_requires_id() -> None:
@@ -247,7 +217,7 @@ def test_dataset_details_accepts_unknown_enum_values() -> None:
     details = DatasetDetails.model_validate(
         {"id": "abc", "visibility": "hidden", "task": "BRAND_NEW_TASK"}
     )
-    assert details.visibility == "hidden"
+    assert details.visibility == "hidden"  # type: ignore[attr-defined]  # extra="allow" field
     assert details.task == "BRAND_NEW_TASK"
 
 

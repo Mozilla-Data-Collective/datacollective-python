@@ -10,7 +10,6 @@ from pydantic import (
     Field,
     computed_field,
     field_validator,
-    model_validator,
 )
 
 
@@ -279,48 +278,6 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
         description="Timestamp when the record was last updated. Updated by the API on changes.",
     )
 
-    @model_validator(mode="after")
-    def _validate_license_details(self) -> DatasetSubmission:
-        has_custom_license_abbreviation = (
-            self.licenseAbbreviation is not None
-            and not isinstance(self.licenseAbbreviation, License)
-        )
-        requires_license_name = (
-            has_custom_license_abbreviation or self.licenseUrl is not None
-        )
-        if requires_license_name and self.license is None:
-            raise ValueError(
-                "`license` is required when providing a custom `licenseAbbreviation` or `licenseUrl`"
-            )
-        return self
-
-    @model_validator(mode="after")
-    def _validate_pricing(self) -> DatasetSubmission:
-        if self.isPaid and self.basePriceCents is None:
-            raise ValueError(
-                "`basePriceCents` is required when `isPaid` is True. The platform only "
-                "accepts prices within its allowed range, in USD cents"
-            )
-        if self.basePriceCents is not None and not self.isPaid:
-            raise ValueError(
-                "`isPaid` must be True when providing `basePriceCents`, "
-                "otherwise the dataset stays uncompensated and the price is ignored"
-            )
-        return self
-
-    @model_validator(mode="after")
-    def _validate_auto_approve_access_requests(self) -> DatasetSubmission:
-        if (
-            self.autoApproveAccessRequests
-            and self.visibility is not None
-            and self.visibility != Visibility.RESTRICTED
-        ):
-            raise ValueError(
-                "`autoApproveAccessRequests` only applies to `restricted` datasets, "
-                f"the only visibility with access requests; got `{self.visibility.value}`"
-            )
-        return self
-
     @computed_field(  # type: ignore[prop-decorator]
         description="Currency for `basePriceCents`. Always `usd`, the only currency the platform currently supports."
     )
@@ -474,24 +431,6 @@ class DatasetFilters(BaseModel):
     )
 
 
-FINAL_SUBMISSION_REQUIRED_FIELDS = (
-    "name",
-    "longDescription",
-    "task",
-    "locale",
-    "format",
-    "restrictions",
-    "forbiddenUsage",
-    "pointOfContactFullName",
-    "pointOfContactEmail",
-    "showContactInfo",
-    "visibility",
-)
-FINAL_SUBMISSION_LOCAL_FIELDS = set(FINAL_SUBMISSION_REQUIRED_FIELDS) | {
-    "licenseAbbreviation",
-    "license",
-    "fileUploadId",
-}
 DRAFT_FIELDS = {"name"}
 UPDATE_FIELDS = {
     "name",
@@ -549,39 +488,3 @@ def _payload_for_fields(
         payload.pop("licenseUrl", None)
 
     return payload
-
-
-def _validate_final_submission_fields(
-    submission: DatasetSubmission, *, require_file_upload_id: bool
-) -> None:
-    missing_items: list[str] = []
-
-    for field_name in FINAL_SUBMISSION_REQUIRED_FIELDS:
-        if getattr(submission, field_name) is None:
-            missing_items.append(f"`{field_name}`")
-
-    if not submission.licenseAbbreviation and not submission.license:
-        missing_items.append("either `licenseAbbreviation` or `license`")
-
-    if submission.agreeToSubmit is not True:
-        missing_items.append("`agreeToSubmit=True`")
-
-    missing_file_upload_id = require_file_upload_id and submission.fileUploadId is None
-    if missing_file_upload_id:
-        missing_items.append("`fileUploadId`")
-
-    if missing_items:
-        message = (
-            "Cannot submit dataset. Missing required fields for final submission: "
-            f"{', '.join(missing_items)}. Please update your DatasetSubmission model "
-            "with the appropriate fields."
-        )
-        if missing_file_upload_id:
-            message += " Upload the dataset file before submitting."
-        raise ValueError(message)
-
-
-def _should_validate_local_final_submission(
-    submission: DatasetSubmission,
-) -> bool:
-    return bool(submission.model_fields_set & FINAL_SUBMISSION_LOCAL_FIELDS)

@@ -47,7 +47,7 @@ Optional:
 
 - `MDC_DOWNLOAD_PATH` - Local directory where datasets will be downloaded
   (defaults to `~/.mozdata/datasets`).
-- `MDC_LOG_PATH` - File path for logs (defaults to a `.log` file in the download directory).
+- `MDC_LOG_PATH` - Directory or file path for the log file (defaults to `~/.mozdata/datacollective.log`).
 
 Example using environment variables directly:
 
@@ -59,8 +59,8 @@ export MDC_LOG_PATH=~/.mozdata
 
 ### `.env` file
 
-The client will automatically load configuration from a `.env` file in your
-project root or present working directory.
+The client will automatically load configuration from a `.env` file in the
+directory you run your code from, or in any of its parent directories.
 
 Create a file named `.env`:
 
@@ -79,7 +79,7 @@ MDC_LOG_PATH=~/.mozdata
 The library has the ability to emit detailed logs for debugging and monitoring purposes, 
 on both the console and a local log file. This is disabled by default.
 To enable logging, pass `enable_logging=True` to the main functions.
-When enabled, logs are stored in a `.log` file in the download directory.
+When enabled, logs are written to `~/.mozdata/datacollective.log` (rotated at 10 MB, 5 backups kept).
 You can change the log file location by setting the `MDC_LOG_PATH` environment variable to your desired path,
 either through the `.env` file or by executing on your terminal:
 
@@ -102,16 +102,59 @@ Use `download_dataset` to download a dataset to the configured download path:
 ```python
 from datacollective import download_dataset
 
-dataset = download_dataset("your-dataset-id")
-
-# Depending on the implementation, `dataset` may contain metadata
-# about the downloaded files or a higher-level dataset object.
+archive_path = download_dataset("your-dataset-id")
 ```
+
+The function returns the path to the downloaded archive. Pass `extract=True` to also unpack
+it into a directory beside the archive, named after the archive without its extension, and
+get that directory back instead:
+
+```python
+dataset_dir = download_dataset("your-dataset-id", extract=True)
+```
+
+An existing archive is reused unless `overwrite_existing=True`, and an existing extracted
+directory is reused unless `overwrite_extracted=True` (or the archive was downloaded again).
+This is the same directory `load_dataset` extracts to, so the two never unpack an archive twice.
 
 !!! note
     `download_dataset` was previously called `save_dataset_to_disk`. The old name still works for backward compatibility, but it is deprecated and new code should use `download_dataset`.
 
 The files will be stored under `MDC_DOWNLOAD_PATH` (default `~/.mozdata/datasets`).
+
+### Download a dataset's sample
+
+Some publishers provide a **sample**: a small excerpt of the dataset for evaluation before
+downloading the full archive. Use `download_sample` to fetch it:
+
+```python
+from datacollective import download_sample
+
+sample_path = download_sample("your-dataset-id")
+```
+
+The sample archive is saved under `samples/<dataset-id>/` inside `MDC_DOWNLOAD_PATH`,
+apart from the full dataset archives. A sample may share a filename with the full archive,
+so keeping them in separate directories ensures one is never mistaken for the other.
+
+The function returns the path to the sample archive. Pass `extract=True` to also unpack it
+into a directory beside the archive and get that directory back instead:
+
+```python
+sample_dir = download_sample("your-dataset-id", extract=True)
+```
+
+If the sample is already present, it is returned without downloading again. Pass
+`overwrite_existing=True` to download it again and replace the existing file. With
+`extract=True`, an existing extracted directory is likewise reused unless
+`overwrite_extracted=True` or the sample was downloaded again.
+
+!!! note
+    Downloading a sample requires an API key whose organization has agreed to the dataset's
+    terms on the MDC platform, just like downloading the full dataset. Datasets that
+    publish no sample raise `FileNotFoundError`. To find datasets with a sample, pass
+    `has_sample=True` to `list_datasets` (see
+    [Browse and search the dataset catalog](#browse-and-search-the-dataset-catalog)).
 
 ## Programmatic submissions and uploads
 
@@ -304,12 +347,12 @@ for dataset in page:
     print(f"{dataset.id}  {dataset.name}  ({dataset.task}, {dataset.locale}, {size_gb:.1f} GB)")
 ```
 
-Other filters: `format` (e.g. `"WAV"`), `upload_date` (`"today"`, `"thisWeek"`,
+Other filters: `file_format` (e.g. `"WAV"`), `upload_date` (`"today"`, `"thisWeek"`,
 `"thisMonth"`, `"thisYear"`), `has_sample=True` for datasets with a sample file,
 `pricing` (`"free"` or `"compensated"`) and `sort_direction` (`"asc"`/`"desc"`).
-`limit` accepts 1 to 100 results per page (the platform defaults to 24).
+`results_per_page` accepts 1 to 100 results per page (the platform defaults to 24).
 
-To walk through every page, increase `page` until you have collected `total` items:
+To walk through every page, increase `page_number` until you have collected `total` items:
 
 ```python
 from datacollective import list_datasets
@@ -367,6 +410,10 @@ or `load_dataset` again.
   the checksum mismatch and starts a fresh download.
 - If only partial files exist without proper tracking data, the SDK safely starts
   a fresh download.
+
+!!! note
+    Sample downloads (`download_sample`) do not resume. The API returns no checksum for
+    samples, so an interrupted sample download starts again from the beginning.
 
 
 ### Automatically check for extracted archives
