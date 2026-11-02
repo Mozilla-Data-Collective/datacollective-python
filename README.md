@@ -85,7 +85,7 @@ dataset_path = download_dataset("your-dataset-id")
 > `download_dataset` was previously called `save_dataset_to_disk`. The old name still works for backward compatibility, but it is deprecated and new code should use `download_dataset`.
 
 > [!TIP]
-> **Automatic Resume:** If a download is interrupted (e.g., due to a network error or it gets stopped it manually), the next time you try download the same dataset at the same folder location, we will automatically resume from where the download left off!
+> **Automatic Resume:** If a download is interrupted (e.g., due to a network error or it gets stopped manually), the next time you download the same dataset to the same folder, it resumes from where it left off. A connection that drops mid-download is retried automatically (see `max_download_attempts`), and a resume reuses the previous download URL while it is still valid, so neither counts as a new download against the API's rate limit.
 
 > [!TIP]
 > Set `enable_logging=True` to emit detailed SDK logs to the console and a local log file at `~/.mozdata/datacollective.log` with timestamped entries, a per-session id, and retention of 5 backup files at 10 MB each.

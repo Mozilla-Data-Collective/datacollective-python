@@ -393,27 +393,19 @@ or `load_dataset` again.
 **How it works:**
 
 1. When a download starts, the SDK creates a `.checksum` file alongside the partial
-   download (`.part` file) to track the download state.
+   download (`.part` file) to track the download state: the archive's checksum, the
+   presigned download URL and when it expires.
 2. If the download is interrupted, both files are preserved.
 3. On the next download attempt, the SDK detects the partial download and resumes
-   from the last byte received.
-4. Once the download completes successfully, the temporary files are automatically
-   cleaned up.
+   from the last byte received. While the stored download URL is still valid, the
+   resume reuses it and does not open a new download session, so it does not count
+   towards the API's download rate limit. Once the URL has expired, or if the storage
+   rejects it, the SDK requests a new one and still resumes the partial download.
+4. Once the download completes successfully, both files are automatically removed.
 
 !!! tip
     You don't need to do anything special to enable resume functionality, it works
     automatically. Just call the same function again after an interruption.
-
-**Edge cases handled:**
-
-- If the dataset has been updated since the interrupted download, the SDK detects
-  the checksum mismatch and starts a fresh download.
-- If only partial files exist without proper tracking data, the SDK safely starts
-  a fresh download.
-
-!!! note
-    Sample downloads (`download_sample`) do not resume. The API returns no checksum for
-    samples, so an interrupted sample download starts again from the beginning.
 
 **Dropped connections are retried in place.** If the connection drops while an archive
 is streaming, the SDK retries the request against the same download URL, continuing from
@@ -431,6 +423,16 @@ archive_path = download_dataset("<dataset-id>", max_download_attempts=10)
 Only connection-level failures are retried. HTTP errors and manual cancellation fail
 immediately, and a full download can still be resumed later as described above.
 
+**Edge cases handled:**
+
+- If the dataset has been updated since the interrupted download, the SDK detects
+  the checksum mismatch and starts a fresh download.
+- If only partial files exist without proper tracking data, the SDK safely starts
+  a fresh download.
+
+!!! note
+    Sample downloads (`download_sample`) do not resume. The API returns no checksum for
+    samples, so an interrupted sample download starts again from the beginning.
 
 ### Automatically check for extracted archives
 
