@@ -4,8 +4,10 @@ import logging
 from typing import Any
 
 import pytest
+import requests
 
 from datacollective.download import (
+    DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     DownloadPlan,
     _download_sample,
     _get_checksum_filepath,
@@ -14,6 +16,7 @@ from datacollective.download import (
     _get_download_plan,
     _execute_download_plan,
 )
+from datacollective.errors import DownloadError
 
 
 def test_resolve_download_dir_prefers_argument(tmp_path: Path, monkeypatch) -> None:
@@ -232,6 +235,176 @@ def test_execute_download_plan_forwards_download_source(
     assert captured["url"] == plan.download_url
     assert captured["source_function"] == "download_dataset"
     assert captured["include_auth_headers"] is False
+
+
+class _FlakyDownloadApi:
+    """Stands in for `_send_api_request` on the presigned GET: serves *content* but drops the
+    connection after *fail_after* bytes on each of the first *failures* calls, then honours
+    the Range header on later calls. Records every call."""
+
+    def __init__(self, content: bytes, fail_after: int, failures: int) -> None:
+        self.content = content
+        self.fail_after = fail_after
+        self.failures = failures
+        self.calls: list[dict[str, Any]] = []
+
+    def __call__(self, **kwargs: Any) -> Any:
+        self.calls.append(kwargs)
+        api = self
+        attempt = len(self.calls)
+        range_header = (kwargs.get("extra_headers") or {}).get("Range")
+        start = (
+            int(range_header.removeprefix("bytes=").rstrip("-")) if range_header else 0
+        )
+
+        class FakeResponse:
+            def __enter__(self) -> "FakeResponse":
+                return self
+
+            def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+                return None
+
+            def iter_content(self, chunk_size: int):
+                body = api.content[start:]
+                if attempt <= api.failures:
+                    yield body[: api.fail_after]
+                    raise requests.ConnectionError("connection reset")
+                yield body
+
+        return FakeResponse()
+
+
+def test_execute_download_plan_retries_same_url_after_connection_drop(
+    tmp_path: Path, monkeypatch
+) -> None:
+    plan = _make_download_plan(tmp_path)
+    api = _FlakyDownloadApi(content=b"0123456789", fail_after=4, failures=1)
+    sleeps: list[float] = []
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+    monkeypatch.setattr("datacollective.download.time.sleep", sleeps.append)
+
+    _execute_download_plan(
+        plan, resume_download_checksum=None, show_progress=False, download_source=None
+    )
+
+    assert plan.tmp_filepath.read_bytes() == b"0123456789"
+    assert len(api.calls) == 2
+    # Both attempts hit the same presigned URL; no new download session was requested.
+    assert {call["url"] for call in api.calls} == {plan.download_url}
+    assert {call["method"] for call in api.calls} == {"GET"}
+    assert "Range" not in (api.calls[0]["extra_headers"] or {})
+    assert api.calls[1]["extra_headers"]["Range"] == "bytes=4-"
+    assert sleeps == [2]
+
+
+def test_execute_download_plan_retry_continues_from_resumed_offset(
+    tmp_path: Path, monkeypatch
+) -> None:
+    plan = _make_download_plan(tmp_path)
+    plan.tmp_filepath.write_bytes(b"012")
+    api = _FlakyDownloadApi(content=b"0123456789", fail_after=2, failures=1)
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+    monkeypatch.setattr("datacollective.download.time.sleep", lambda _s: None)
+
+    _execute_download_plan(
+        plan, resume_download_checksum="abc", show_progress=False, download_source=None
+    )
+
+    assert plan.tmp_filepath.read_bytes() == b"0123456789"
+    assert api.calls[0]["extra_headers"]["Range"] == "bytes=3-"
+    assert api.calls[1]["extra_headers"]["Range"] == "bytes=5-"
+
+
+def test_execute_download_plan_gives_up_after_max_attempts(
+    tmp_path: Path, monkeypatch
+) -> None:
+    plan = _make_download_plan(tmp_path)
+    api = _FlakyDownloadApi(content=b"0123456789", fail_after=1, failures=99)
+    sleeps: list[float] = []
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+    monkeypatch.setattr("datacollective.download.time.sleep", sleeps.append)
+
+    with pytest.raises(DownloadError) as excinfo:
+        _execute_download_plan(
+            plan,
+            resume_download_checksum=None,
+            show_progress=False,
+            download_source=None,
+        )
+
+    assert len(api.calls) == DEFAULT_MAX_DOWNLOAD_ATTEMPTS
+    assert sleeps == [2, 4]
+    assert isinstance(excinfo.value.__cause__, requests.ConnectionError)
+    # One byte landed on disk per attempt.
+    assert plan.tmp_filepath.read_bytes() == b"012"
+
+
+def test_execute_download_plan_honours_max_download_attempts(
+    tmp_path: Path, monkeypatch
+) -> None:
+    plan = _make_download_plan(tmp_path)
+    api = _FlakyDownloadApi(content=b"0123456789", fail_after=1, failures=99)
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+    monkeypatch.setattr("datacollective.download.time.sleep", lambda _s: None)
+
+    with pytest.raises(DownloadError):
+        _execute_download_plan(
+            plan,
+            resume_download_checksum=None,
+            show_progress=False,
+            max_download_attempts=1,
+            download_source=None,
+        )
+
+    assert len(api.calls) == 1
+
+
+def test_execute_download_plan_rejects_zero_attempts(tmp_path: Path) -> None:
+    plan = _make_download_plan(tmp_path)
+    with pytest.raises(ValueError, match="max_download_attempts"):
+        _execute_download_plan(
+            plan,
+            resume_download_checksum=None,
+            show_progress=False,
+            max_download_attempts=0,
+            download_source=None,
+        )
+
+
+def test_execute_download_plan_does_not_retry_other_errors(
+    tmp_path: Path, monkeypatch
+) -> None:
+    plan = _make_download_plan(tmp_path)
+    calls: list[dict[str, Any]] = []
+
+    class FakeResponse:
+        def __enter__(self) -> "FakeResponse":
+            return self
+
+        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            return None
+
+        def iter_content(self, chunk_size: int):
+            yield b"abc"
+            raise requests.HTTPError("403 Forbidden")
+
+    def fake_send_api_request(**kwargs: Any) -> FakeResponse:
+        calls.append(kwargs)
+        return FakeResponse()
+
+    monkeypatch.setattr(
+        "datacollective.download._send_api_request", fake_send_api_request
+    )
+
+    with pytest.raises(DownloadError):
+        _execute_download_plan(
+            plan,
+            resume_download_checksum=None,
+            show_progress=False,
+            download_source=None,
+        )
+
+    assert len(calls) == 1
 
 
 """

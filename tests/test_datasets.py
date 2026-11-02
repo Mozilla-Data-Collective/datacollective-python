@@ -70,6 +70,7 @@ def test_save_dataset_to_disk_warns_and_reports_its_own_source(
             "download_directory": "dir",
             "show_progress": True,
             "overwrite_existing": False,
+            "max_download_attempts": 3,
             "download_source": "save_dataset_to_disk",
         }
     ]
@@ -100,6 +101,7 @@ def test_download_sample_resolves_id_and_reports_its_own_source(
             "download_directory": "dir",
             "show_progress": True,
             "overwrite_existing": False,
+            "max_download_attempts": 3,
             "download_source": "download_sample",
         }
     ]
