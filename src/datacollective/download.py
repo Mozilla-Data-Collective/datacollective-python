@@ -1,11 +1,13 @@
+import json
 import os
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
 import requests
 from fox_progress_bar import ProgressBar
-from pydantic import Field
+from pydantic import Field, ValidationError
 
 from datacollective.api_utils import (
     ENV_DOWNLOAD_PATH,
@@ -40,6 +42,11 @@ _RETRYABLE_DOWNLOAD_ERRORS = (
     requests.exceptions.ChunkedEncodingError,
 )
 
+# The .checksum sidecar of an interrupted download also keeps the presigned URL and its
+# expiry, so a later run can resume from it without opening a new download session (which
+# would count towards the API's rate limit). A URL this close to expiring is not reused.
+URL_EXPIRY_MARGIN = timedelta(seconds=30)
+
 
 class DownloadPlan(NonEmptyStrModel):
     download_url: str
@@ -49,6 +56,8 @@ class DownloadPlan(NonEmptyStrModel):
     # The API returns no checksum for a sample, so a sample download can never be resumed.
     checksum: str | None
     checksum_filepath: Path
+    # When the presigned download URL stops working; None if the API did not say.
+    expires_at: datetime | None = None
 
 
 def _download_dataset(
@@ -66,12 +75,15 @@ def _download_dataset(
     Flow:
     1. Check if the dataset archive already exists in the download directory.
         If it does and overwrite_existing is False, skip download.
-    2. Call the MDC API to get a download session URL and other necessary details.
-    3. If overwrite_existing is True, clean up any existing files.
-    4. Determine whether to resume download based on existing .checksum and .part files.
-        If not resuming, write a new .checksum file.
-    5. Execute the download plan, downloading to a temporary file.
-    6. Once download is complete, rename the temporary file to the target filename and remove the .checksum file.
+    2. If an interrupted download left a .part file and a .checksum sidecar whose stored
+        presigned URL has not expired, resume from that URL without calling the API.
+        Should the URL be rejected after all, fall through to the next step.
+    3. Call the MDC API to get a download session URL and other necessary details.
+    4. If overwrite_existing is True, clean up any existing files.
+    5. Determine whether to resume download based on existing .checksum and .part files.
+    6. Write the .checksum sidecar (checksum, URL, expiry and size) for a later resume.
+    7. Execute the download plan, downloading to a temporary file.
+    8. Once download is complete, rename the temporary file to the target filename and remove the .checksum file.
 
     Args:
         dataset_id: The unique dataset ID.
@@ -94,6 +106,26 @@ def _download_dataset(
             f"Skipping download. Dataset archive already exists at `{target_filepath}`"
         )
         return target_filepath
+
+    # Resume an interrupted download with its stored URL, sparing a download-session request
+    if not overwrite_existing:
+        stored_plan = _load_stored_download_plan(target_filepath)
+        if stored_plan is not None:
+            logger.info("Resuming interrupted download with its stored download URL...")
+            try:
+                return _run_download_plan(
+                    download_plan=stored_plan,
+                    show_progress=show_progress,
+                    overwrite_existing=False,
+                    max_download_attempts=max_download_attempts,
+                    download_source=download_source,
+                )
+            except DownloadError as exc:
+                # The storage refused the stored URL (expired early, revoked, ...): ask
+                # the API for a fresh one. Any other failure is a real download failure.
+                if not isinstance(exc.__cause__, (PermissionError, requests.HTTPError)):
+                    raise
+                logger.info("Stored download URL was rejected. Requesting a new one...")
 
     # Call MDC API to start download session
     download_plan = _get_download_plan(
@@ -209,9 +241,10 @@ def _run_download_plan(
 
     resume_checksum = _determine_resume_state(download_plan)
 
-    # Write checksum file before starting download (for potential resume later)
-    if download_plan.checksum and not resume_checksum:
-        download_plan.checksum_filepath.write_text(download_plan.checksum)
+    # Persist the resume state before downloading. Rewritten on every run, so a later
+    # resume holds the newest URL.
+    if download_plan.checksum:
+        _write_download_state(download_plan)
 
     _execute_download_plan(
         download_plan=download_plan,
@@ -317,6 +350,7 @@ def _build_download_plan(
     download_url = payload.get("downloadUrl")
     size_bytes = payload.get("sizeBytes")
     checksum = payload.get("checksum")
+    expires_at = payload.get("expiresAt") or None
 
     if not download_url or not size_bytes:
         raise RuntimeError(f"Unexpected response format: {payload}")
@@ -334,11 +368,84 @@ def _build_download_plan(
         size_bytes=size_bytes,
         checksum=checksum,
         checksum_filepath=checksum_filepath,
+        expires_at=expires_at,
     )
     logger.debug(
-        f"Download plan: full path={target_filepath}, size={size_bytes} bytes, checksum={checksum}",
+        f"Download plan: full path={target_filepath}, size={size_bytes} bytes, "
+        f"checksum={checksum}, url expires at {expires_at}",
     )
     return download_plan
+
+
+def _write_download_state(download_plan: DownloadPlan) -> None:
+    """
+    Write the .checksum sidecar: what a later run needs to resume the .part file.
+
+    Besides the checksum, which tells whether the .part file still belongs to the current
+    archive, it keeps the presigned URL, its expiry and the archive size, so that a resume
+    within the URL's lifetime needs no new download session.
+    """
+    state = download_plan.model_dump(
+        mode="json", include={"checksum", "download_url", "expires_at", "size_bytes"}
+    )
+    download_plan.checksum_filepath.write_text(json.dumps(state))
+
+
+def _read_download_state(checksum_filepath: Path) -> dict[str, Any]:
+    """
+    Read the .checksum sidecar; {} if there is none or it is unreadable.
+
+    A sidecar written by an older SDK version holds the bare checksum, which is returned
+    under the "checksum" key so such a download still resumes (via the API).
+    """
+    if not checksum_filepath.exists():
+        return {}
+    text = checksum_filepath.read_text().strip()
+    try:
+        state = json.loads(text)
+    except ValueError:
+        return {"checksum": text} if text else {}
+    return state if isinstance(state, dict) else {}
+
+
+def _load_stored_download_plan(target_filepath: Path) -> DownloadPlan | None:
+    """
+    Rebuild the plan of an interrupted download from its sidecar, if it can be resumed
+    without calling the API: a .part file exists and the sidecar holds a complete state
+    with a presigned URL that has not expired. Otherwise return None.
+    """
+    tmp_filepath = target_filepath.with_name(target_filepath.name + ".part")
+    checksum_filepath = _get_checksum_filepath(target_filepath)
+    if not tmp_filepath.exists():
+        return None
+
+    state = _read_download_state(checksum_filepath)
+    if not state.get("checksum") or not state.get("download_url"):
+        return None
+    try:
+        plan = DownloadPlan(
+            target_filepath=target_filepath,
+            tmp_filepath=tmp_filepath,
+            checksum_filepath=checksum_filepath,
+            **state,
+        )
+    except (ValidationError, TypeError):
+        logger.debug(f"Ignoring unreadable download state in `{checksum_filepath}`")
+        return None
+
+    if not _url_still_valid(plan.expires_at):
+        logger.debug("Stored download URL has expired")
+        return None
+    return plan
+
+
+def _url_still_valid(expires_at: datetime | None) -> bool:
+    """Whether a presigned URL with this expiry can still be used, with some margin."""
+    if expires_at is None:
+        return False
+    if expires_at.tzinfo is None:
+        expires_at = expires_at.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) + URL_EXPIRY_MARGIN < expires_at
 
 
 def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
@@ -346,7 +453,7 @@ def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
     Decide whether a previous partial download can be resumed.
 
     A download is resumed only when both the .part and .checksum files exist
-    and the stored checksum matches the current one. In every other case the
+    and the checksum stored in the sidecar matches the current one. In every other case the
     leftover .part / .checksum files are removed and the download starts fresh.
     A plan without a checksum (a sample) can never be resumed, so any leftover
     .part file is simply discarded.
@@ -368,10 +475,8 @@ def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
         _cleanup_partial_download(download_plan)
         return None
 
-    checksum_filepath = download_plan.checksum_filepath
-    stored_checksum = (
-        checksum_filepath.read_text().strip() if checksum_filepath.exists() else None
-    )
+    stored = _read_download_state(download_plan.checksum_filepath).get("checksum")
+    stored_checksum = str(stored).strip() if stored else None
 
     if part_exists and stored_checksum:
         if stored_checksum == download_plan.checksum:
