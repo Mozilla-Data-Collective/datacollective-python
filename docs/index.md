@@ -415,6 +415,22 @@ or `load_dataset` again.
     Sample downloads (`download_sample`) do not resume. The API returns no checksum for
     samples, so an interrupted sample download starts again from the beginning.
 
+**Dropped connections are retried in place.** If the connection drops while an archive
+is streaming, the SDK retries the request against the same download URL, continuing from
+the bytes already on disk. These retries do not start a new download session, so they do
+not count towards the API's download rate limit. By default up to 3 attempts are made;
+pass `max_download_attempts` to `download_dataset`, `download_sample` or `load_dataset`
+to change this, e.g. for an unreliable connection:
+
+```python
+from datacollective import download_dataset
+
+archive_path = download_dataset("<dataset-id>", max_download_attempts=10)
+```
+
+Only connection-level failures are retried. HTTP errors and manual cancellation fail
+immediately, and a full download can still be resumed later as described above.
+
 
 ### Automatically check for extracted archives
 
