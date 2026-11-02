@@ -21,6 +21,7 @@ from datacollective.models import (
 )
 from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
+    DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     DOWNLOAD_SOURCE_DOWNLOAD,
     DOWNLOAD_SOURCE_LOAD,
     DOWNLOAD_SOURCE_SAMPLE,
@@ -87,6 +88,7 @@ def download_dataset(
     enable_logging: bool = False,
     extract: bool = False,
     overwrite_extracted: bool = False,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
 ) -> Path:
     """
     Download the dataset archive to a local directory and return the archive path.
@@ -115,6 +117,10 @@ def download_dataset(
         extract: Whether to also unpack the archive and return the extracted directory.
         overwrite_extracted: With `extract=True`, whether to unpack the archive again even
             if the extracted directory already exists. Does not download the archive again.
+        max_download_attempts: How many times to request the archive before giving up.
+            A connection that drops mid-download is retried against the same download
+            URL, continuing from the bytes already saved, without starting a new download
+            session. Defaults to 3.
 
     Returns:
         Path to the downloaded dataset archive, or to the extracted directory if
@@ -140,6 +146,7 @@ def download_dataset(
         download_source=DOWNLOAD_SOURCE_DOWNLOAD,
         extract=extract,
         overwrite_extracted=overwrite_extracted,
+        max_download_attempts=max_download_attempts,
     )
 
 
@@ -151,6 +158,7 @@ def download_sample(
     enable_logging: bool = False,
     extract: bool = False,
     overwrite_extracted: bool = False,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
 ) -> Path:
     """
     Download the dataset's sample archive to a local directory and return the archive path.
@@ -184,6 +192,10 @@ def download_sample(
         extract: Whether to also unpack the archive and return the extracted directory.
         overwrite_extracted: With `extract=True`, whether to unpack the sample again even
             if the extracted directory already exists. Does not download the sample again.
+        max_download_attempts: How many times to request the archive before giving up.
+            A connection that drops mid-download is retried against the same download
+            URL, continuing from the bytes already saved, without starting a new download
+            session. Defaults to 3.
 
     Returns:
         Path to the downloaded sample archive, or to the extracted directory if
@@ -211,6 +223,7 @@ def download_sample(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        max_download_attempts=max_download_attempts,
         download_source=DOWNLOAD_SOURCE_SAMPLE,
     )
     if not extract:
@@ -227,6 +240,7 @@ def _download_archive(
     download_source: str,
     extract: bool = False,
     overwrite_extracted: bool = False,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
 ) -> Path:
     """Shared body of `download_dataset` and its deprecated alias; the
     *download_source* sent with the request tells them apart."""
@@ -241,6 +255,7 @@ def _download_archive(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        max_download_attempts=max_download_attempts,
         download_source=download_source,
     )
     if not extract:
@@ -276,6 +291,7 @@ def load_dataset(
     overwrite_existing: bool = False,
     overwrite_extracted: bool = False,
     enable_logging: bool = False,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     return_format: Literal["pandas"] = "pandas",
 ) -> pd.DataFrame: ...
 
@@ -288,6 +304,7 @@ def load_dataset(
     overwrite_existing: bool = False,
     overwrite_extracted: bool = False,
     enable_logging: bool = False,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     *,
     return_format: Literal["hf"],
 ) -> Dataset | DatasetDict: ...
@@ -300,6 +317,7 @@ def load_dataset(
     overwrite_existing: bool = False,
     overwrite_extracted: bool = False,
     enable_logging: bool = False,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     return_format: Literal["pandas", "hf"] = "pandas",
 ) -> pd.DataFrame | Dataset | DatasetDict:
     """
@@ -330,6 +348,10 @@ def load_dataset(
             Only makes sense when overwrite_existing is False.
             Will check in the download directory for existing extracted files with the default naming of the folder.
         enable_logging: Whether to enable SDK logging to console and a local log file.
+        max_download_attempts: How many times to request the archive before giving up.
+            A connection that drops mid-download is retried against the same download
+            URL, continuing from the bytes already saved, without starting a new download
+            session. Defaults to 3.
         return_format: Format of the returned object. `"pandas"` (default) returns a
             pandas DataFrame. `"hf"` returns a HuggingFace `Dataset`, or a `DatasetDict`
             keyed by split name for datasets with multiple splits.
@@ -383,6 +405,7 @@ def load_dataset(
         download_directory=download_directory,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        max_download_attempts=max_download_attempts,
         download_source=DOWNLOAD_SOURCE_LOAD,
     )
 
