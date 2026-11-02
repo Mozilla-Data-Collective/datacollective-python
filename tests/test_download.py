@@ -1,6 +1,8 @@
 from pathlib import Path
 
+import json
 import logging
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import pytest
@@ -9,7 +11,10 @@ import requests
 from datacollective.download import (
     DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     DownloadPlan,
+    _download_dataset,
     _download_sample,
+    _load_stored_download_plan,
+    _run_download_plan,
     _get_checksum_filepath,
     _determine_resume_state,
     _resolve_download_dir,
@@ -405,6 +410,276 @@ def test_execute_download_plan_does_not_retry_other_errors(
         )
 
     assert len(calls) == 1
+
+
+"""
+Resuming with the stored presigned URL
+"""
+
+
+class _FakeDatasetApi:
+    """Stands in for `_send_api_request`: answers the download-session POST with *payload*
+    and any presigned GET with *content* (honouring the Range header), recording every
+    call. A URL listed in *rejected_urls* answers the GET with a PermissionError instead,
+    as the storage would an expired or revoked presigned URL."""
+
+    def __init__(
+        self,
+        payload: dict[str, Any],
+        content: bytes,
+        rejected_urls: tuple[str, ...] = (),
+    ) -> None:
+        self.payload = payload
+        self.content = content
+        self.rejected_urls = rejected_urls
+        self.calls: list[dict[str, Any]] = []
+
+    @property
+    def methods(self) -> list[str]:
+        return [call["method"] for call in self.calls]
+
+    def __call__(self, **kwargs: Any) -> Any:
+        self.calls.append(kwargs)
+        if kwargs["method"] == "GET" and kwargs["url"] in self.rejected_urls:
+            raise PermissionError("403 Forbidden")
+        api = self
+        range_header = (kwargs.get("extra_headers") or {}).get("Range")
+        start = (
+            int(range_header.removeprefix("bytes=").rstrip("-")) if range_header else 0
+        )
+
+        class FakeResponse:
+            def json(self) -> dict[str, Any]:
+                return api.payload
+
+            def __enter__(self) -> "FakeResponse":
+                return self
+
+            def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+                return None
+
+            def iter_content(self, chunk_size: int):
+                yield api.content[start:]
+
+        return FakeResponse()
+
+
+_CONTENT = b"0123456789"
+
+
+def _future(seconds: int = 3600) -> str:
+    return (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat()
+
+
+def _session_payload(
+    url: str = "https://example.com/new", checksum: str = "abc"
+) -> dict[str, Any]:
+    return {
+        "downloadUrl": url,
+        "sizeBytes": str(len(_CONTENT)),
+        "checksum": checksum,
+        "expiresAt": _future(),
+    }
+
+
+def _write_interrupted_download(
+    tmp_path: Path,
+    url: str = "https://example.com/stored",
+    checksum: str = "abc",
+    expires_at: str | None = None,
+    partial: bytes = _CONTENT[:4],
+) -> Path:
+    """Leave behind what an interrupted download of `dataset.tar.gz` leaves: a .part file
+    and a sidecar with the stored plan. Returns the target path."""
+    target = tmp_path / "dataset.tar.gz"
+    target.with_name(target.name + ".part").write_bytes(partial)
+    _get_checksum_filepath(target).write_text(
+        json.dumps(
+            {
+                "checksum": checksum,
+                "download_url": url,
+                "expires_at": expires_at or _future(),
+                "size_bytes": len(_CONTENT),
+            }
+        )
+    )
+    return target
+
+
+def _download(tmp_path: Path, **kwargs: Any) -> Path:
+    return _download_dataset(
+        dataset_id="dataset-id",
+        archive_filename="dataset.tar.gz",
+        download_directory=str(tmp_path),
+        show_progress=False,
+        overwrite_existing=kwargs.pop("overwrite_existing", False),
+        **kwargs,
+    )
+
+
+def test_run_download_plan_writes_url_and_expiry_to_sidecar(
+    tmp_path: Path, monkeypatch
+) -> None:
+    api = _FakeDatasetApi(_session_payload(), _CONTENT)
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+    plan = DownloadPlan.model_validate(
+        {
+            **_make_download_plan(tmp_path, checksum="abc").model_dump(),
+            "size_bytes": len(_CONTENT),
+            "expires_at": _future(),
+        }
+    )
+    written: dict[str, Any] = {}
+
+    def capture_then_fail(**kwargs: Any) -> None:
+        written.update(json.loads(plan.checksum_filepath.read_text()))
+        raise RuntimeError("stop here")
+
+    monkeypatch.setattr(
+        "datacollective.download._execute_download_plan", capture_then_fail
+    )
+
+    with pytest.raises(RuntimeError, match="stop here"):
+        _run_download_plan(plan, show_progress=False, overwrite_existing=False)
+
+    assert written == {
+        "checksum": "abc",
+        "download_url": plan.download_url,
+        "expires_at": plan.expires_at.isoformat().replace("+00:00", "Z"),  # type: ignore[union-attr]
+        "size_bytes": len(_CONTENT),
+    }
+
+
+def test_resume_uses_stored_url_without_calling_the_api(
+    tmp_path: Path, monkeypatch
+) -> None:
+    target = _write_interrupted_download(tmp_path)
+    api = _FakeDatasetApi(_session_payload(), _CONTENT)
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    result = _download(tmp_path)
+
+    assert result == target
+    assert target.read_bytes() == _CONTENT
+    assert api.methods == ["GET"]
+    assert api.calls[0]["url"] == "https://example.com/stored"
+    assert api.calls[0]["extra_headers"]["Range"] == "bytes=4-"
+    assert not _get_checksum_filepath(target).exists()
+    assert not target.with_name(target.name + ".part").exists()
+
+
+def test_resume_asks_the_api_when_stored_url_has_expired(
+    tmp_path: Path, monkeypatch
+) -> None:
+    target = _write_interrupted_download(tmp_path, expires_at=_future(seconds=10))
+    api = _FakeDatasetApi(_session_payload(), _CONTENT)
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    _download(tmp_path)
+
+    assert target.read_bytes() == _CONTENT
+    assert api.methods == ["POST", "GET"]
+    # The fresh URL is used, and the partial download is still resumed.
+    assert api.calls[1]["url"] == "https://example.com/new"
+    assert api.calls[1]["extra_headers"]["Range"] == "bytes=4-"
+
+
+def test_resume_falls_back_to_the_api_when_stored_url_is_rejected(
+    tmp_path: Path, monkeypatch
+) -> None:
+    target = _write_interrupted_download(tmp_path)
+    api = _FakeDatasetApi(
+        _session_payload(), _CONTENT, rejected_urls=("https://example.com/stored",)
+    )
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    _download(tmp_path)
+
+    assert target.read_bytes() == _CONTENT
+    assert api.methods == ["GET", "POST", "GET"]
+    assert api.calls[0]["url"] == "https://example.com/stored"
+    assert api.calls[2]["url"] == "https://example.com/new"
+    assert api.calls[2]["extra_headers"]["Range"] == "bytes=4-"
+
+
+def test_resume_with_stored_url_surfaces_other_download_failures(
+    tmp_path: Path, monkeypatch
+) -> None:
+    _write_interrupted_download(tmp_path)
+
+    def connection_lost(**kwargs: Any) -> Any:
+        raise requests.ConnectionError("reset")
+
+    monkeypatch.setattr("datacollective.download._send_api_request", connection_lost)
+    monkeypatch.setattr("datacollective.download.time.sleep", lambda _s: None)
+
+    with pytest.raises(DownloadError):
+        _download(tmp_path, max_download_attempts=1)
+
+
+def test_overwrite_ignores_stored_url(tmp_path: Path, monkeypatch) -> None:
+    target = _write_interrupted_download(tmp_path)
+    api = _FakeDatasetApi(_session_payload(), _CONTENT)
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    _download(tmp_path, overwrite_existing=True)
+
+    assert target.read_bytes() == _CONTENT
+    assert api.methods == ["POST", "GET"]
+    assert "Range" not in (api.calls[1]["extra_headers"] or {})
+
+
+def test_legacy_plain_text_sidecar_still_resumes_via_the_api(
+    tmp_path: Path, monkeypatch
+) -> None:
+    target = tmp_path / "dataset.tar.gz"
+    target.with_name(target.name + ".part").write_bytes(_CONTENT[:4])
+    _get_checksum_filepath(target).write_text("abc")
+    api = _FakeDatasetApi(_session_payload(), _CONTENT)
+    monkeypatch.setattr("datacollective.download._send_api_request", api)
+
+    _download(tmp_path)
+
+    assert target.read_bytes() == _CONTENT
+    assert api.methods == ["POST", "GET"]
+    assert api.calls[1]["extra_headers"]["Range"] == "bytes=4-"
+
+
+@pytest.mark.parametrize(
+    "sidecar",
+    [
+        None,
+        "",
+        "not json {",
+        json.dumps(["a", "list"]),
+        json.dumps({"checksum": "abc"}),
+        json.dumps({"checksum": "abc", "download_url": "https://x", "size_bytes": 10}),
+        json.dumps(
+            {
+                "checksum": "abc",
+                "download_url": "https://x",
+                "size_bytes": 10,
+                "extra": 1,
+            }
+        ),
+    ],
+)
+def test_load_stored_download_plan_rejects_incomplete_state(
+    tmp_path: Path, sidecar: str | None
+) -> None:
+    target = tmp_path / "dataset.tar.gz"
+    target.with_name(target.name + ".part").write_bytes(b"0123")
+    if sidecar is not None:
+        _get_checksum_filepath(target).write_text(sidecar)
+
+    assert _load_stored_download_plan(target) is None
+
+
+def test_load_stored_download_plan_requires_part_file(tmp_path: Path) -> None:
+    target = _write_interrupted_download(tmp_path)
+    target.with_name(target.name + ".part").unlink()
+
+    assert _load_stored_download_plan(target) is None
 
 
 """
