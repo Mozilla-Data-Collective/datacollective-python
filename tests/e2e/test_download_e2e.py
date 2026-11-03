@@ -156,6 +156,9 @@ def test_resume_download(
                 download_directory=str(live_download_dir),
                 show_progress=False,
                 overwrite_existing=True,
+                # Disable in-call retries so the interruption surfaces as a DownloadError
+                # and the second call has to resume from the saved .part file.
+                max_download_attempts=1,
             )
 
         part_files = list(live_download_dir.glob("*.part"))
