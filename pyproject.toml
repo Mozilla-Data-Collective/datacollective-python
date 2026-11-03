@@ -18,7 +18,7 @@ authors = [
 ]
 description = "A Python package for interfacing with the Mozilla Data Collective's API"
 readme = "README.md"
-requires-python = ">=3.11.4"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
