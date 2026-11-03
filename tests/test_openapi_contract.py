@@ -318,7 +318,7 @@ Check download session spec
 def test_download_session_fields(schemas: dict[str, Any]) -> None:
     schema = _resolve(schemas["DownloadSession"], schemas)
     # download._build_download_plan reads these keys and requires the first two.
-    assert {"downloadUrl", "sizeBytes"} <= _required(schema)
+    assert {"downloadUrl", "sizeBytes", "expiresAt"} <= _required(schema)
     assert "checksum" in _properties(schema, schemas)
 
 
