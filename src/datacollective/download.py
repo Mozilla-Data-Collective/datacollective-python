@@ -1,7 +1,9 @@
 import os
+import time
 from pathlib import Path
 from typing import Any
 
+import requests
 from fox_progress_bar import ProgressBar
 from pydantic import Field
 
@@ -27,6 +29,17 @@ DOWNLOAD_SOURCE_SAMPLE = "download_sample"
 # dataset's sample, and sharing a directory would let one be mistaken for the other.
 SAMPLES_DIRNAME = "samples"
 
+# A connection that drops while the archive is streaming is retried against the same
+# presigned URL, continuing from the bytes already on disk. The URL is still valid for a short
+# period of time so there is no need to ask for a new one
+DEFAULT_MAX_DOWNLOAD_ATTEMPTS = 3
+DOWNLOAD_RETRY_BACKOFF_SECONDS = 2
+_RETRYABLE_DOWNLOAD_ERRORS = (
+    requests.ConnectionError,
+    requests.Timeout,
+    requests.exceptions.ChunkedEncodingError,
+)
+
 
 class DownloadPlan(NonEmptyStrModel):
     download_url: str
@@ -44,6 +57,7 @@ def _download_dataset(
     download_directory: str | None,
     show_progress: bool,
     overwrite_existing: bool,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     download_source: str | None = None,
 ) -> Path:
     """
@@ -66,6 +80,9 @@ def _download_dataset(
         show_progress: Show a progress bar when downloading the dataset.
         overwrite_existing: If True, overwrite any existing dataset archive in the download directory.
         download_source: Optional context appended to the User-Agent for download analytics.
+        max_download_attempts: How many times to request the archive before giving up;
+            a dropped connection is retried against the same download URL, continuing
+            from the bytes already on disk.
     Returns:
         The full path to the downloaded dataset archive.
     """
@@ -89,6 +106,7 @@ def _download_dataset(
         download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        max_download_attempts=max_download_attempts,
         download_source=download_source,
     )
 
@@ -98,6 +116,7 @@ def _download_sample(
     download_directory: str | None,
     show_progress: bool,
     overwrite_existing: bool,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     download_source: str | None = None,
 ) -> Path:
     """
@@ -118,6 +137,9 @@ def _download_sample(
         show_progress: Show a progress bar when downloading the sample.
         overwrite_existing: If True, download the sample again and replace any existing one.
         download_source: Optional context appended to the User-Agent for download analytics.
+        max_download_attempts: How many times to request the archive before giving up;
+            a dropped connection is retried against the same download URL, continuing
+            from the bytes already on disk.
     Returns:
         The full path to the downloaded sample archive.
     """
@@ -147,6 +169,7 @@ def _download_sample(
         download_plan=download_plan,
         show_progress=show_progress,
         overwrite_existing=overwrite_existing,
+        max_download_attempts=max_download_attempts,
         download_source=download_source,
     )
 
@@ -155,6 +178,7 @@ def _run_download_plan(
     download_plan: DownloadPlan,
     show_progress: bool,
     overwrite_existing: bool,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     download_source: str | None = None,
 ) -> Path:
     """
@@ -166,6 +190,9 @@ def _run_download_plan(
         show_progress: Whether to show a progress bar during download.
         overwrite_existing: If True, remove any existing complete or partial download first.
         download_source: Optional context appended to the User-Agent for download analytics.
+        max_download_attempts: How many times to request the archive before giving up;
+            a dropped connection is retried against the same download URL, continuing
+            from the bytes already on disk.
 
     Returns:
         The full path to the downloaded archive.
@@ -190,6 +217,7 @@ def _run_download_plan(
         download_plan=download_plan,
         resume_download_checksum=resume_checksum,
         show_progress=show_progress,
+        max_download_attempts=max_download_attempts,
         download_source=download_source,
     )
 
@@ -366,63 +394,124 @@ def _execute_download_plan(
     download_plan: DownloadPlan,
     resume_download_checksum: str | None,
     show_progress: bool,
+    max_download_attempts: int = DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     download_source: str | None = None,
 ) -> None:
     """
     Execute the download plan, downloading the dataset to a temporary path.
+
+    A connection that drops mid-stream is retried up to `max_download_attempts` times
+    against the same presigned URL, each attempt continuing from the end of the .part
+    file. Only connection-level failures are retried; an HTTP error, a KeyboardInterrupt
+    or any other exception fails the download at once.
 
     Args:
         download_plan: The DownloadPlan object with download details.
         resume_download_checksum: Provide the checksum to resume a previously interrupted download.
         show_progress: Whether to show a progress bar during download.
         download_source: Optional context appended to the User-Agent for download analytics.
+        max_download_attempts: How many times to request the archive before giving up;
+            a dropped connection is retried against the same download URL, continuing
+            from the bytes already on disk.
 
     Raises:
+        ValueError: If `max_download_attempts` is less than 1.
         DownloadError: If the download fails or is interrupted.
     """
-    headers: dict[str, str] = {}
+    if max_download_attempts < 1:
+        raise ValueError(
+            f"max_download_attempts must be at least 1, got {max_download_attempts}"
+        )
+
     previously_downloaded_bytes = 0
     if resume_download_checksum and download_plan.tmp_filepath.exists():
         previously_downloaded_bytes = download_plan.tmp_filepath.stat().st_size
-        headers["Range"] = f"bytes={previously_downloaded_bytes}-"
 
     progress_bar = None
-    session_downloaded_bytes = 0
     logger.info(f"Downloading dataset: {download_plan.target_filepath}")
     if show_progress:
         progress_bar = ProgressBar(download_plan.size_bytes)
         progress_bar.update(previously_downloaded_bytes)
         progress_bar._display()
-    try:
-        with _send_api_request(
-            method="GET",
-            url=download_plan.download_url,
-            stream=True,
-            timeout=HTTP_TIMEOUT,
-            extra_headers=headers,
-            include_auth_headers=False,  # Download URL is pre-signed, no auth needed
-            source_function=download_source,
-        ) as response:
-            with open(download_plan.tmp_filepath, "ab") as f:
-                # Iterate over response in 64KB chunks to avoid using too much memory
-                for chunk in response.iter_content(chunk_size=1 << 16):
-                    if not chunk:
-                        continue
-                    f.write(chunk)
-                    session_downloaded_bytes += len(chunk)
-                    if progress_bar:
-                        progress_bar.update(len(chunk))
 
-            if progress_bar:
-                progress_bar.finish()
+    # Bytes on disk, and hence the offset the next request continues from.
+    downloaded_bytes = previously_downloaded_bytes
+    try:
+        for attempt in range(1, max_download_attempts + 1):
+            try:
+                _stream_archive_to_disk(
+                    download_plan=download_plan,
+                    offset=downloaded_bytes,
+                    progress_bar=progress_bar,
+                    download_source=download_source,
+                )
+                break
+            except _RETRYABLE_DOWNLOAD_ERRORS:
+                downloaded_bytes = _bytes_on_disk(download_plan)
+                if attempt == max_download_attempts:
+                    raise
+                wait_seconds = DOWNLOAD_RETRY_BACKOFF_SECONDS * attempt
+                logger.warning(
+                    f"Connection lost after {downloaded_bytes} of {download_plan.size_bytes} "
+                    f"bytes (attempt {attempt}/{max_download_attempts}). "
+                    f"Retrying in {wait_seconds}s..."
+                )
+                time.sleep(wait_seconds)
+
+        if progress_bar:
+            progress_bar.finish()
     except (Exception, KeyboardInterrupt) as e:
+        downloaded_bytes = _bytes_on_disk(download_plan)
         raise DownloadError(
-            session_bytes=session_downloaded_bytes,
-            total_downloaded_bytes=previously_downloaded_bytes
-            + session_downloaded_bytes,
+            session_bytes=downloaded_bytes - previously_downloaded_bytes,
+            total_downloaded_bytes=downloaded_bytes,
             total_archive_bytes=download_plan.size_bytes,
             checksum=download_plan.checksum,
         ) from e
+
+
+def _stream_archive_to_disk(
+    download_plan: DownloadPlan,
+    offset: int,
+    progress_bar: ProgressBar | None,
+    download_source: str | None,
+) -> None:
+    """
+    Stream the archive from *offset* to its end and append it to the .part file.
+
+    Args:
+        download_plan: The DownloadPlan object with download details.
+        offset: Number of bytes already on disk; a Range header asks for the rest.
+        progress_bar: Progress bar to advance per chunk, if any.
+        download_source: Optional context appended to the User-Agent for download analytics.
+    """
+    headers: dict[str, str] = {}
+    if offset:
+        headers["Range"] = f"bytes={offset}-"
+
+    with _send_api_request(
+        method="GET",
+        url=download_plan.download_url,
+        stream=True,
+        timeout=HTTP_TIMEOUT,
+        extra_headers=headers,
+        include_auth_headers=False,  # Download URL is pre-signed, no auth needed
+        source_function=download_source,
+    ) as response:
+        with open(download_plan.tmp_filepath, "ab") as f:
+            # Iterate over response in 64KB chunks to avoid using too much memory
+            for chunk in response.iter_content(chunk_size=1 << 16):
+                if not chunk:
+                    continue
+                f.write(chunk)
+                if progress_bar:
+                    progress_bar.update(len(chunk))
+
+
+def _bytes_on_disk(download_plan: DownloadPlan) -> int:
+    """Size of the .part file, or 0 if nothing has been written yet."""
+    tmp = download_plan.tmp_filepath
+    return tmp.stat().st_size if tmp.exists() else 0
 
 
 def _resolve_download_dir(download_directory: str | None) -> Path:
