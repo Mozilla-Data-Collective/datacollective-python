@@ -59,6 +59,7 @@ class License(str, Enum):
     GFDL_1_3 = "GFDL-1.3"
     GPL_3_0 = "GPL-3.0"
     LGPLLR = "LGPLLR"
+    MDC_DLA_1_0 = "MDC-DLA-1.0"
     MIT = "MIT"
     MPL_2_0 = "MPL-2.0"
     NLOD_2_0 = "NLOD-2.0"
