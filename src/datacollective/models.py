@@ -94,7 +94,7 @@ class NonEmptyStrModel(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
     _allow_empty_trimmed_strings: ClassVar[frozenset[str]] = frozenset(
-        {"licenseAbbreviation"}
+        {"licenseAbbreviation", "licenseUrl"}
     )
 
     @field_validator("*", mode="before")

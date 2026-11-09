@@ -133,7 +133,8 @@ def download_dataset(
             where the archive would be extracted.
         FileNotFoundError: If the dataset does not exist (404).
         ResourceRemovedError: If the dataset is no longer available (410).
-        PermissionError: If access is denied (403) or download directory is not writable.
+        PermissionError: If access is denied (403) — e.g. incomplete profile, terms not
+            agreed, or access request not approved — or download directory is not writable.
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """
@@ -368,7 +369,8 @@ def load_dataset(
             would be extracted.
         FileNotFoundError: If the dataset does not exist (404).
         ResourceRemovedError: If the dataset is no longer available (410).
-        PermissionError: If access is denied (403) or download directory is not writable.
+        PermissionError: If access is denied (403) — e.g. incomplete profile, terms not
+            agreed, or access request not approved — or download directory is not writable.
         RuntimeError: If rate limit is exceeded (429) or unexpected response format.
         requests.HTTPError: For other non-2xx responses.
     """

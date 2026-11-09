@@ -127,8 +127,8 @@ def _send_api_request(
         raise PermissionError(
             f"Access denied: {method.upper()} {url} — {detail}"
             if detail
-            else f"Access denied: {method.upper()} {url}. Common causes: the dataset's"
-            " Terms & Conditions have not been agreed to on its MDC platform page, the"
+            else f"Access denied: {method.upper()} {url}. Common causes: your MDC profile is"
+            " incomplete, the dataset's Terms & Conditions have not been agreed to on its MDC platform page, the"
             " dataset or submission belongs to another organization, the submission"
             " has already been published, or your organization is not approved to"
             " upload datasets yet (or the API key predates the approval)."
