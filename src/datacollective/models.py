@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from enum import Enum
-from typing import Any, ClassVar
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -165,9 +165,6 @@ class NonEmptyStrModel(BaseModel):
     """Base model that trims string fields and rejects empty values."""
 
     model_config = ConfigDict(extra="forbid")
-    _allow_empty_trimmed_strings: ClassVar[frozenset[str]] = frozenset(
-        {"licenseAbbreviation", "licenseUrl"}
-    )
 
     @field_validator("*", mode="before")
     @classmethod
@@ -179,8 +176,6 @@ class NonEmptyStrModel(BaseModel):
         if isinstance(value, str):
             trimmed = value.strip()
             if not trimmed:
-                if info.field_name in cls._allow_empty_trimmed_strings:
-                    return trimmed
                 raise ValueError(f"`{info.field_name}` must be a non-empty string")
             return trimmed
         return value
