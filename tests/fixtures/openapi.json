@@ -1146,13 +1146,19 @@
                                 ]
                             },
                             "longDescription": {
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "examples": [
                                     "Community-generated audio dataset featuring Greek speech recordings."
                                 ]
                             },
                             "locale": {
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "examples": [
                                     "el"
                                 ]
@@ -1249,6 +1255,7 @@
                                     "string",
                                     "null"
                                 ],
+                                "description": "Markdown as the publisher wrote it. Sanitise it before rendering it as HTML.",
                                 "examples": [
                                     "Datasheet markdown for the dataset."
                                 ]
@@ -1258,6 +1265,7 @@
                                     "string",
                                     "null"
                                 ],
+                                "description": "Markdown as the publisher wrote it. Sanitise it before rendering it as HTML.",
                                 "examples": [
                                     "Research use only. See the [terms](https://example.com/terms)."
                                 ]
@@ -1267,6 +1275,7 @@
                                     "string",
                                     "null"
                                 ],
+                                "description": "Markdown as the publisher wrote it. Sanitise it before rendering it as HTML.",
                                 "examples": [
                                     "- No re-identification of speakers.\n- No voice cloning."
                                 ]
@@ -1276,6 +1285,7 @@
                                     "string",
                                     "null"
                                 ],
+                                "description": "Markdown as the publisher wrote it. Sanitise it before rendering it as HTML.",
                                 "examples": [
                                     "Attribution requested in published work; cite the [paper](https://example.com/paper)."
                                 ]
@@ -1358,6 +1368,68 @@
                             },
                             "showContactInfo": {
                                 "type": "boolean"
+                            },
+                            "showComplianceAttributes": {
+                                "type": "boolean"
+                            },
+                            "complianceAttributes": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "properties": {
+                                    "commercialAvailability": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "yes",
+                                            "conditional",
+                                            "no",
+                                            null
+                                        ]
+                                    },
+                                    "commercialAvailabilityConditions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "attribution",
+                                                "no_derivatives",
+                                                "share_alike",
+                                                "use_restrictions",
+                                                "weak_copyleft",
+                                                "custom_terms_and_conditions"
+                                            ]
+                                        }
+                                    },
+                                    "contributorConsent": {
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            "not_applicable",
+                                            "unspecified"
+                                        ]
+                                    },
+                                    "fairContributorCompensation": {
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            "not_applicable",
+                                            "unspecified"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "commercialAvailability",
+                                    "commercialAvailabilityConditions",
+                                    "contributorConsent",
+                                    "fairContributorCompensation"
+                                ],
+                                "description": "Null until a compliance value is first saved."
                             },
                             "intendedUsage": {
                                 "type": [
@@ -1646,6 +1718,8 @@
                             "createdByFullName",
                             "createdByEmail",
                             "showContactInfo",
+                            "showComplianceAttributes",
+                            "complianceAttributes",
                             "intendedUsage",
                             "ethicalReviewProcess",
                             "agreeToSubmit",
@@ -1748,13 +1822,19 @@
                                 ]
                             },
                             "longDescription": {
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "examples": [
                                     "Community-generated audio dataset featuring Greek speech recordings."
                                 ]
                             },
                             "locale": {
-                                "type": "string",
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
                                 "examples": [
                                     "el"
                                 ]
@@ -1851,6 +1931,7 @@
                                     "string",
                                     "null"
                                 ],
+                                "description": "Markdown as the publisher wrote it. Sanitise it before rendering it as HTML.",
                                 "examples": [
                                     "Datasheet markdown for the dataset."
                                 ]
@@ -1860,6 +1941,7 @@
                                     "string",
                                     "null"
                                 ],
+                                "description": "Markdown as the publisher wrote it. Sanitise it before rendering it as HTML.",
                                 "examples": [
                                     "Research use only. See the [terms](https://example.com/terms)."
                                 ]
@@ -1869,6 +1951,7 @@
                                     "string",
                                     "null"
                                 ],
+                                "description": "Markdown as the publisher wrote it. Sanitise it before rendering it as HTML.",
                                 "examples": [
                                     "- No re-identification of speakers.\n- No voice cloning."
                                 ]
@@ -1878,6 +1961,7 @@
                                     "string",
                                     "null"
                                 ],
+                                "description": "Markdown as the publisher wrote it. Sanitise it before rendering it as HTML.",
                                 "examples": [
                                     "Attribution requested in published work; cite the [paper](https://example.com/paper)."
                                 ]
@@ -1960,6 +2044,68 @@
                             },
                             "showContactInfo": {
                                 "type": "boolean"
+                            },
+                            "showComplianceAttributes": {
+                                "type": "boolean"
+                            },
+                            "complianceAttributes": {
+                                "type": [
+                                    "object",
+                                    "null"
+                                ],
+                                "properties": {
+                                    "commercialAvailability": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "enum": [
+                                            "yes",
+                                            "conditional",
+                                            "no",
+                                            null
+                                        ]
+                                    },
+                                    "commercialAvailabilityConditions": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string",
+                                            "enum": [
+                                                "attribution",
+                                                "no_derivatives",
+                                                "share_alike",
+                                                "use_restrictions",
+                                                "weak_copyleft",
+                                                "custom_terms_and_conditions"
+                                            ]
+                                        }
+                                    },
+                                    "contributorConsent": {
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            "not_applicable",
+                                            "unspecified"
+                                        ]
+                                    },
+                                    "fairContributorCompensation": {
+                                        "type": "string",
+                                        "enum": [
+                                            "yes",
+                                            "no",
+                                            "not_applicable",
+                                            "unspecified"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "commercialAvailability",
+                                    "commercialAvailabilityConditions",
+                                    "contributorConsent",
+                                    "fairContributorCompensation"
+                                ],
+                                "description": "Null until a compliance value is first saved."
                             },
                             "intendedUsage": {
                                 "type": [
@@ -2122,6 +2268,8 @@
                             "createdByFullName",
                             "createdByEmail",
                             "showContactInfo",
+                            "showComplianceAttributes",
+                            "complianceAttributes",
                             "intendedUsage",
                             "ethicalReviewProcess",
                             "agreeToSubmit",
@@ -2238,7 +2386,11 @@
                         ]
                     },
                     "longDescription": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
                         "maxLength": 7500,
                         "examples": [
                             "Community-generated audio dataset featuring Greek speech recordings."
@@ -2265,146 +2417,108 @@
                             "string",
                             "null"
                         ],
+                        "minLength": 1,
                         "maxLength": 160,
                         "examples": [
                             "Common Voice Greek dataset version 22.0"
                         ]
                     },
                     "longDescription": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 7500,
-                                "examples": [
-                                    "Community-generated audio dataset featuring Greek speech recordings."
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0,
-                                "examples": [
-                                    ""
-                                ]
-                            }
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
+                        "maxLength": 7500,
+                        "examples": [
+                            "Community-generated audio dataset featuring Greek speech recordings."
                         ]
                     },
                     "task": {
-                        "anyOf": [
+                        "allOf": [
                             {
                                 "$ref": "#/components/schemas/DatasetTask"
                             },
                             {
-                                "type": "string",
-                                "enum": [
-                                    ""
+                                "type": [
+                                    "string",
+                                    "null"
                                 ]
                             }
                         ]
                     },
                     "locale": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 20,
-                                "examples": [
-                                    "el"
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0,
-                                "examples": [
-                                    ""
-                                ]
-                            }
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
+                        "maxLength": 20,
+                        "examples": [
+                            "el"
                         ]
                     },
                     "format": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 50,
-                                "examples": [
-                                    "MP3"
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0,
-                                "examples": [
-                                    ""
-                                ]
-                            }
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
+                        "maxLength": 50,
+                        "examples": [
+                            "MP3"
                         ]
                     },
                     "licenseAbbreviation": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 25,
-                                "examples": [
-                                    "CC0-1.0"
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0,
-                                "examples": [
-                                    ""
-                                ]
-                            }
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
+                        "maxLength": 25,
+                        "examples": [
+                            "CC0-1.0"
                         ]
                     },
                     "license": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1,
-                                "maxLength": 1000,
-                                "examples": [
-                                    "Creative Commons Zero v1.0 Universal (CC0-1.0)"
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0,
-                                "examples": [
-                                    ""
-                                ]
-                            }
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
+                        "maxLength": 1000,
+                        "examples": [
+                            "Creative Commons Zero v1.0 Universal (CC0-1.0)"
                         ]
                     },
                     "licenseUrl": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uri",
-                                "examples": [
-                                    "https://creativecommons.org/publicdomain/zero/1.0/"
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0,
-                                "examples": [
-                                    ""
-                                ]
-                            }
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
+                        "format": "uri",
+                        "examples": [
+                            "https://creativecommons.org/publicdomain/zero/1.0/"
                         ]
                     },
                     "restrictions": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
                         "maxLength": 7500,
                         "examples": [
                             "Research use only. See the [terms](https://example.com/terms)."
                         ]
                     },
                     "forbiddenUsage": {
-                        "type": "string",
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
                         "maxLength": 7500,
                         "examples": [
                             "- No re-identification of speakers.\n- No voice cloning."
@@ -2415,6 +2529,7 @@
                             "string",
                             "null"
                         ],
+                        "minLength": 1,
                         "maxLength": 25000,
                         "examples": [
                             "Datasheet markdown for the dataset."
@@ -2425,46 +2540,31 @@
                             "string",
                             "null"
                         ],
+                        "minLength": 1,
                         "maxLength": 7500,
                         "examples": [
                             "Attribution requested in published work; cite the [paper](https://example.com/paper)."
                         ]
                     },
                     "pointOfContactFullName": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1,
-                                "examples": [
-                                    "Alex Rivera"
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0,
-                                "examples": [
-                                    ""
-                                ]
-                            }
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
+                        "examples": [
+                            "Alex Rivera"
                         ]
                     },
                     "pointOfContactEmail": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "minLength": 1,
-                                "format": "email",
-                                "examples": [
-                                    "alex.rivera@example.com"
-                                ]
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0,
-                                "examples": [
-                                    ""
-                                ]
-                            }
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "minLength": 1,
+                        "format": "email",
+                        "examples": [
+                            "alex.rivera@example.com"
                         ]
                     },
                     "fundedByFullName": {
@@ -2472,6 +2572,7 @@
                             "string",
                             "null"
                         ],
+                        "minLength": 1,
                         "examples": [
                             "Mozilla Foundation"
                         ]
@@ -2492,6 +2593,7 @@
                             "string",
                             "null"
                         ],
+                        "minLength": 1,
                         "examples": [
                             "Sam Okafor"
                         ]
@@ -2512,6 +2614,7 @@
                             "string",
                             "null"
                         ],
+                        "minLength": 1,
                         "examples": [
                             "Jordan Blake"
                         ]
@@ -2532,6 +2635,7 @@
                             "string",
                             "null"
                         ],
+                        "minLength": 1,
                         "maxLength": 7500,
                         "examples": [
                             "Training and evaluating speech recognition models."
@@ -2542,6 +2646,7 @@
                             "string",
                             "null"
                         ],
+                        "minLength": 1,
                         "maxLength": 7500,
                         "examples": [
                             "Reviewed by the internal data ethics board."
@@ -2593,6 +2698,58 @@
                     },
                     "autoApproveAccessRequests": {
                         "type": "boolean"
+                    },
+                    "complianceAttributes": {
+                        "type": "object",
+                        "properties": {
+                            "commercialAvailability": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "enum": [
+                                    "yes",
+                                    "conditional",
+                                    "no",
+                                    null
+                                ]
+                            },
+                            "commercialAvailabilityConditions": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "enum": [
+                                        "attribution",
+                                        "no_derivatives",
+                                        "share_alike",
+                                        "use_restrictions",
+                                        "weak_copyleft",
+                                        "custom_terms_and_conditions"
+                                    ]
+                                },
+                                "maxItems": 6,
+                                "uniqueItems": true,
+                                "description": "Non-empty only with `commercialAvailability: conditional` in the same request; any other availability clears them. A conditional submission needs at least one to be submitted for review."
+                            },
+                            "contributorConsent": {
+                                "type": "string",
+                                "enum": [
+                                    "yes",
+                                    "no",
+                                    "not_applicable",
+                                    "unspecified"
+                                ]
+                            },
+                            "fairContributorCompensation": {
+                                "type": "string",
+                                "enum": [
+                                    "yes",
+                                    "no",
+                                    "not_applicable",
+                                    "unspecified"
+                                ]
+                            }
+                        }
                     }
                 }
             },
@@ -3591,6 +3748,16 @@
                     },
                     "404": {
                         "description": "Submission not found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ApiError"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Submission status changed during the update",
                         "content": {
                             "application/json": {
                                 "schema": {
