@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from enum import Enum
-from typing import Any, ClassVar
+from typing import Any
 
 from pydantic import (
     BaseModel,
@@ -89,13 +89,82 @@ class Visibility(str, Enum):
     RESTRICTED = "restricted"
 
 
+class CommercialAvailability(str, Enum):
+    """Whether the dataset may be used commercially."""
+
+    YES = "yes"
+    CONDITIONAL = "conditional"
+    NO = "no"
+
+
+class CommercialAvailabilityCondition(str, Enum):
+    """Conditions attached to `CommercialAvailability.CONDITIONAL` commercial use."""
+
+    ATTRIBUTION = "attribution"
+    NO_DERIVATIVES = "no_derivatives"
+    SHARE_ALIKE = "share_alike"
+    USE_RESTRICTIONS = "use_restrictions"
+    WEAK_COPYLEFT = "weak_copyleft"
+    CUSTOM_TERMS_AND_CONDITIONS = "custom_terms_and_conditions"
+
+
+class ComplianceAnswer(str, Enum):
+    """Answer to a contributor-related compliance question."""
+
+    YES = "yes"
+    NO = "no"
+    NOT_APPLICABLE = "not_applicable"
+    UNSPECIFIED = "unspecified"
+
+
+class ComplianceAttributes(BaseModel):
+    """
+    Compliance attributes of a dataset submission.
+
+    Every field is optional on update; unset fields are left unchanged on the platform.
+    Whether they are shown publicly is controlled by `showComplianceAttributes`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+
+    commercialAvailability: CommercialAvailability | None = Field(
+        None, description="Whether the dataset may be used commercially."
+    )
+    commercialAvailabilityConditions: list[CommercialAvailabilityCondition] | None = (
+        Field(
+            None,
+            max_length=len(CommercialAvailabilityCondition),
+            description=(
+                "Conditions for commercial use. Only kept with "
+                "`commercialAvailability=CommercialAvailability.CONDITIONAL` in the same "
+                "update; any other availability clears them. A conditional submission "
+                "needs at least one to be submitted for review."
+            ),
+        )
+    )
+    contributorConsent: ComplianceAnswer | None = Field(
+        None,
+        description="Whether contributors explicitly consented to the dataset's terms of use.",
+    )
+    fairContributorCompensation: ComplianceAnswer | None = Field(
+        None,
+        description="Whether contributors were fairly compensated for their work in dataset creation.",
+    )
+
+    @field_validator("commercialAvailabilityConditions")
+    @classmethod
+    def _unique_conditions(
+        cls, value: list[CommercialAvailabilityCondition] | None
+    ) -> list[CommercialAvailabilityCondition] | None:
+        if value is not None and len(set(value)) != len(value):
+            raise ValueError("`commercialAvailabilityConditions` must be unique")
+        return value
+
+
 class NonEmptyStrModel(BaseModel):
     """Base model that trims string fields and rejects empty values."""
 
     model_config = ConfigDict(extra="forbid")
-    _allow_empty_trimmed_strings: ClassVar[frozenset[str]] = frozenset(
-        {"licenseAbbreviation", "licenseUrl"}
-    )
 
     @field_validator("*", mode="before")
     @classmethod
@@ -107,8 +176,6 @@ class NonEmptyStrModel(BaseModel):
         if isinstance(value, str):
             trimmed = value.strip()
             if not trimmed:
-                if info.field_name in cls._allow_empty_trimmed_strings:
-                    return trimmed
                 raise ValueError(f"`{info.field_name}` must be a non-empty string")
             return trimmed
         return value
@@ -228,6 +295,10 @@ class DatasetSubmission(NonEmptyStrModel, Dataset):
     showComplianceAttributes: bool | None = Field(
         None,
         description="Whether to publicly display the dataset's compliance attributes.",
+    )
+    complianceAttributes: ComplianceAttributes | None = Field(
+        None,
+        description="Compliance attributes of the dataset (commercial availability, contributor consent and compensation).",
     )
     # Submission-specific fields defined by the user
     createdByFullName: str | None = Field(None, description="Creator's name.")
@@ -459,6 +530,7 @@ UPDATE_FIELDS = {
     "ethicalReviewProcess",
     "showContactInfo",
     "showComplianceAttributes",
+    "complianceAttributes",
     "visibility",
     "exclusivityOptOut",
     "autoApproveAccessRequests",

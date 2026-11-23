@@ -138,6 +138,46 @@ submission = DatasetSubmission(
 )
 ```
 
+### Compliance Attributes
+
+`complianceAttributes` records whether the dataset may be used commercially and how its
+contributors were treated. All of its fields are optional, and any you leave unset stay as they
+are on the platform. Set `showComplianceAttributes=True` to show them publicly on the dataset page.
+
+| Field                              | Values                                                                                                  |
+|------------------------------------|---------------------------------------------------------------------------------------------------------|
+| `commercialAvailability`           | `CommercialAvailability`: `YES`, `CONDITIONAL`, `NO`                                                    |
+| `commercialAvailabilityConditions` | List of `CommercialAvailabilityCondition`, only with `CONDITIONAL` (at least one is required to submit) |
+| `contributorConsent`               | `ComplianceAnswer`: `YES`, `NO`, `NOT_APPLICABLE`, `UNSPECIFIED`                                        |
+| `fairContributorCompensation`      | `ComplianceAnswer`: `YES`, `NO`, `NOT_APPLICABLE`, `UNSPECIFIED`                                        |
+
+```python
+from datacollective import (
+    CommercialAvailability,
+    CommercialAvailabilityCondition,
+    ComplianceAnswer,
+    ComplianceAttributes,
+    DatasetSubmission,
+)
+
+submission = DatasetSubmission(
+    showComplianceAttributes=True,
+    complianceAttributes=ComplianceAttributes(
+        commercialAvailability=CommercialAvailability.CONDITIONAL,
+        commercialAvailabilityConditions=[
+            CommercialAvailabilityCondition.ATTRIBUTION,
+            CommercialAvailabilityCondition.SHARE_ALIKE,
+        ],
+        contributorConsent=ComplianceAnswer.YES,
+        fairContributorCompensation=ComplianceAnswer.NOT_APPLICABLE,
+    ),
+)
+```
+
+Send `commercialAvailabilityConditions` in the same update as
+`commercialAvailability=CommercialAvailability.CONDITIONAL`. Setting any other availability clears
+the conditions.
+
 
 ### Pricing
 

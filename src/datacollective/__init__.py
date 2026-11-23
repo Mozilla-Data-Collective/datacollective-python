@@ -15,6 +15,10 @@ from datacollective.errors import (
     ResourceRemovedError,
 )
 from datacollective.models import (
+    CommercialAvailability,
+    CommercialAvailabilityCondition,
+    ComplianceAnswer,
+    ComplianceAttributes,
     DatasetDetails,
     DatasetFilters,
     DatasetList,
@@ -54,6 +58,10 @@ __all__ = [
     "License",
     "Task",
     "Visibility",
+    "ComplianceAttributes",
+    "CommercialAvailability",
+    "CommercialAvailabilityCondition",
+    "ComplianceAnswer",
     "AuthenticationError",
     "RateLimitError",
     "ResourceRemovedError",
