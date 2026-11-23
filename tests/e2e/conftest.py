@@ -10,7 +10,16 @@ from requests import HTTPError
 from requests import Timeout
 
 from datacollective.errors import RateLimitError
-from datacollective.models import DatasetSubmission, License, Task, Visibility
+from datacollective.models import (
+    CommercialAvailability,
+    CommercialAvailabilityCondition,
+    ComplianceAnswer,
+    ComplianceAttributes,
+    DatasetSubmission,
+    License,
+    Task,
+    Visibility,
+)
 from datacollective.submissions import delete_submission
 
 
@@ -110,7 +119,18 @@ def sample_dataset_submission(name: str) -> DatasetSubmission:
         intendedUsage="Exercise the upload and submission lifecycle in live tests.",
         ethicalReviewProcess="No review required for synthetic test data.",
         showContactInfo=False,
-        visibility=Visibility.PUBLIC,
+        showComplianceAttributes=True,
+        complianceAttributes=ComplianceAttributes(
+            commercialAvailability=CommercialAvailability.CONDITIONAL,
+            commercialAvailabilityConditions=[
+                CommercialAvailabilityCondition.ATTRIBUTION,
+                CommercialAvailabilityCondition.SHARE_ALIKE,
+            ],
+            contributorConsent=ComplianceAnswer.YES,
+            fairContributorCompensation=ComplianceAnswer.NOT_APPLICABLE,
+        ),
+        visibility=Visibility.RESTRICTED,
+        autoApproveAccessRequests=True,
         exclusivityOptOut=True,
         agreeToSubmit=True,
     )
