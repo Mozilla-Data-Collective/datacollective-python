@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import os
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +28,10 @@ from datacollective.api_utils import (
 )
 from datacollective.models import (
     DRAFT_FIELDS,
+    CommercialAvailability,
+    CommercialAvailabilityCondition,
+    ComplianceAnswer,
+    ComplianceAttributes,
     SUBMIT_FIELDS,
     UPDATE_FIELDS,
     DatasetDetails,
@@ -234,6 +239,29 @@ def test_visibility_enum_matches_update_request(
 """
 Check Upload Submissions
 """
+
+
+def test_compliance_attributes_match_update_request(
+    schemas: dict[str, Any], update_schema: dict[str, Any]
+) -> None:
+    schema = _resolve(update_schema["properties"]["complianceAttributes"], schemas)
+    props = schema["properties"]
+    accepted = _properties(schema, schemas)
+    declared = set(ComplianceAttributes.model_fields)
+    assert declared == accepted, sorted(declared ^ accepted)
+
+    def values(enum: type[Enum]) -> set[str]:
+        return {member.value for member in enum}
+
+    assert values(CommercialAvailability) == _enum_values(
+        props["commercialAvailability"], schemas
+    )
+    conditions = _resolve(props["commercialAvailabilityConditions"], schemas)
+    assert values(CommercialAvailabilityCondition) == _enum_values(
+        conditions["items"], schemas
+    )
+    for name in ("contributorConsent", "fairContributorCompensation"):
+        assert values(ComplianceAnswer) == _enum_values(props[name], schemas), name
 
 
 def test_draft_fields_match_create_request(schemas: dict[str, Any]) -> None:

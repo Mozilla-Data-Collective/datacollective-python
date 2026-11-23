@@ -2,11 +2,17 @@ import pytest
 from pydantic import ValidationError
 
 from datacollective.models import (
+    UPDATE_FIELDS,
+    CommercialAvailability,
+    CommercialAvailabilityCondition,
+    ComplianceAnswer,
+    ComplianceAttributes,
     DatasetDetails,
     DatasetSubmission,
     License,
     Task,
     Visibility,
+    _payload_for_fields,
 )
 
 
@@ -112,16 +118,40 @@ def test_custom_license_allows_optional_details() -> None:
     assert model.licenseUrl == "https://example.com/license"
 
 
-def test_empty_license_abbreviation_is_accepted() -> None:
-    # The platform uses "" to clear the field; completeness is checked on submit.
-    assert DatasetSubmission(licenseAbbreviation="").licenseAbbreviation == ""
+@pytest.mark.parametrize("field", ["licenseAbbreviation", "licenseUrl", "license"])
+def test_empty_license_fields_are_rejected(field: str) -> None:
+    # The platform rejects "" (minLength 1); leave the field unset instead.
+    with pytest.raises(ValidationError, match=field):
+        DatasetSubmission(**{field: "  "})
 
+
+def test_compliance_attributes() -> None:
     model = DatasetSubmission(
-        licenseAbbreviation="",
-        license="Mozilla Research License",
+        showComplianceAttributes=True,
+        complianceAttributes=ComplianceAttributes(
+            commercialAvailability=CommercialAvailability.CONDITIONAL,
+            commercialAvailabilityConditions=[
+                CommercialAvailabilityCondition.ATTRIBUTION,
+                CommercialAvailabilityCondition.SHARE_ALIKE,
+            ],
+            contributorConsent=ComplianceAnswer.YES,
+        ),
     )
-    assert model.licenseAbbreviation == ""
-    assert model.license == "Mozilla Research License"
+    payload = _payload_for_fields(model, UPDATE_FIELDS)
+    assert payload["complianceAttributes"] == {
+        "commercialAvailability": "conditional",
+        "commercialAvailabilityConditions": ["attribution", "share_alike"],
+        "contributorConsent": "yes",
+    }
+
+
+def test_compliance_attributes_validation() -> None:
+    with pytest.raises(ValidationError):
+        ComplianceAttributes(contributorConsent="maybe")
+    with pytest.raises(ValidationError, match="unique"):
+        ComplianceAttributes(commercialAvailabilityConditions=["attribution"] * 2)
+    with pytest.raises(ValidationError):
+        ComplianceAttributes(unknown="yes")
 
 
 def test_visibility_enum_values() -> None:
