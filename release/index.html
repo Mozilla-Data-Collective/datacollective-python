@@ -888,10 +888,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-push-the-changes-and-tag" class="md-nav__link">
+  <a href="#5-merge-the-version-bump-through-a-pull-request" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Push the changes and tag
+        5. Merge the version bump through a pull request
       
     </span>
   </a>
@@ -1040,10 +1040,10 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#5-push-the-changes-and-tag" class="md-nav__link">
+  <a href="#5-merge-the-version-bump-through-a-pull-request" class="md-nav__link">
     <span class="md-ellipsis">
       
-        5. Push the changes and tag
+        5. Merge the version bump through a pull request
       
     </span>
   </a>
@@ -1169,40 +1169,53 @@
 </span></code></pre></div>
 <hr />
 <h2 id="3-bump-the-version-using-bump-my-version">3. Bump the version using bump-my-version</h2>
-<p>Run <strong>one</strong> of the following from the repository root:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># choose exactly one:</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w"> </span>-vv
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="c1"># or</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w"> </span>-vv
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="c1"># or</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w"> </span>-vv
+<p>Create a release branch from the up-to-date <code>main</code>, named after the version you are about to release:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>git<span class="w"> </span>switch<span class="w"> </span>-c<span class="w"> </span>release-X.Y.Z
+</span></code></pre></div>
+<p>Then run <strong>one</strong> of the following from the repository root:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># choose exactly one:</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>patch<span class="w"> </span>-vv
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="c1"># or</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>minor<span class="w"> </span>-vv
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="c1"># or</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>bump-my-version<span class="w"> </span>bump<span class="w"> </span>major<span class="w"> </span>-vv
 </span></code></pre></div>
 <p>This will update the version in <code>pyproject.toml</code> and <code>src/datacollective/__init__.py</code>, and then run <code>uv lock</code> to update <code>uv.lock</code>.</p>
 <hr />
 <h2 id="4-check-uvlock">4. Check uv.lock</h2>
 <p><code>bump-my-version</code> runs <code>uv lock</code> automatically after bumping (see <code>pre_commit_hooks</code> in <code>pyproject.toml</code>), so <code>uv.lock</code> should already carry the new version. CI installs with <code>uv sync --locked</code> and fails if it does not. Verify with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>uv<span class="w"> </span>lock<span class="w"> </span>--check
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>lock<span class="w"> </span>--check
 </span></code></pre></div>
 <p>If the <code>uv lock</code> hook fails (for example <code>uv</code> is not on your <code>PATH</code>, or you are offline), the version is already bumped in <code>pyproject.toml</code> and <code>src/datacollective/__init__.py</code> but <code>uv.lock</code> is stale. Do <strong>not</strong> re-run the bump, as that would refuse the dirty tree or bump a second time. Either finish the step by hand:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>uv<span class="w"> </span>lock
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>uv<span class="w"> </span>lock
 </span></code></pre></div>
 <p>or undo the bump and start again from step 3:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a>git<span class="w"> </span>restore<span class="w"> </span>pyproject.toml<span class="w"> </span>src/datacollective/__init__.py
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>git<span class="w"> </span>restore<span class="w"> </span>pyproject.toml<span class="w"> </span>src/datacollective/__init__.py
 </span></code></pre></div>
-<h2 id="5-push-the-changes-and-tag">5. Push the changes and tag</h2>
-<p>Commit the version bump and push to the <code>main</code> branch:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>git<span class="w"> </span>add<span class="w"> </span>pyproject.toml<span class="w"> </span>src/datacollective/__init__.py<span class="w"> </span>uv.lock
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"Bump version to X.Y.Z"</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>main
+<hr />
+<h2 id="5-merge-the-version-bump-through-a-pull-request">5. Merge the version bump through a pull request</h2>
+<p>Commit the version bump on the release branch, push it and open a pull request against <code>main</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>git<span class="w"> </span>add<span class="w"> </span>pyproject.toml<span class="w"> </span>src/datacollective/__init__.py<span class="w"> </span>uv.lock
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"Bump version to X.Y.Z"</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>git<span class="w"> </span>push<span class="w"> </span>-u<span class="w"> </span>origin<span class="w"> </span>release-X.Y.Z
+</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>gh<span class="w"> </span>pr<span class="w"> </span>create<span class="w"> </span>--base<span class="w"> </span>main<span class="w"> </span>--title<span class="w"> </span><span class="s2">"Bump version to X.Y.Z"</span><span class="w"> </span>--body<span class="w"> </span><span class="s2">"Release X.Y.Z"</span>
 </span></code></pre></div>
-<p>Replace <code>X.Y.Z</code> with the tag created in the previous step (for example, <code>0.0.35</code>).</p>
+<p>Replace <code>X.Y.Z</code> with the new version (for example, <code>0.0.35</code>).</p>
+<p>Wait for the required checks to pass, then merge the pull request. Afterwards, update your local <code>main</code>:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>git<span class="w"> </span>switch<span class="w"> </span>main
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>git<span class="w"> </span>pull<span class="w"> </span>origin<span class="w"> </span>main
+</span></code></pre></div>
+<p>Confirm that <code>main</code> now carries the new version before going further:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>grep<span class="w"> </span><span class="s1">'^version'</span><span class="w"> </span>pyproject.toml
+</span></code></pre></div>
 <hr />
 <h2 id="6-create-a-github-release">6. Create a GitHub Release</h2>
+<p>Only do this once the bump pull request is merged (see the warning at the top of this page).</p>
 <ol>
 <li>Go to the repository page on GitHub.</li>
 <li>Open the <code>Releases</code> section.</li>
 <li>Click <code>Draft a new release</code>.</li>
-<li>Select the tag you just pushed (for example, <code>0.0.35</code>).</li>
+<li>Create a new tag named <code>X.Y.Z</code> (for example, <code>0.0.35</code>) with <code>main</code> as the target, so that it points at the merged bump commit.</li>
 <li>Set the release title to the same value (e.g. <code>0.0.35</code>).</li>
 <li>Add release notes (high-level changes).</li>
 <li>Click <code>Publish release</code>.</li>
@@ -1231,7 +1244,7 @@
 <li>Confirm that the new version <code>X.Y.Z</code> is listed.</li>
 <li>Optionally install the package in a clean environment to verify:</li>
 </ol>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span><span class="nv">datacollective</span><span class="o">==</span>X.Y.Z
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>pip<span class="w"> </span>install<span class="w"> </span>--upgrade<span class="w"> </span><span class="nv">datacollective</span><span class="o">==</span>X.Y.Z
 </span></code></pre></div>
 <hr />
 <h2 id="notes-and-best-practices">Notes and Best Practices</h2>
