@@ -11,15 +11,14 @@ from fox_progress_bar import ProgressBar
 from pydantic import Field, ValidationError
 from requests.adapters import HTTPAdapter
 
-from datacollective.errors import RateLimitError
 from datacollective.api_utils import (
+    _format_bytes,
     _get_api_url,
     _send_api_request,
-    _format_bytes,
 )
+from datacollective.errors import RateLimitError
 from datacollective.logging_utils import get_logger
 from datacollective.models import NonEmptyStrModel, UploadPart
-
 
 logger = get_logger(__name__)
 
@@ -271,7 +270,7 @@ def _load_or_create_state(
             )
             state = None
         else:
-            logger.info(f"Resuming upload from `{str(state_file)}`")
+            logger.info(f"Resuming upload from `{state_file!s}`")
 
     if not state:
         logger.info(
