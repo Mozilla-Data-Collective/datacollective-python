@@ -7,11 +7,17 @@ on:
       - mkdocs.yml
       - 'docs/**'
       - 'src/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/docs.yml'
   pull_request:
     paths:
       - mkdocs.yml
       - 'docs/**'
       - 'src/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/docs.yml'
   workflow_dispatch:
 
 jobs:
@@ -41,12 +47,12 @@ jobs:
           git config user.email 'github-actions[bot]@users.noreply.github.com'
 
       - name: Install requirements
-        run: uv pip install --system -e . --group docs
+        run: uv sync --locked --no-default-groups --group docs
 
       - name: Build docs
         if: github.event_name == 'pull_request'
-        run: mkdocs build -s
+        run: uv run --no-sync mkdocs build -s
 
       - name: Publish docs
         if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
-        run: mkdocs gh-deploy
+        run: uv run --no-sync mkdocs gh-deploy

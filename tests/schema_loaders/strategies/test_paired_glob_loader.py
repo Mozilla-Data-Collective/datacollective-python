@@ -275,7 +275,7 @@ class TestPairedGlobJSON:
             "gender",
         ]
         # Per-recording fields repeat on every utterance row
-        assert set(Path(p).name for p in df["audio_path"]) == {"rec1.wav", "rec2.wav"}
+        assert {Path(p).name for p in df["audio_path"]} == {"rec1.wav", "rec2.wav"}
         assert (df["gender"] == "male").all()
         assert df["start_time"].dtype == "float64"
         assert df["transcription"].iloc[0] == "utterance 1"

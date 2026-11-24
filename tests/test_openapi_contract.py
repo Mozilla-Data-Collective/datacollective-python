@@ -28,12 +28,12 @@ from datacollective.api_utils import (
 )
 from datacollective.models import (
     DRAFT_FIELDS,
+    SUBMIT_FIELDS,
+    UPDATE_FIELDS,
     CommercialAvailability,
     CommercialAvailabilityCondition,
     ComplianceAnswer,
     ComplianceAttributes,
-    SUBMIT_FIELDS,
-    UPDATE_FIELDS,
     DatasetDetails,
     DatasetSubmission,
     Task,

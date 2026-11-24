@@ -34,12 +34,12 @@ class MultiSplitLoader(BaseSchemaLoader):
 
         split_files: dict[str, Path] = {}
         for path in self.extract_dir.rglob(pattern):
-            if path.stem in allowed_splits:
-                # Prefer the shallowest match per split name
-                if path.stem not in split_files or len(path.parts) < len(
-                    split_files[path.stem].parts
-                ):
-                    split_files[path.stem] = path
+            # Prefer the shallowest match per split name
+            if path.stem in allowed_splits and (
+                path.stem not in split_files
+                or len(path.parts) < len(split_files[path.stem].parts)
+            ):
+                split_files[path.stem] = path
 
         if not split_files:
             raise RuntimeError(

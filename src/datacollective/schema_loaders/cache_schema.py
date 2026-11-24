@@ -1,8 +1,9 @@
 from pathlib import Path
+
 import yaml
 
 from datacollective.logging_utils import get_logger
-from datacollective.schema import DatasetSchema, _parse_schema, _get_dataset_schema
+from datacollective.schema import DatasetSchema, _get_dataset_schema, _parse_schema
 
 logger = get_logger(__name__)
 
