@@ -1,5 +1,6 @@
 import importlib.util
-from datacollective import get_dataset_details, download_dataset, load_dataset
+
+from datacollective import download_dataset, get_dataset_details, load_dataset
 
 dataset_id_or_slug = "cmkfm9fbl00nto0070sdcrak2"
 download_directory = "downloads"

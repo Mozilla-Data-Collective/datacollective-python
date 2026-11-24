@@ -1,8 +1,8 @@
 from pathlib import Path
 
-import datacollective.submissions as submissions_module
 import pytest
 
+import datacollective.submissions as submissions_module
 from datacollective.models import DatasetSubmission, License, Task, Visibility
 
 

@@ -11,15 +11,14 @@ from fox_progress_bar import ProgressBar
 from pydantic import Field, ValidationError
 from requests.adapters import HTTPAdapter
 
-from datacollective.errors import RateLimitError
 from datacollective.api_utils import (
+    _format_bytes,
     _get_api_url,
     _send_api_request,
-    _format_bytes,
 )
+from datacollective.errors import RateLimitError
 from datacollective.logging_utils import get_logger
 from datacollective.models import NonEmptyStrModel, UploadPart
-
 
 logger = get_logger(__name__)
 
@@ -74,7 +73,7 @@ def _ensure_part_size_is_valid(file_size: int, part_size: int) -> None:
         )
     required_parts = _expected_parts(file_size, part_size)
     if required_parts > MAX_UPLOAD_PARTS:
-        min_part_size = int(math.ceil(file_size / MAX_UPLOAD_PARTS))
+        min_part_size = math.ceil(file_size / MAX_UPLOAD_PARTS)
         raise ValueError(
             f"File requires {required_parts} parts at a part size of "
             f"{_format_bytes(part_size)} for the whole file of {_format_bytes(file_size)},"
@@ -231,7 +230,7 @@ def _load_upload_state(path: Path) -> UploadState | None:
     try:
         payload = json.loads(path.read_text())
         return UploadState.model_validate(payload)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
 
 
@@ -271,7 +270,7 @@ def _load_or_create_state(
             )
             state = None
         else:
-            logger.info(f"Resuming upload from `{str(state_file)}`")
+            logger.info(f"Resuming upload from `{state_file!s}`")
 
     if not state:
         logger.info(
@@ -496,7 +495,7 @@ def _upload_parts_and_compute_checksum(
 
 
 def _expected_parts(file_size: int, part_size: int) -> int:
-    return int(math.ceil(file_size / part_size))
+    return math.ceil(file_size / part_size)
 
 
 def _normalize_parts(state: UploadState) -> dict[int, str]:
@@ -514,7 +513,7 @@ def _cleanup_state_file(state_file: Path) -> None:
     try:
         if state_file.exists():
             state_file.unlink()
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.debug(f"Failed to remove upload state file: {state_file}")
 
 

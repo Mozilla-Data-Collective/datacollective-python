@@ -4,8 +4,8 @@ import pytest
 from _pytest.monkeypatch import MonkeyPatch
 
 from datacollective import datasets
-from datacollective.models import DatasetDetails
 from datacollective.download import _resolve_download_dir
+from datacollective.models import DatasetDetails
 
 
 def test_resolve_download_dir_prefers_argument(

@@ -152,8 +152,8 @@ class BaseSchemaLoader(abc.ABC):
             if col_map.dtype == "file_path":
                 misses: list[str] = []
                 series = raw_df.apply(
-                    lambda row, _col_map=col_map, _source=resolved_source: (
-                        self._resolve_file_path(row[_source], _col_map, row, misses)
+                    lambda row, _col_map=col_map, _source=resolved_source, _misses=misses: (
+                        self._resolve_file_path(row[_source], _col_map, row, _misses)
                     ),
                     axis=1,
                 )
@@ -166,13 +166,16 @@ class BaseSchemaLoader(abc.ABC):
             elif col_map.dtype == "file_content":
                 misses = []
                 series = raw_df.apply(
-                    lambda row, _col_map=col_map, _source=resolved_source: (
-                        self._load_file_content(row[_source], _col_map, row, misses)
+                    lambda row, _col_map=col_map, _source=resolved_source, _misses=misses: (
+                        self._load_file_content(row[_source], _col_map, row, _misses)
                     ),
                     axis=1,
                 )
                 self._warn_unresolved_files(
-                    logical_name, misses, len(raw_df), "their values are set to missing"
+                    logical_name,
+                    misses,
+                    len(raw_df),
+                    "their values are set to missing",
                 )
             elif col_map.dtype == "category":
                 series = series.astype("category")

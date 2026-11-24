@@ -1,13 +1,12 @@
 import os
 import warnings
+from collections.abc import Iterator
 from pathlib import Path
-from typing import NoReturn, Iterator
+from typing import NoReturn
 
 import pytest
-
 from requests import ConnectionError as RequestsConnectionError
-from requests import HTTPError
-from requests import Timeout
+from requests import HTTPError, Timeout
 
 from datacollective.errors import RateLimitError
 from datacollective.models import (
@@ -21,7 +20,6 @@ from datacollective.models import (
     Visibility,
 )
 from datacollective.submissions import delete_submission
-
 
 LIVE_TEST_SKIP_REASON = (
     "Set MDC_TEST_API_KEY and MDC_TEST_API_URL to run live API tests."

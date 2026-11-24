@@ -1,6 +1,6 @@
 import re
 
-import datacollective.api_utils as api_utils
+from datacollective import api_utils
 
 
 def test_get_user_agent_omits_download_source_by_default() -> None:
