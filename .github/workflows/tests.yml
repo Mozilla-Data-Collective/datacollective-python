@@ -6,11 +6,15 @@ on:
     paths:
       - 'src/**'
       - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
       - 'src/**'
       - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
   release:
     types: [published]
   workflow_dispatch:
@@ -41,10 +45,10 @@ jobs:
           enable-cache: false
 
       - name: Install test dependencies
-        run: uv pip install --system -e . --group dev
+        run: uv sync --locked --group dev
 
       - name: Run unit & integration tests (exclude e2e)
-        run: pytest -v --ignore=tests/e2e tests
+        run: uv run --no-sync pytest -v --ignore=tests/e2e tests
 
   run-e2e:
     needs: run-tests
@@ -73,10 +77,10 @@ jobs:
           enable-cache: false
 
       - name: Install test dependencies
-        run: uv pip install --system -e . --group dev
+        run: uv sync --locked --group dev
 
       - name: Run e2e tests
         env:
           MDC_TEST_API_KEY: ${{ secrets.MDC_TEST_API_KEY }}
           MDC_TEST_API_URL: ${{ secrets.MDC_TEST_API_URL }}
-        run: pytest -q tests/e2e
+        run: uv run --no-sync pytest -q tests/e2e
