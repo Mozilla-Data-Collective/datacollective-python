@@ -51,7 +51,7 @@ jobs:
           enable-cache: true
 
       - name: Install test dependencies
-        run: uv pip install --system -e . --group dev
+        run: uv sync --locked --group dev
 
       - name: Fetch the live spec
         run: |
@@ -73,7 +73,7 @@ jobs:
         id: contract
         continue-on-error: true
         run: |
-          pytest -q tests/test_openapi_contract.py 2>&1 | tee contract-output.txt
+          uv run --no-sync pytest -q tests/test_openapi_contract.py 2>&1 | tee contract-output.txt
           exit "${PIPESTATUS[0]}"
 
       - name: Write the issue body
