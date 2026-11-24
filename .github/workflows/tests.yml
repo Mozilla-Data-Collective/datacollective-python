@@ -8,6 +8,7 @@ on:
       - 'tests/**'
       - 'pyproject.toml'
       - 'uv.lock'
+      - '.github/workflows/tests.yml'
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
@@ -15,6 +16,7 @@ on:
       - 'tests/**'
       - 'pyproject.toml'
       - 'uv.lock'
+      - '.github/workflows/tests.yml'
   release:
     types: [published]
   workflow_dispatch:

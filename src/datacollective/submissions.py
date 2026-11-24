@@ -9,18 +9,18 @@ from datacollective.logging_utils import (
     get_logger,
 )
 from datacollective.models import (
+    DRAFT_FIELDS,
+    SUBMIT_FIELDS,
+    UPDATE_FIELDS,
     DatasetSubmission,
     _ensure_submission_model,
     _payload_for_fields,
-    DRAFT_FIELDS,
-    UPDATE_FIELDS,
-    SUBMIT_FIELDS,
 )
 from datacollective.upload import upload_dataset_file, upload_sample_file
 from datacollective.upload_utils import (
-    _resolve_upload_state,
-    DEFAULT_PART_SIZE,
     DEFAULT_MAX_WORKERS,
+    DEFAULT_PART_SIZE,
+    _resolve_upload_state,
 )
 
 logger = get_logger(__name__)

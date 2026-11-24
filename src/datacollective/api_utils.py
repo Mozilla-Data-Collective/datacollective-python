@@ -159,7 +159,7 @@ def _extract_error_detail(resp: requests.Response) -> str:
     try:
         body = resp.json()
         return str(body.get("message") or body.get("error") or "")
-    except Exception:
+    except Exception:  # noqa: BLE001
         return ""
 
 
@@ -170,7 +170,7 @@ def _response_body_for_logging(resp: requests.Response, stream: bool = False) ->
     try:
         # Redact sensitive info
         body: Any = _redact_sensitive(resp.json())
-    except Exception:
+    except Exception:  # noqa: BLE001
         # Non-JSON body: no structured keys to redact, fall back to raw text
         body = resp.text
     return f"{resp.status_code}: {body}"

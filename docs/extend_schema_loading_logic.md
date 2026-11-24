@@ -19,6 +19,7 @@ import pandas as pd
 from datacollective.schema import DatasetSchema
 from datacollective.schema_loaders.base import BaseSchemaLoader
 
+
 class ManifestLoader(BaseSchemaLoader):
     """Load a dataset described by a single JSON manifest."""
 

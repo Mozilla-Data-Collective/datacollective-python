@@ -9,8 +9,8 @@ from datasets import Dataset, DatasetDict
 
 from datacollective import load_dataset
 from datacollective.errors import MissingDependencyError
-from datacollective.models import DatasetDetails
 from datacollective.hf_utils import _convert_to_hf, _require_datasets
+from datacollective.models import DatasetDetails
 from datacollective.schema import DatasetSchema
 
 

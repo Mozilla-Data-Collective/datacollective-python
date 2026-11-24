@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import warnings
+from collections.abc import Sequence
 from enum import Enum
 from pathlib import Path
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Literal, overload
 
 import pandas as pd
@@ -11,13 +11,6 @@ import pandas as pd
 from datacollective.api_utils import (
     _get_api_url,
     _send_api_request,
-)
-from datacollective.models import (
-    DatasetDetails,
-    DatasetFilters,
-    DatasetList,
-    License,
-    Task,
 )
 from datacollective.archive_utils import _extract_archive
 from datacollective.download import (
@@ -34,9 +27,16 @@ from datacollective.logging_utils import (
     _enable_logging,
     get_logger,
 )
+from datacollective.models import (
+    DatasetDetails,
+    DatasetFilters,
+    DatasetList,
+    License,
+    Task,
+)
+from datacollective.schema import _get_dataset_schema
 from datacollective.schema_loaders.cache_schema import _resolve_schema
 from datacollective.schema_loaders.registry import _load_dataset_from_schema
-from datacollective.schema import _get_dataset_schema
 
 if TYPE_CHECKING:
     from datasets import Dataset, DatasetDict

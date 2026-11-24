@@ -5,10 +5,10 @@ from typing import Any
 
 import pytest
 import requests
-from datacollective.errors import DownloadError
 
 import datacollective.download as download_module
 from datacollective import DatasetDetails, download_dataset, get_dataset_details
+from datacollective.errors import DownloadError
 from tests.e2e.conftest import skip_if_rate_limited
 
 
@@ -21,7 +21,7 @@ def test_get_dataset_details_live_api(
 
     try:
         details = get_dataset_details(dev_dataset_id)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert details is not None
@@ -54,7 +54,7 @@ def test_get_dataset_details_live_api_without_api_key(
 
     try:
         details = get_dataset_details(dev_dataset_id)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert details is not None
@@ -79,7 +79,7 @@ def test_download_dataset_live_api(
             show_progress=False,
             overwrite_existing=True,
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert archive_path is not None
@@ -171,7 +171,7 @@ def test_resume_download(
                 download_directory=str(live_download_dir),
                 show_progress=False,
             )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert interrupt_first_download["value"]
