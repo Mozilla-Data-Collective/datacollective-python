@@ -73,7 +73,13 @@ bump-my-version bump minor --dry-run -vv
 
 ## 3. Bump the version using bump-my-version
 
-Run **one** of the following from the repository root:
+Create a release branch from the up-to-date `main`, named after the version you are about to release:
+
+```bash
+git switch -c release-X.Y.Z
+```
+
+Then run **one** of the following from the repository root:
 
 ```bash
 # choose exactly one:
@@ -108,26 +114,44 @@ or undo the bump and start again from step 3:
 git restore pyproject.toml src/datacollective/__init__.py
 ```
 
-## 5. Push the changes and tag
+---
 
-Commit the version bump and push to the `main` branch:
+## 5. Merge the version bump through a pull request
+
+Commit the version bump on the release branch, push it and open a pull request against `main`:
 
 ```bash
 git add pyproject.toml src/datacollective/__init__.py uv.lock
 git commit -m "Bump version to X.Y.Z"
-git push origin main
+git push -u origin release-X.Y.Z
+gh pr create --base main --title "Bump version to X.Y.Z" --body "Release X.Y.Z"
 ```
 
-Replace `X.Y.Z` with the tag created in the previous step (for example, `0.0.35`).
+Replace `X.Y.Z` with the new version (for example, `0.0.35`).
+
+Wait for the required checks to pass, then merge the pull request. Afterwards, update your local `main`:
+
+```bash
+git switch main
+git pull origin main
+```
+
+Confirm that `main` now carries the new version before going further:
+
+```bash
+grep '^version' pyproject.toml
+```
 
 ---
 
 ## 6. Create a GitHub Release
 
+Only do this once the bump pull request is merged (see the warning at the top of this page).
+
 1. Go to the repository page on GitHub.
 2. Open the `Releases` section.
 3. Click `Draft a new release`.
-4. Select the tag you just pushed (for example, `0.0.35`).
+4. Create a new tag named `X.Y.Z` (for example, `0.0.35`) with `main` as the target, so that it points at the merged bump commit.
 5. Set the release title to the same value (e.g. `0.0.35`).
 6. Add release notes (high-level changes).
 7. Click `Publish release`.
