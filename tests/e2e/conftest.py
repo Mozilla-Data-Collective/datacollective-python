@@ -32,9 +32,10 @@ def skip_if_rate_limited(exc: Exception) -> NoReturn:
     """Skip live E2E tests when the backend or network is unavailable."""
     if isinstance(exc, RateLimitError):
         pytest.skip("Skipped due to API rate limiting (HTTP 429)")
-    if isinstance(exc, HTTPError) and getattr(exc, "response", None):
-        if getattr(exc.response, "status_code", None) == 429:
-            pytest.skip("Skipped due to API rate limiting (HTTP 429)")
+    # Read the status directly: a 4xx/5xx `Response` is falsy, so a truthiness
+    # check on `exc.response` would never reach the 429 comparison.
+    if isinstance(exc, HTTPError) and getattr(exc.response, "status_code", None) == 429:
+        pytest.skip("Skipped due to API rate limiting (HTTP 429)")
     if isinstance(exc, (RequestsConnectionError, Timeout)):
         pytest.skip("Skipped due to live API connectivity issues")
     raise exc
