@@ -86,12 +86,12 @@ This will update the version in `pyproject.toml` and `src/datacollective/__init_
 
 ---
 
-## 4. Update uv.lock
+## 4. Check uv.lock
 
-After bumping the version, you need to update the `uv.lock` file to reflect the new version:
+`bump-my-version` runs `uv lock` automatically after bumping (see `pre_commit_hooks` in `pyproject.toml`), so `uv.lock` should already carry the new version. CI installs with `uv sync --locked` and fails if it does not. Verify with:
 
 ```bash
-uv lock
+uv lock --check
 ```
 
 ## 5. Push the changes and tag

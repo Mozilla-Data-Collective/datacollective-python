@@ -185,9 +185,9 @@ submission = DatasetSubmission(
     format="TSV",
     licenseAbbreviation=License.CC_BY_4_0,
     other="This text should provide a detailed description of the dataset, "
-          "including its contents, structure, and any relevant information "
-          "that would help users understand what the dataset is about "
-          "and how it can be used.",
+    "including its contents, structure, and any relevant information "
+    "that would help users understand what the dataset is about "
+    "and how it can be used.",
     restrictions="Any restrictions you want to impose on the dataset",
     forbiddenUsage="Use cases that are not allowed with this dataset",
     additionalConditions="Any additional conditions for using the dataset",
@@ -200,24 +200,23 @@ submission = DatasetSubmission(
     createdByFullName="Creator Name",
     createdByEmail="creator@example.com",
     intendedUsage="Describe the intended usage of the dataset, including "
-                  "potential applications and use cases.",
+    "potential applications and use cases.",
     ethicalReviewProcess="Describe the ethical review process that was "
-                         "followed for this dataset, including any approvals "
-                         "or considerations related to data collection and usage.",
+    "followed for this dataset, including any approvals "
+    "or considerations related to data collection and usage.",
     showContactInfo=False,  # Whether to publicly display the contact information above
     visibility=Visibility.PUBLIC,  # public | private | restricted
     isPaid=False,  # True = the dataset is compensated and requires `basePriceCents`,
-                   # False (default) = the dataset is free to access
-    exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective, 
-                              # False = Dataset is exclusively hosted in Mozilla Data Collective
-    agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and 
-                         # that all information provided in the datasheet is accurate. 
-                         # Required to be True to complete the submission process
+    # False (default) = the dataset is free to access
+    exclusivityOptOut=False,  # True = This dataset is non-exclusive to Mozilla Data Collective,
+    # False = Dataset is exclusively hosted in Mozilla Data Collective
+    agreeToSubmit=True,  # True = You confirm that you have the right to submit this dataset and
+    # that all information provided in the datasheet is accurate.
+    # Required to be True to complete the submission process
 )
 
 response = create_submission_with_upload(
-    file_path="/path/to/dataset.tar.gz",
-    submission=submission
+    file_path="/path/to/dataset.tar.gz", submission=submission
 )
 
 print(response)
@@ -302,7 +301,7 @@ ds = ds.cast_column("audio", Audio(sampling_rate=16_000))
 # Nothing is decoded yet, decoding happens on access, one example at a time:
 sample = ds[0]["audio"]
 print(sample["sampling_rate"])  # 16000
-print(sample["array"])          # numpy array with the decoded waveform
+print(sample["array"])  # numpy array with the decoded waveform
 ```
 
 This keeps memory usage low: the dataset only stores the file paths, and each
@@ -344,7 +343,9 @@ page = list_datasets(
 print(f"{page.total} datasets match, showing {len(page)}")
 for dataset in page:
     size_gb = (dataset.sizeBytes or 0) / 1e9
-    print(f"{dataset.id}  {dataset.name}  ({dataset.task}, {dataset.locale}, {size_gb:.1f} GB)")
+    print(
+        f"{dataset.id}  {dataset.name}  ({dataset.task}, {dataset.locale}, {size_gb:.1f} GB)"
+    )
 ```
 
 Other filters: `file_format` (e.g. `"WAV"`), `upload_date` (`"today"`, `"thisWeek"`,
@@ -377,10 +378,10 @@ value absent from these lists matches nothing rather than failing:
 from datacollective import list_dataset_filters
 
 filters = list_dataset_filters()
-print(filters.tasks)     # e.g. ['ASR', 'TTS', 'NLP', ...]
-print(filters.locales)   # e.g. ['el', 'en', 'sw', ...]
+print(filters.tasks)  # e.g. ['ASR', 'TTS', 'NLP', ...]
+print(filters.locales)  # e.g. ['el', 'en', 'sw', ...]
 print(filters.licenses)  # e.g. ['CC0-1.0', 'CC-BY-4.0', ...]
-print(filters.formats)   # e.g. ['MP3', 'WAV', 'TSV', ...]
+print(filters.formats)  # e.g. ['MP3', 'WAV', 'TSV', ...]
 ```
 
 ### Automatic Download Resume
