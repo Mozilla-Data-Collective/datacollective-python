@@ -20,6 +20,8 @@ Before doing a release, make sure you have:
 uv tool install bump-my-version
 ```
 
+- `uv` available on your `PATH`: the version bump runs `uv lock` for you (see step 4).
+
 - An up-to-date local clone with all changes merged into `main`:
 
 ```bash
@@ -82,7 +84,7 @@ bump-my-version bump minor -vv
 bump-my-version bump major -vv
 ```
 
-This will update the version in `pyproject.toml` and `src/datacollective/__init__.py`.
+This will update the version in `pyproject.toml` and `src/datacollective/__init__.py`, and then run `uv lock` to update `uv.lock`.
 
 ---
 
@@ -92,6 +94,18 @@ This will update the version in `pyproject.toml` and `src/datacollective/__init_
 
 ```bash
 uv lock --check
+```
+
+If the `uv lock` hook fails (for example `uv` is not on your `PATH`, or you are offline), the version is already bumped in `pyproject.toml` and `src/datacollective/__init__.py` but `uv.lock` is stale. Do **not** re-run the bump, as that would refuse the dirty tree or bump a second time. Either finish the step by hand:
+
+```bash
+uv lock
+```
+
+or undo the bump and start again from step 3:
+
+```bash
+git restore pyproject.toml src/datacollective/__init__.py
 ```
 
 ## 5. Push the changes and tag
