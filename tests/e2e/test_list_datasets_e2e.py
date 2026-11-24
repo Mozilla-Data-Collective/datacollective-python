@@ -1,9 +1,9 @@
 import pytest
 
 from datacollective import (
+    DatasetDetails,
     DatasetFilters,
     DatasetList,
-    DatasetDetails,
     get_dataset_details,
     list_dataset_filters,
     list_datasets,

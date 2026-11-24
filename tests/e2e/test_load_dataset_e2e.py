@@ -1,5 +1,6 @@
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 from datacollective import load_dataset
 from tests.e2e.conftest import skip_if_rate_limited

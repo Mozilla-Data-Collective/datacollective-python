@@ -1,9 +1,8 @@
-from pathlib import Path
-
 import json
 import logging
-from datetime import datetime, timedelta, timezone
-from typing import Any
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any, Self
 
 import pytest
 import requests
@@ -11,15 +10,15 @@ import requests
 from datacollective.download import (
     DEFAULT_MAX_DOWNLOAD_ATTEMPTS,
     DownloadPlan,
+    _determine_resume_state,
     _download_dataset,
     _download_sample,
-    _load_stored_download_plan,
-    _run_download_plan,
-    _get_checksum_filepath,
-    _determine_resume_state,
-    _resolve_download_dir,
-    _get_download_plan,
     _execute_download_plan,
+    _get_checksum_filepath,
+    _get_download_plan,
+    _load_stored_download_plan,
+    _resolve_download_dir,
+    _run_download_plan,
 )
 from datacollective.errors import DownloadError
 

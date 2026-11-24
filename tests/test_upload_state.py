@@ -1,5 +1,6 @@
-import pytest
 from pathlib import Path
+
+import pytest
 
 import datacollective.upload as upload_module
 import datacollective.upload_utils as upload_utils_module

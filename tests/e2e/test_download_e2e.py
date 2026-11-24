@@ -5,10 +5,10 @@ from typing import Any
 
 import pytest
 import requests
-from datacollective.errors import DownloadError
 
 import datacollective.download as download_module
 from datacollective import DatasetDetails, download_dataset, get_dataset_details
+from datacollective.errors import DownloadError
 from tests.e2e.conftest import skip_if_rate_limited
 
 

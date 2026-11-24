@@ -8,7 +8,6 @@ from typing import Any, Literal
 
 import requests
 import yaml
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from datacollective.api_utils import HTTP_TIMEOUT, SCHEMA_REGISTRY_RAW_BASE_URL

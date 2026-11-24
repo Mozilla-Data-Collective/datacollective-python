@@ -4,8 +4,8 @@ from pathlib import Path
 from unittest.mock import patch
 
 from datacollective.logging_utils import (
-    _resolve_log_path,
     DEFAULT_LOG_FILENAME,
+    _resolve_log_path,
 )
 
 
