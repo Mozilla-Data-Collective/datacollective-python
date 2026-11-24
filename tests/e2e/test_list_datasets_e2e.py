@@ -23,7 +23,7 @@ def test_list_dataset_filters_live_api(live_public_api_env: None) -> None:
 
     try:
         filters = list_dataset_filters()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert isinstance(filters, DatasetFilters)
@@ -41,7 +41,7 @@ def test_list_datasets_live_api(live_public_api_env: None) -> None:
 
     try:
         page = list_datasets(results_per_page=5, page_number=1, sort="newest")
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert isinstance(page, DatasetList)
@@ -66,7 +66,7 @@ def test_list_datasets_filter_roundtrip_live_api(live_public_api_env: None) -> N
         assert filters.tasks
         task = filters.tasks[0]
         page = list_datasets(task=task, results_per_page=10)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert page is not None
@@ -86,7 +86,7 @@ def test_list_datasets_matches_details_live_api(
         details = get_dataset_details(dev_dataset_id)
         assert details.name
         page = list_datasets(details.name, results_per_page=50)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert page is not None

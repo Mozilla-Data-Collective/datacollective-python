@@ -21,7 +21,7 @@ def test_get_dataset_details_live_api(
 
     try:
         details = get_dataset_details(dev_dataset_id)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert details is not None
@@ -54,7 +54,7 @@ def test_get_dataset_details_live_api_without_api_key(
 
     try:
         details = get_dataset_details(dev_dataset_id)
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert details is not None
@@ -79,7 +79,7 @@ def test_download_dataset_live_api(
             show_progress=False,
             overwrite_existing=True,
         )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert archive_path is not None
@@ -171,7 +171,7 @@ def test_resume_download(
                 download_directory=str(live_download_dir),
                 show_progress=False,
             )
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         skip_if_rate_limited(exc)
 
     assert interrupt_first_download["value"]

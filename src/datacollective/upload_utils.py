@@ -231,7 +231,7 @@ def _load_upload_state(path: Path) -> UploadState | None:
     try:
         payload = json.loads(path.read_text())
         return UploadState.model_validate(payload)
-    except Exception:
+    except Exception:  # noqa: BLE001
         return None
 
 
@@ -514,7 +514,7 @@ def _cleanup_state_file(state_file: Path) -> None:
     try:
         if state_file.exists():
             state_file.unlink()
-    except Exception:
+    except Exception:  # noqa: BLE001
         logger.debug(f"Failed to remove upload state file: {state_file}")
 
 

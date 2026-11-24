@@ -151,7 +151,7 @@ def test_compliance_attributes_validation() -> None:
     with pytest.raises(ValidationError, match="unique"):
         ComplianceAttributes(commercialAvailabilityConditions=["attribution"] * 2)
     with pytest.raises(ValidationError):
-        ComplianceAttributes(unknown="yes")
+        ComplianceAttributes(unknown="yes")  # type: ignore[call-arg]
 
 
 def test_visibility_enum_values() -> None:
