@@ -311,6 +311,9 @@ def _parse_schema(raw: str | dict[str, Any] | Path) -> DatasetSchema:
     if isinstance(raw, str):
         raw = yaml.safe_load(raw)
     if not isinstance(raw, dict):
-        raise ValueError(f"Expected a dict after YAML parsing, got {type(raw)}")
+        # Kept as ValueError: callers rely on it for malformed schema input.
+        raise ValueError(  # noqa: TRY004
+            f"Expected a dict after YAML parsing, got {type(raw)}"
+        )
 
     return DatasetSchema.model_validate(raw)

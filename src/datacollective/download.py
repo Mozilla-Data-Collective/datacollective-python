@@ -444,8 +444,8 @@ def _url_still_valid(expires_at: datetime | None) -> bool:
     if expires_at is None:
         return False
     if expires_at.tzinfo is None:
-        expires_at = expires_at.replace(tzinfo=timezone.utc)
-    return datetime.now(timezone.utc) + URL_EXPIRY_MARGIN < expires_at
+        expires_at = expires_at.replace(tzinfo=UTC)
+    return datetime.now(UTC) + URL_EXPIRY_MARGIN < expires_at
 
 
 def _determine_resume_state(download_plan: DownloadPlan) -> str | None:
@@ -594,23 +594,25 @@ def _stream_archive_to_disk(
     if offset:
         headers["Range"] = f"bytes={offset}-"
 
-    with _send_api_request(
-        method="GET",
-        url=download_plan.download_url,
-        stream=True,
-        timeout=HTTP_TIMEOUT,
-        extra_headers=headers,
-        include_auth_headers=False,  # Download URL is pre-signed, no auth needed
-        source_function=download_source,
-    ) as response:
-        with open(download_plan.tmp_filepath, "ab") as f:
-            # Iterate over response in 64KB chunks to avoid using too much memory
-            for chunk in response.iter_content(chunk_size=1 << 16):
-                if not chunk:
-                    continue
-                f.write(chunk)
-                if progress_bar:
-                    progress_bar.update(len(chunk))
+    with (
+        _send_api_request(
+            method="GET",
+            url=download_plan.download_url,
+            stream=True,
+            timeout=HTTP_TIMEOUT,
+            extra_headers=headers,
+            include_auth_headers=False,  # Download URL is pre-signed, no auth needed
+            source_function=download_source,
+        ) as response,
+        open(download_plan.tmp_filepath, "ab") as f,
+    ):
+        # Iterate over response in 64KB chunks to avoid using too much memory
+        for chunk in response.iter_content(chunk_size=1 << 16):
+            if not chunk:
+                continue
+            f.write(chunk)
+            if progress_bar:
+                progress_bar.update(len(chunk))
 
 
 def _bytes_on_disk(download_plan: DownloadPlan) -> int:

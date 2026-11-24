@@ -208,10 +208,10 @@ def test_execute_download_plan_forwards_download_source(
     plan = _make_download_plan(tmp_path)
 
     class FakeResponse:
-        def __enter__(self) -> "FakeResponse":
+        def __enter__(self) -> Self:
             return self
 
-        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        def __exit__(self, *args: object) -> None:
             return None
 
         def iter_content(self, chunk_size: int):
@@ -262,10 +262,10 @@ class _FlakyDownloadApi:
         )
 
         class FakeResponse:
-            def __enter__(self) -> "FakeResponse":
+            def __enter__(self) -> Self:
                 return self
 
-            def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            def __exit__(self, *args: object) -> None:
                 return None
 
             def iter_content(self, chunk_size: int):
@@ -382,10 +382,10 @@ def test_execute_download_plan_does_not_retry_other_errors(
     calls: list[dict[str, Any]] = []
 
     class FakeResponse:
-        def __enter__(self) -> "FakeResponse":
+        def __enter__(self) -> Self:
             return self
 
-        def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        def __exit__(self, *args: object) -> None:
             return None
 
         def iter_content(self, chunk_size: int):
@@ -451,10 +451,10 @@ class _FakeDatasetApi:
             def json(self) -> dict[str, Any]:
                 return api.payload
 
-            def __enter__(self) -> "FakeResponse":
+            def __enter__(self) -> Self:
                 return self
 
-            def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            def __exit__(self, *args: object) -> None:
                 return None
 
             def iter_content(self, chunk_size: int):
@@ -467,7 +467,7 @@ _CONTENT = b"0123456789"
 
 
 def _future(seconds: int = 3600) -> str:
-    return (datetime.now(timezone.utc) + timedelta(seconds=seconds)).isoformat()
+    return (datetime.now(UTC) + timedelta(seconds=seconds)).isoformat()
 
 
 def _session_payload(
@@ -703,10 +703,10 @@ class _FakeSampleApi:
             def json(self) -> dict[str, Any]:
                 return api.payload
 
-            def __enter__(self) -> "FakeResponse":
+            def __enter__(self) -> Self:
                 return self
 
-            def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+            def __exit__(self, *args: object) -> None:
                 return None
 
             def iter_content(self, chunk_size: int):

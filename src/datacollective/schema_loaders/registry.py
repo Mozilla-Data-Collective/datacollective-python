@@ -21,7 +21,7 @@ from datacollective.schema_loaders.strategies import (
 logger = get_logger(__name__)
 
 
-_STRATEGY_REGISTRY: dict[Strategy, Type[BaseSchemaLoader]] = {
+_STRATEGY_REGISTRY: dict[Strategy, type[BaseSchemaLoader]] = {
     Strategy.INDEX: IndexLoader,
     Strategy.MULTI_SPLIT: MultiSplitLoader,
     Strategy.MULTI_SECTIONS: MultiSectionsLoader,

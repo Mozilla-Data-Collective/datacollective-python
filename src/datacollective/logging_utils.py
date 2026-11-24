@@ -13,7 +13,7 @@ DEFAULT_LOG_FILENAME = "datacollective.log"
 DEFAULT_LOG_MAX_BYTES = 10 * 1024 * 1024
 DEFAULT_LOG_BACKUP_COUNT = 5
 _SESSION_ID = (
-    f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
+    f"{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}"
     f"-pid{os.getpid()}-{uuid.uuid4().hex[:8]}"
 )
 _CONSOLE_LOG_FORMAT = (
@@ -67,7 +67,7 @@ def _resolve_log_path() -> Path:
 
 def _enable_logging(enable_logging: bool) -> None:
     if not enable_logging:
-        return None
+        return
 
     log_path = _resolve_log_path()
     log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -105,7 +105,7 @@ def _enable_logging(enable_logging: bool) -> None:
         DEFAULT_LOG_MAX_BYTES,
         DEFAULT_LOG_BACKUP_COUNT,
     )
-    return None
+    return
 
 
 configure_package_logging()
