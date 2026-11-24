@@ -89,6 +89,8 @@ allow_dirty = false
 commit = false
 message = "Bump version: {current_version} → {new_version}"
 commit_args = ""
+# Keep uv.lock in sync with the bumped version (CI installs with `uv sync --locked`).
+pre_commit_hooks = ["uv lock"]
 
 
 [[tool.bumpversion.files]]
