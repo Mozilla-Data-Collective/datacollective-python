@@ -73,7 +73,7 @@ def _ensure_part_size_is_valid(file_size: int, part_size: int) -> None:
         )
     required_parts = _expected_parts(file_size, part_size)
     if required_parts > MAX_UPLOAD_PARTS:
-        min_part_size = int(math.ceil(file_size / MAX_UPLOAD_PARTS))
+        min_part_size = math.ceil(file_size / MAX_UPLOAD_PARTS)
         raise ValueError(
             f"File requires {required_parts} parts at a part size of "
             f"{_format_bytes(part_size)} for the whole file of {_format_bytes(file_size)},"
@@ -495,7 +495,7 @@ def _upload_parts_and_compute_checksum(
 
 
 def _expected_parts(file_size: int, part_size: int) -> int:
-    return int(math.ceil(file_size / part_size))
+    return math.ceil(file_size / part_size)
 
 
 def _normalize_parts(state: UploadState) -> dict[int, str]:

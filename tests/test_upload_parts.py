@@ -109,7 +109,7 @@ def _run(
 def test_single_worker_uploads_parts_in_order(
     tmp_path: Path, fake_storage: FakeStorage
 ) -> None:
-    (bytes_read, checksum), data, parts_by_number, state, state_file = _run(
+    (bytes_read, checksum), data, parts_by_number, _state, state_file = _run(
         tmp_path, parts=3, max_workers=1
     )
 
